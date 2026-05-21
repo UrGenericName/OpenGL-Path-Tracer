@@ -1,0 +1,37 @@
+#ifndef MESH_CLASS_H
+#define MESH_CLASS_H
+
+#include <string>
+#include <fstream>
+
+#include "VAO.h"
+#include "EBO.h"
+#include "Camera.h"
+#include "Material.h"
+
+class Mesh {
+public:
+
+	std::vector<Vertex> vertices;
+	std::vector<GLuint> indices;
+	Material* material;
+
+	VAO VAO;
+	VBO* VBOptr;
+	EBO* EBOptr;
+
+	Mesh(std::vector<Vertex>& vertices, std::vector<GLuint>& indices, Material& i_material);
+	Mesh(std::vector<Vertex>& vertices, std::vector<GLuint>& indices);
+	Mesh(const char* fileName, Material& i_material, glm::vec3 importColor = { 1.0f, 1.0f, 1.0f });
+	Mesh(const char* fileName, glm::vec3 importColor = { 1.0f, 1.0f, 1.0f });
+	~Mesh();
+
+	void Draw(Shader& shader, Camera& camera);
+	bool importObj(const char* fileName, glm::vec3 importColor);	// imports an obj mesh (MUST BE TRIANGLATED BEFORE IMPORT)
+	void updateBuffers();
+
+private:
+	void MeshSetup();
+};
+
+#endif
