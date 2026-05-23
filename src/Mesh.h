@@ -1,6 +1,3 @@
-#ifndef MESH_CLASS_H
-#define MESH_CLASS_H
-
 #include <string>
 #include <fstream>
 
@@ -20,10 +17,12 @@ public:
 	VBO* VBOptr;
 	EBO* EBOptr;
 
+	bool emissive = false;
+
 	Mesh(std::vector<Vertex>& vertices, std::vector<GLuint>& indices, Material& i_material);
-	Mesh(std::vector<Vertex>& vertices, std::vector<GLuint>& indices);
+	Mesh(std::vector<Vertex>& vertices, std::vector<GLuint>& indices, bool i_emissive = false);
 	Mesh(const char* fileName, Material& i_material, glm::vec3 importColor = { 1.0f, 1.0f, 1.0f });
-	Mesh(const char* fileName, glm::vec3 importColor = { 1.0f, 1.0f, 1.0f });
+	Mesh(const char* fileName, glm::vec3 importColor = { 1.0f, 1.0f, 1.0f }, bool i_emissive = false);
 	~Mesh();
 
 	void Draw(Shader& shader, Camera& camera);
@@ -33,5 +32,3 @@ public:
 private:
 	void MeshSetup();
 };
-
-#endif

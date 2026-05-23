@@ -1,4 +1,4 @@
-#include "Mesh.h"
+#include "Scene.h"
 
 #define WIDTH 800
 #define HEIGHT 800
@@ -38,17 +38,19 @@ int main() {
 	Mesh carParts("models/car_parts.obj", carPartsMat);
 	*/
 
-	Mesh cubeA("models/room/cubeA.obj");
-	Mesh cubeB("models/room/cubeB.obj");
-	Mesh sphere("models/room/sphere.obj");
-	Mesh light("models/room/cubeA.obj", glm::vec3(1.0f, 0.8f, 0.8f) );
-	Mesh whiteWalls("models/room/white_walls.obj");
-	Mesh redWall("models/room/red_wall.obj", glm::vec3(1.0f, 0.0f, 0.0f) );
-	Mesh greenWall("models/room/green_wall.obj", glm::vec3(0.0f, 1.0f, 0.0f) );
+	Scene scene;
+	scene.meshCollection.push_back(new Mesh("models/room/cubeA.obj"));
+	scene.meshCollection.push_back(new Mesh("models/room/cubeB.obj"));
+	scene.meshCollection.push_back(new Mesh("models/room/sphere.obj"));
+	scene.meshCollection.push_back(new Mesh("models/room/white_walls.obj"));
+	scene.meshCollection.push_back(new Mesh("models/room/light.obj", glm::vec3(1.0f, 0.8f, 0.8f), true));
+	scene.meshCollection.push_back(new Mesh("models/room/red_wall.obj", glm::vec3(1.0f, 0.0f, 0.0f)));
+	scene.meshCollection.push_back(new Mesh("models/room/green_wall.obj", glm::vec3(0.0f, 1.0f, 0.0f)));
 
-
-
-
+	
+	for (int i = 0; i < scene.meshCollection[1]->vertices.size(); i++) {
+		std::cout << scene.meshCollection[1]->vertices[i].position[0] << ", " << scene.meshCollection[1]->vertices[i].position[1] << ", " << scene.meshCollection[1]->vertices[i].position[2] << std::endl;
+	}
 
 	shaderProgram.Activate();
 	glm::vec3 sun = { 1.0f, 1.0f, -1.0f };
@@ -75,13 +77,7 @@ int main() {
 		camera.updateMatrix(45.0f, 0.1f, 100.0f);
 		camera.Inputs(window);
 
-		cubeA.Draw(shaderProgram, camera);
-		cubeB.Draw(shaderProgram, camera);
-		sphere.Draw(shaderProgram, camera);
-		light.Draw(shaderProgram, camera);
-		whiteWalls.Draw(shaderProgram, camera);
-		redWall.Draw(shaderProgram, camera);
-		greenWall.Draw(shaderProgram, camera);
+		scene.Draw(shaderProgram, camera);
 
 		glfwSwapBuffers(window);
 

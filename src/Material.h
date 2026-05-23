@@ -1,5 +1,4 @@
-#ifndef MATERIAL_CLASS_H
-#define MATERIAL_CLASS_H
+#pragma once
 
 #include <glad/glad.h>
 
@@ -22,5 +21,3 @@ public:
 	Material(const char* albedo, const char* normal = nullptr, const char* roughness = nullptr, const char* metallic = nullptr);
 
 };
-
-#endif

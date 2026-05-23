@@ -13,7 +13,7 @@ Mesh::Mesh(std::vector<Vertex>& i_vertices, std::vector<GLuint>& i_indices, Mate
 
 }
 
-Mesh::Mesh(std::vector<Vertex>& i_vertices, std::vector<GLuint>& i_indices) {
+Mesh::Mesh(std::vector<Vertex>& i_vertices, std::vector<GLuint>& i_indices, bool i_emissive) {
 
 	vertices = i_vertices;
 	indices = i_indices;
@@ -21,6 +21,7 @@ Mesh::Mesh(std::vector<Vertex>& i_vertices, std::vector<GLuint>& i_indices) {
 	MeshSetup();
 
 	material = new Material();
+	emissive = i_emissive;
 
 }
 
@@ -33,12 +34,13 @@ Mesh::Mesh(const char* fileName, Material& i_material, glm::vec3 importColor) {
 
 }
 
-Mesh::Mesh(const char* fileName, glm::vec3 importColor) {
+Mesh::Mesh(const char* fileName, glm::vec3 importColor, bool i_emissive) {
 
 	importObj(fileName, importColor);
 	MeshSetup();
 
 	material = new Material();
+	emissive = i_emissive;
 
 }
 
@@ -95,6 +97,10 @@ void Mesh::Draw(Shader& shader, Camera& camera) {
 	material->metallic->texUnit(shader, "metallic", 3);
 	glActiveTexture(GL_TEXTURE3);
 	material->metallic->Bind();
+
+	GLuint emissiveUniformID = glGetUniformLocation(shader.ID, "emissive");
+	glUniform1f(emissiveUniformID, static_cast<GLfloat>(emissive) );
+
 
 	camera.Matrix(shader, "camMatrix");
 	glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);

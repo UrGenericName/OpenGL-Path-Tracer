@@ -1,5 +1,4 @@
-#ifndef VBO_H
-#define VBO_H
+#pragma once
 
 #include <glm/glm.hpp>
 #include <glad/glad.h>
@@ -23,5 +22,3 @@ public:
 	void Unbind();
 	void Delete();
 };
-
-#endif

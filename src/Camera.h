@@ -1,5 +1,4 @@
-#ifndef CAMERA_H
-#define CAMERA_H
+#pragma once
 
 #define GLM_ENABLE_EXPERIMENTAL
 
@@ -41,5 +40,3 @@ private:
 	bool firstClick = true;	// just to avoid camera snapping when initially selecting window
 	const glm::vec3 Up = glm::vec3(0.0f, 0.0f, 1.0f);	// a const vector used to define the up vector
 };
-
-#endif
