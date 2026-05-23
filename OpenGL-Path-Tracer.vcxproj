@@ -184,12 +184,16 @@
     <ClInclude Include="src\VBO.h" />
   </ItemGroup>
   <ItemGroup>
-    <Object Include="models\cube.obj">
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
-    </Object>
+    <Object Include="models\car_base.obj" />
+    <Object Include="models\car_parts.obj" />
+    <Object Include="models\cube.obj" />
+    <Object Include="models\room\cubeA.obj" />
+    <Object Include="models\room\cubeB.obj" />
+    <Object Include="models\room\green_wall.obj" />
+    <Object Include="models\room\light.obj" />
+    <Object Include="models\room\red_wall.obj" />
+    <Object Include="models\room\sphere.obj" />
+    <Object Include="models\room\white_walls.obj" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="textures\brick.png" />
