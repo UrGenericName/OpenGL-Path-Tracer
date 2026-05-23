@@ -74,15 +74,23 @@
     <None Include="shaders\default.frag">
       <Filter>Resource Files\Shaders</Filter>
     </None>
-    <None Include="models\monkey.obj">
-      <Filter>Resource Files\Models</Filter>
-    </None>
     <None Include="shaders\path_tracing.frag">
       <Filter>Resource Files\Shaders</Filter>
     </None>
     <None Include="shaders\path_tracing.vert">
       <Filter>Resource Files\Shaders</Filter>
     </None>
+    <None Include="models\monkey.obj" />
+    <None Include="models\room\cubeA.obj" />
+    <None Include="models\room\cubeB.obj" />
+    <None Include="models\room\green_wall.obj" />
+    <None Include="models\room\light.obj" />
+    <None Include="models\room\red_wall.obj" />
+    <None Include="models\room\sphere.obj" />
+    <None Include="models\room\white_walls.obj" />
+    <None Include="models\car_base.obj" />
+    <None Include="models\car_parts.obj" />
+    <None Include="models\cube.obj" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\shaderClass.h">
@@ -109,11 +117,6 @@
     <ClInclude Include="src\Scene.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-  </ItemGroup>
-  <ItemGroup>
-    <Object Include="models\cube.obj">
-      <Filter>Resource Files\Models</Filter>
-    </Object>
   </ItemGroup>
   <ItemGroup>
     <Image Include="textures\default\roughness_default.png">
