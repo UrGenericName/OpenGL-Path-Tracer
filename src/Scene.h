@@ -11,5 +11,5 @@ public:
 	~Scene();
 
 	void Draw(Shader& shader, Camera& camera);
-	GLuint createSSBO();
+	void generateSSBOs(GLuint& vertexSSBO, GLuint& indicesSSBO, GLuint& meshHeaderSSBO);
 };

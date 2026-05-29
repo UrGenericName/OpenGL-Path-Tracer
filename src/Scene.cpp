@@ -18,6 +18,57 @@ void Scene::Draw(Shader& shader, Camera& camera) {
 
 }
 
-GLuint Scene::createSSBO() {
-	return 0;
+void Scene::generateSSBOs(GLuint& vertexSSBO, GLuint& indicesSSBO, GLuint& meshHeaderSSBO) {
+
+	std::vector<Vertex> globalVertices;
+	std::vector<GLuint> globalIndices;
+	std::vector<glm::vec4> meshHeader;
+
+	for (Mesh* mesh : meshCollection) {
+
+		globalVertices.insert(globalVertices.end(), mesh->vertices.begin(), mesh->vertices.end());
+		globalIndices.insert(globalIndices.end(), mesh->indices.begin(), mesh->indices.end());
+		meshHeader.push_back(glm::vec4(mesh->vertices.size(), mesh->indices.size(), mesh->emissive, 0.0f));
+
+	}
+
+	// GENERATE VERTEX SSBO
+	glGenBuffers(1, &vertexSSBO);
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, vertexSSBO);
+
+	glBufferData(
+		GL_SHADER_STORAGE_BUFFER,
+		globalVertices.size() * sizeof(globalVertices[0]),
+		globalVertices.data(),
+		GL_STATIC_DRAW
+	);
+
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, vertexSSBO);
+
+	// GENERATE INDICES SSBO
+	glGenBuffers(1, &indicesSSBO);
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, indicesSSBO);
+
+	glBufferData(
+		GL_SHADER_STORAGE_BUFFER,
+		globalIndices.size() * sizeof(globalIndices[0]),
+		globalIndices.data(),
+		GL_STATIC_DRAW
+	);
+
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, indicesSSBO);
+
+	// MESH-HEADER SSBO
+	glGenBuffers(1, &meshHeaderSSBO);
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, meshHeaderSSBO);
+
+	glBufferData(
+		GL_SHADER_STORAGE_BUFFER,
+		meshHeader.size() * sizeof(meshHeader[0]),
+		meshHeader.data(),
+		GL_STATIC_DRAW
+	);
+
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, meshHeaderSSBO);
+
 }

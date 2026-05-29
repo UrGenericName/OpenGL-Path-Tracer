@@ -47,16 +47,18 @@ int main() {
 	scene.meshCollection.push_back(new Mesh("models/room/red_wall.obj", glm::vec3(1.0f, 0.0f, 0.0f)));
 	scene.meshCollection.push_back(new Mesh("models/room/green_wall.obj", glm::vec3(0.0f, 1.0f, 0.0f)));
 
-	
-	for (int i = 0; i < scene.meshCollection[1]->vertices.size(); i++) {
-		std::cout << scene.meshCollection[1]->vertices[i].position[0] << ", " << scene.meshCollection[1]->vertices[i].position[1] << ", " << scene.meshCollection[1]->vertices[i].position[2] << std::endl;
-	}
+	glm::vec3 posA = scene.meshCollection[2]->vertices[0].position;
+	glm::vec3 posB = scene.meshCollection[2]->vertices[1].position;
+	glm::vec3 posC = scene.meshCollection[2]->vertices[2].position;
+
+	printf("%f, %f, %f\n", posA.x, posA.y, posA.z);
+	printf("%f, %f, %f\n", posB.x, posB.y, posB.z);
+	printf("%f, %f, %f\n", posC.x, posC.y, posC.z);
 
 	shaderProgram.Activate();
 	glm::vec3 sun = { 1.0f, 1.0f, -1.0f };
 	int sunUniformLocation = glGetUniformLocation(shaderProgram.ID, "sun");
 	glUniform3f(sunUniformLocation, sun.x, sun.y, sun.z);
-
 
 	glViewport(0, 0, WIDTH, HEIGHT);
 	glfwSwapBuffers(window);
@@ -68,6 +70,8 @@ int main() {
 
 	Camera camera(WIDTH, HEIGHT, glm::vec3(0.0f, 0.0f, 0.0f));
 
+	int camPosUniformLocation = glGetUniformLocation(shaderProgram.ID, "camPos");
+
 	while (!glfwWindowShouldClose(window)) 
 	{
 
@@ -78,6 +82,7 @@ int main() {
 		camera.Inputs(window);
 
 		scene.Draw(shaderProgram, camera);
+		glUniform3f(camPosUniformLocation, camera.Position.x, camera.Position.y, camera.Position.z);
 
 		glfwSwapBuffers(window);
 

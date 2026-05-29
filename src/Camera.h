@@ -13,7 +13,7 @@
 #include "shaderClass.h"
 
 #define SENSITIVITY_DEFAULT 100.0f;
-#define SPEED_DEFAULT 0.1f;
+#define SPEED_DEFAULT 0.02f;
 
 class Camera {
 public:

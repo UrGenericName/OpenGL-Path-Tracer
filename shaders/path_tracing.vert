@@ -10,6 +10,7 @@ out vec3 faceNormal;
 out vec3 intersectionPoint;
 
 uniform mat4 camMatrix;
+uniform vec3 camPos;
 
 void main()
 {
