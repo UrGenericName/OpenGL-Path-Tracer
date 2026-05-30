@@ -162,6 +162,7 @@
     <ClCompile Include="src\VBO.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="extract_path_tracing.frag.sh" />
     <None Include="shaders\path_tracing.frag" />
     <None Include="shaders\path_tracing.vert" />
     <None Include="shaders\default.frag" />
@@ -218,6 +219,9 @@
     <None Include="models\room\white_walls.obj">
       <FileType>Document</FileType>
     </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="temp_inspect_path_tracing.frag.txt" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

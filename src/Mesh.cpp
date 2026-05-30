@@ -25,7 +25,7 @@ Mesh::Mesh(std::vector<Vertex>& i_vertices, std::vector<GLuint>& i_indices, bool
 
 }
 
-Mesh::Mesh(const char* fileName, Material& i_material, glm::vec3 importColor) {
+Mesh::Mesh(const char* fileName, Material& i_material, glm::vec4 importColor) {
 
 	importObj(fileName, importColor);
 	MeshSetup();
@@ -34,7 +34,7 @@ Mesh::Mesh(const char* fileName, Material& i_material, glm::vec3 importColor) {
 
 }
 
-Mesh::Mesh(const char* fileName, glm::vec3 importColor, bool i_emissive) {
+Mesh::Mesh(const char* fileName, glm::vec4 importColor, bool i_emissive) {
 
 	importObj(fileName, importColor);
 	MeshSetup();
@@ -65,10 +65,10 @@ void Mesh::MeshSetup() {
 
 	//			POS		  COLOR		NORMAL      UV
 	// VAO : [x, y, z,   r, g, b,   x, y, z,   u, v,]
-	VAO.LinkAttribute(*VBOptr, 0, 3, GL_FLOAT, sizeof(Vertex), (void*)0);	// defines the position (x, y, z); 3 floats with an offset of 0
-	VAO.LinkAttribute(*VBOptr, 1, 3, GL_FLOAT, sizeof(Vertex), (void*)(3 * sizeof(float)));	// defines the color (r, g, b); 3 floats with an offset of 3 floats
-	VAO.LinkAttribute(*VBOptr, 2, 3, GL_FLOAT, sizeof(Vertex), (void*)(6 * sizeof(float)));
-	VAO.LinkAttribute(*VBOptr, 3, 2, GL_FLOAT, sizeof(Vertex), (void*)(9 * sizeof(float)));
+	VAO.LinkAttribute(*VBOptr, 0, 3, GL_FLOAT, sizeof(Vertex), (void*)0);	// defines the position (x, y, z, 0.0f); 4 floats with an offset of 0
+	VAO.LinkAttribute(*VBOptr, 1, 3, GL_FLOAT, sizeof(Vertex), (void*)(4 * sizeof(float)));	// defines the color (r, g, b, 0.0f); 4 floats with an offset of 4 floats
+	VAO.LinkAttribute(*VBOptr, 2, 3, GL_FLOAT, sizeof(Vertex), (void*)(8 * sizeof(float)));
+	VAO.LinkAttribute(*VBOptr, 3, 2, GL_FLOAT, sizeof(Vertex), (void*)(12 * sizeof(float)));
 
 	// Unbind them, since the constructor binds them automatically
 	VAO.Unbind();
@@ -107,7 +107,7 @@ void Mesh::Draw(Shader& shader, Camera& camera) {
 
 }
 
-bool Mesh::importObj(const char* fileName, glm::vec3 importColor) {
+bool Mesh::importObj(const char* fileName, glm::vec4 importColor) {
 
 	ifstream file(fileName);
 
@@ -116,8 +116,8 @@ bool Mesh::importObj(const char* fileName, glm::vec3 importColor) {
 		vertices.clear();	// deletes all data in vertices/indices
 		indices.clear();	
 
-		std::vector<glm::vec3> parsedVertices;
-		std::vector<glm::vec3> parsedNormals;
+		std::vector<glm::vec4> parsedVertices;
+		std::vector<glm::vec4> parsedNormals;
 		std::vector<glm::vec2> parsedUVs;
 
 		string line;
@@ -155,7 +155,7 @@ bool Mesh::importObj(const char* fileName, glm::vec3 importColor) {
 				}
 
 				// for some reason we have to invert the y
-				parsedVertices.push_back(glm::vec3(stof(x), -stof(y), stof(z)));
+				parsedVertices.push_back(glm::vec4(stof(x), -stof(y), stof(z), 0.0f));
 				continue;
 			}
 
@@ -188,7 +188,7 @@ bool Mesh::importObj(const char* fileName, glm::vec3 importColor) {
 
 				}
 
-				parsedNormals.push_back(glm::vec3(stof(x), stof(y), stof(z)));
+				parsedNormals.push_back(glm::vec4(stof(x), stof(y), stof(z), 0.0f));
 				parsedNormals[parsedNormals.size() - 1] *= -1;	// inverts normals
 				continue;
 			}

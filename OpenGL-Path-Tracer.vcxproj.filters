@@ -80,17 +80,40 @@
     <None Include="shaders\path_tracing.vert">
       <Filter>Resource Files\Shaders</Filter>
     </None>
-    <None Include="models\room\white_walls.obj" />
-    <None Include="models\car_base.obj" />
-    <None Include="models\car_parts.obj" />
-    <None Include="models\cube.obj" />
-    <None Include="models\room\cubeA.obj" />
-    <None Include="models\room\cubeB.obj" />
-    <None Include="models\room\green_wall.obj" />
-    <None Include="models\room\light.obj" />
-    <None Include="models\monkey.obj" />
-    <None Include="models\room\red_wall.obj" />
-    <None Include="models\room\sphere.obj" />
+    <None Include="models\room\white_walls.obj">
+      <Filter>Resource Files\Models</Filter>
+    </None>
+    <None Include="models\car_base.obj">
+      <Filter>Resource Files\Models</Filter>
+    </None>
+    <None Include="models\car_parts.obj">
+      <Filter>Resource Files\Models</Filter>
+    </None>
+    <None Include="models\cube.obj">
+      <Filter>Resource Files\Models</Filter>
+    </None>
+    <None Include="models\room\cubeA.obj">
+      <Filter>Resource Files\Models</Filter>
+    </None>
+    <None Include="models\room\cubeB.obj">
+      <Filter>Resource Files\Models</Filter>
+    </None>
+    <None Include="models\room\green_wall.obj">
+      <Filter>Resource Files\Models</Filter>
+    </None>
+    <None Include="models\room\light.obj">
+      <Filter>Resource Files\Models</Filter>
+    </None>
+    <None Include="models\monkey.obj">
+      <Filter>Resource Files\Models</Filter>
+    </None>
+    <None Include="models\room\red_wall.obj">
+      <Filter>Resource Files\Models</Filter>
+    </None>
+    <None Include="models\room\sphere.obj">
+      <Filter>Resource Files\Models</Filter>
+    </None>
+    <None Include="extract_path_tracing.frag.sh" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\shaderClass.h">
@@ -134,5 +157,8 @@
     <Image Include="textures\brick.png">
       <Filter>Resource Files\Textures</Filter>
     </Image>
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="temp_inspect_path_tracing.frag.txt" />
   </ItemGroup>
 </Project>

@@ -76,7 +76,7 @@ void Scene::generateSSBOs(GLuint& vertexSSBO, GLuint& indicesSSBO, GLuint& textu
 		GL_STATIC_DRAW
 	);
 
-	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, textureHandelsSSBO);
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, textureHandelsSSBO);
 
 	// MESH-HEADER SSBO
 	glGenBuffers(1, &meshHeaderSSBO);
@@ -89,6 +89,6 @@ void Scene::generateSSBOs(GLuint& vertexSSBO, GLuint& indicesSSBO, GLuint& textu
 		GL_STATIC_DRAW
 	);
 
-	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, meshHeaderSSBO);
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, meshHeaderSSBO);
 
 }

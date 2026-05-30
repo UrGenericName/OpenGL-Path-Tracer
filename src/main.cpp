@@ -43,9 +43,9 @@ int main() {
 	scene.meshCollection.push_back(new Mesh("models/room/cubeB.obj"));
 	scene.meshCollection.push_back(new Mesh("models/room/sphere.obj"));
 	scene.meshCollection.push_back(new Mesh("models/room/white_walls.obj"));
-	scene.meshCollection.push_back(new Mesh("models/room/light.obj", glm::vec3(1.0f, 0.8f, 0.8f), true));
-	scene.meshCollection.push_back(new Mesh("models/room/red_wall.obj", glm::vec3(1.0f, 0.0f, 0.0f)));
-	scene.meshCollection.push_back(new Mesh("models/room/green_wall.obj", glm::vec3(0.0f, 1.0f, 0.0f)));
+	scene.meshCollection.push_back(new Mesh("models/room/light.obj", glm::vec4(1.0f, 0.8f, 0.8f, 0.0f), true));
+	scene.meshCollection.push_back(new Mesh("models/room/red_wall.obj", glm::vec4(1.0f, 0.0f, 0.0f, 0.0f)));
+	scene.meshCollection.push_back(new Mesh("models/room/green_wall.obj", glm::vec4(0.0f, 1.0f, 0.0f, 0.0f)));
 
 	glm::vec3 posA = scene.meshCollection[2]->vertices[0].position;
 	glm::vec3 posB = scene.meshCollection[2]->vertices[1].position;
