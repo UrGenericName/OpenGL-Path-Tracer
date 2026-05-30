@@ -18,16 +18,23 @@ void Scene::Draw(Shader& shader, Camera& camera) {
 
 }
 
-void Scene::generateSSBOs(GLuint& vertexSSBO, GLuint& indicesSSBO, GLuint& meshHeaderSSBO) {
+void Scene::generateSSBOs(GLuint& vertexSSBO, GLuint& indicesSSBO, GLuint& textureHandelsSSBO, GLuint& meshHeaderSSBO) {
 
 	std::vector<Vertex> globalVertices;
 	std::vector<GLuint> globalIndices;
+	std::vector<GLuint64> globalTextureHandles;
 	std::vector<glm::vec4> meshHeader;
 
 	for (Mesh* mesh : meshCollection) {
 
 		globalVertices.insert(globalVertices.end(), mesh->vertices.begin(), mesh->vertices.end());
 		globalIndices.insert(globalIndices.end(), mesh->indices.begin(), mesh->indices.end());
+
+		globalTextureHandles.push_back(glGetTextureHandleARB(mesh->material->albedo->ID));
+		globalTextureHandles.push_back(glGetTextureHandleARB(mesh->material->normal->ID));
+		globalTextureHandles.push_back(glGetTextureHandleARB(mesh->material->roughness->ID));
+		globalTextureHandles.push_back(glGetTextureHandleARB(mesh->material->metallic->ID));
+
 		meshHeader.push_back(glm::vec4(mesh->vertices.size(), mesh->indices.size(), mesh->emissive, 0.0f));
 
 	}
@@ -57,6 +64,19 @@ void Scene::generateSSBOs(GLuint& vertexSSBO, GLuint& indicesSSBO, GLuint& meshH
 	);
 
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, indicesSSBO);
+
+	// TEXTURE HANDLES SSBO
+	glGenBuffers(1, &textureHandelsSSBO);
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, textureHandelsSSBO);
+
+	glBufferData(
+		GL_SHADER_STORAGE_BUFFER,
+		globalTextureHandles.size() * sizeof(globalTextureHandles[0]),
+		globalTextureHandles.data(),
+		GL_STATIC_DRAW
+	);
+
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, textureHandelsSSBO);
 
 	// MESH-HEADER SSBO
 	glGenBuffers(1, &meshHeaderSSBO);

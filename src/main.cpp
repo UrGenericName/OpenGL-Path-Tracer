@@ -51,6 +51,9 @@ int main() {
 	glm::vec3 posB = scene.meshCollection[2]->vertices[1].position;
 	glm::vec3 posC = scene.meshCollection[2]->vertices[2].position;
 
+	GLuint vertexSSBO, indicesSSBO, textureHandlesSSBO, meshHeaderSSBO;
+	scene.generateSSBOs(vertexSSBO, indicesSSBO, textureHandlesSSBO, meshHeaderSSBO);
+
 	printf("%f, %f, %f\n", posA.x, posA.y, posA.z);
 	printf("%f, %f, %f\n", posB.x, posB.y, posB.z);
 	printf("%f, %f, %f\n", posC.x, posC.y, posC.z);
