@@ -1,5 +1,4 @@
 #version 430 core
-#extension GL_ARB_gpu_shader_int64 : require
 
 struct Vertex {
     vec4 position;
@@ -17,10 +16,10 @@ layout(std430, binding = 0) readonly buffer VertexBuffer {
 layout(std430, binding = 1) readonly buffer IndexBuffer {
     uint indices[];
 };
-
+/*
 layout(std430, binding = 2) readonly buffer TextureHandlesBuffer { 
     uint64_t textureHandles[]; 
-};
+};*/
 
 layout(std430, binding = 3) readonly buffer MeshHeaderBuffer {
     vec4 meshHeader[];
@@ -36,6 +35,7 @@ in vec3 geometricFaceNormal;
 in vec3 intersectionPoint;
 
 // UNIFORMS
+uniform uint currentMesh;
 uniform vec3 sun;
 uniform vec3 camPos;
 uniform sampler2D albedo;
@@ -52,7 +52,9 @@ bool intersect_triangle(vec3 orig, vec3 dir, vec3 vert0, vec3 vert1, vec3 vert2,
 #define MAX_BRIGHTNESS 0.8
 #define MIN_BRIGHTNESS 0.4
 
-#define DOUBLE_SIDED_REFLECTION
+//#define DOUBLE_SIDED_REFLECTION
+
+#define EPSILON 0.000001f
 
 void main() {
 
@@ -85,32 +87,31 @@ void main() {
         vec3 incidentRay = normalize(intersectionPoint - camPos);
         vec3 reflectionBounceDir = reflect(incidentRay, faceNormal);
 
-        uint vertexPointer = 0;
-        uint indexPointer = 0;
-
         uint meshCount = meshHeader.length();
-        for (uint i = 0; i < meshCount; ++i) {
+        for (uint i = 0u; i < meshCount; ++i) {
             
-
+            if (i == currentMesh) continue;
 
             uint trigCount = uint(meshHeader[i].y) / 3u;
             for (uint j = 0u; j < trigCount; ++j) {
 
-                uint k = j * 3u;
-                vec3 v0 = vertices[0u + k].position.xyz;
-                vec3 v1 = vertices[1u + k].position.xyz;
-                vec3 v2 = vertices[2u + k].position.xyz;
+                uint indexStartPointer = uint(meshHeader[i].x);
+
+                vec3 v0 = vertices[indexStartPointer + (3*j) + 0].position.xyz;
+                vec3 v1 = vertices[indexStartPointer + (3*j) + 1].position.xyz;
+                vec3 v2 = vertices[indexStartPointer + (3*j) + 2].position.xyz;
 
                 vec3 result;
-                if (intersect_triangle(intersectionPoint, reflectionBounceDir, v0, v1, v2, result)) {
-                    FragColor = vec4(0.0f, 1.0f, 1.0f, 1.0f);
+                if (intersect_triangle(intersectionPoint + (-faceNormal * EPSILON), reflectionBounceDir, v0, v1, v2, result)) {
+
+                    float tempDot = dot(faceNormal, normalize(sun));
+                    float brightness = tempDot * (MAX_BRIGHTNESS - MIN_BRIGHTNESS) + MIN_BRIGHTNESS;
+                    FragColor = (texture(albedo, texCoord) * vec4(color, 1.0f) * brightness) * vec4(1.3f, 1.0f, 1.0f, 1.0f);
+
                     return;
                 }
 
             }
-
-            vertexPointer += uint(meshHeader[i].x);
-            indexPointer += uint(meshHeader[i].y);
         }
     }
 
@@ -162,7 +163,7 @@ void calculateWorldSpaceTangentBitagent(vec3 point, vec3 faceNormal, vec2 texCoo
 
 // Pure Möller-Trumbore ray-triangle intersection algorithm
 bool intersect_triangle(vec3 orig, vec3 dir, vec3 vert0, vec3 vert1, vec3 vert2, out vec3 result) {
-    const float EPSILON = 0.000001f;
+
     vec3 edge1 = vert1 - vert0;
     vec3 edge2 = vert2 - vert0;
     vec3 pvec = cross(dir, edge2);

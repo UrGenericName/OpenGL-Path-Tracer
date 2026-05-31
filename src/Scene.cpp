@@ -12,8 +12,8 @@ Scene::~Scene() {
 
 void Scene::Draw(Shader& shader, Camera& camera) {
 
-	for (Mesh* mesh : meshCollection) {
-		mesh->Draw(shader, camera);
+	for (size_t i = 0; i < meshCollection.size(); ++i) {
+		meshCollection[i]->Draw(shader, camera, i);
 	}
 
 }
@@ -25,9 +25,13 @@ void Scene::generateSSBOs(GLuint& vertexSSBO, GLuint& indicesSSBO, GLuint& textu
 	std::vector<GLuint64> globalTextureHandles;
 	std::vector<glm::vec4> meshHeader;
 
+	size_t indexPointer = 0;
 	for (Mesh* mesh : meshCollection) {
 
 		globalVertices.insert(globalVertices.end(), mesh->vertices.begin(), mesh->vertices.end());
+
+		std::vector<GLuint> tempIndices = mesh->indices;
+		for (size_t i = 0; i < tempIndices.size(); ++i) tempIndices[i] += indexPointer;
 		globalIndices.insert(globalIndices.end(), mesh->indices.begin(), mesh->indices.end());
 
 		globalTextureHandles.push_back(glGetTextureHandleARB(mesh->material->albedo->ID));
@@ -35,7 +39,9 @@ void Scene::generateSSBOs(GLuint& vertexSSBO, GLuint& indicesSSBO, GLuint& textu
 		globalTextureHandles.push_back(glGetTextureHandleARB(mesh->material->roughness->ID));
 		globalTextureHandles.push_back(glGetTextureHandleARB(mesh->material->metallic->ID));
 
-		meshHeader.push_back(glm::vec4(mesh->vertices.size(), mesh->indices.size(), mesh->emissive, 0.0f));
+		meshHeader.push_back(glm::vec4(indexPointer, mesh->indices.size(), mesh->emissive, 0.0f));
+
+		indexPointer += mesh->indices.size();
 
 	}
 

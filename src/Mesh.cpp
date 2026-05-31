@@ -77,7 +77,7 @@ void Mesh::MeshSetup() {
 
 }
 
-void Mesh::Draw(Shader& shader, Camera& camera) {
+void Mesh::Draw(Shader& shader, Camera& camera, GLuint currentMesh) {
 
 	shader.Activate();
 	VAO.Bind();
@@ -101,6 +101,8 @@ void Mesh::Draw(Shader& shader, Camera& camera) {
 	GLuint emissiveUniformID = glGetUniformLocation(shader.ID, "emissive");
 	glUniform1f(emissiveUniformID, static_cast<GLfloat>(emissive) );
 
+	GLuint currentMeshID = glGetUniformLocation(shader.ID, "currentMesh");
+	glUniform1f(currentMeshID, currentMesh);
 
 	camera.Matrix(shader, "camMatrix");
 	glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
