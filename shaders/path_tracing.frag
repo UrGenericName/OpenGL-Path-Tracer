@@ -1,4 +1,5 @@
 #version 430 core
+#extension GL_ARB_gpu_shader_int64 : enable
 
 struct Vertex {
     vec4 position;
@@ -16,10 +17,10 @@ layout(std430, binding = 0) readonly buffer VertexBuffer {
 layout(std430, binding = 1) readonly buffer IndexBuffer {
     uint indices[];
 };
-/*
+
 layout(std430, binding = 2) readonly buffer TextureHandlesBuffer { 
     uint64_t textureHandles[]; 
-};*/
+};
 
 layout(std430, binding = 3) readonly buffer MeshHeaderBuffer {
     vec4 meshHeader[];
@@ -35,6 +36,7 @@ in vec3 geometricFaceNormal;
 in vec3 intersectionPoint;
 
 // UNIFORMS
+uniform sampler2D colorNoise;
 uniform uint currentMesh;
 uniform vec3 sun;
 uniform vec3 camPos;
@@ -104,10 +106,7 @@ void main() {
                 vec3 result;
                 if (intersect_triangle(intersectionPoint + (-faceNormal * EPSILON), reflectionBounceDir, v0, v1, v2, result)) {
 
-                    float tempDot = dot(faceNormal, normalize(sun));
-                    float brightness = tempDot * (MAX_BRIGHTNESS - MIN_BRIGHTNESS) + MIN_BRIGHTNESS;
-                    FragColor = (texture(albedo, texCoord) * vec4(color, 1.0f) * brightness) * vec4(1.3f, 1.0f, 1.0f, 1.0f);
-
+                    FragColor = texelFetch(colorNoise, ivec2(i, 0), 0);
                     return;
                 }
 

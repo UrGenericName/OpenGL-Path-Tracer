@@ -58,10 +58,22 @@ int main() {
 	printf("%f, %f, %f\n", posB.x, posB.y, posB.z);
 	printf("%f, %f, %f\n", posC.x, posC.y, posC.z);
 
+
+
 	shaderProgram.Activate();
+
+	Texture colorNoise("textures/color_noise.png", GL_TEXTURE_2D, GL_TEXTURE0, GL_RGB, GL_UNSIGNED_BYTE);
+
+	GLuint64 handle = glGetTextureHandleARB(colorNoise.ID);
+	glMakeTextureHandleResidentARB(handle);
+	int colorNoiseUniformLocation = glGetUniformLocation(shaderProgram.ID, "colorNoise");
+	glUniformHandleui64ARB(colorNoiseUniformLocation, handle);
+
 	glm::vec3 sun = { 1.0f, 1.0f, -1.0f };
 	int sunUniformLocation = glGetUniformLocation(shaderProgram.ID, "sun");
 	glUniform3f(sunUniformLocation, sun.x, sun.y, sun.z);
+
+
 
 	glViewport(0, 0, WIDTH, HEIGHT);
 	glfwSwapBuffers(window);
