@@ -2,14 +2,14 @@
 
 using namespace std;
 
-Mesh::Mesh(std::vector<Vertex>& i_vertices, std::vector<GLuint>& i_indices, Material& i_material) {
+Mesh::Mesh(std::vector<Vertex>& i_vertices, std::vector<GLuint>& i_indices, Material* i_material) {
 
 	vertices = i_vertices;
 	indices = i_indices;
 
 	MeshSetup();
 
-	material = &i_material;
+	material = i_material;
 
 }
 
@@ -25,12 +25,12 @@ Mesh::Mesh(std::vector<Vertex>& i_vertices, std::vector<GLuint>& i_indices, bool
 
 }
 
-Mesh::Mesh(const char* fileName, Material& i_material, glm::vec4 importColor) {
+Mesh::Mesh(const char* fileName, Material* i_material, glm::vec4 importColor) {
 
 	importObj(fileName, importColor);
 	MeshSetup();
 
-	material = &i_material;
+	material = i_material;
 
 }
 
@@ -49,6 +49,7 @@ Mesh::~Mesh() {
 	VAO.Delete();
 	VBOptr->Delete();
 	EBOptr->Delete();
+	delete material;
 
 }
 
@@ -77,32 +78,32 @@ void Mesh::MeshSetup() {
 
 }
 
-void Mesh::Draw(Shader& shader, Camera& camera, GLuint currentMesh) {
+void Mesh::Draw(Shader& shader, Camera& camera, GLuint currentMesh, std::vector<glm::vec4> meshTextures) {
 
 	shader.Activate();
 	VAO.Bind();
 
-	material->albedo->texUnit(shader, "albedo", 0);
-	glActiveTexture(GL_TEXTURE0);
-	material->albedo->Bind();
+	// Uniforms for the index location of each texture
+	GLuint albedoUniformID = glGetUniformLocation(shader.ID, "albedo");
+	glUniform1ui(albedoUniformID, meshTextures[currentMesh].x);
 
-	material->normal->texUnit(shader, "normal", 1);
-	glActiveTexture(GL_TEXTURE1);
-	material->normal->Bind();
+	GLuint normalUniformID = glGetUniformLocation(shader.ID, "normal");
+	glUniform1ui(normalUniformID, meshTextures[currentMesh].y);
 
-	material->roughness->texUnit(shader, "roughness", 2);
-	glActiveTexture(GL_TEXTURE2);
-	material->roughness->Bind();
+	GLuint roughnessUniformID = glGetUniformLocation(shader.ID, "roughness");
+	glUniform1ui(roughnessUniformID, meshTextures[currentMesh].z);
 
-	material->metallic->texUnit(shader, "metallic", 3);
-	glActiveTexture(GL_TEXTURE3);
-	material->metallic->Bind();
+	GLuint metallicUniformID = glGetUniformLocation(shader.ID, "metallic");
+	glUniform1ui(metallicUniformID, meshTextures[currentMesh].w);
 
+
+	// Other unfiorms
 	GLuint emissiveUniformID = glGetUniformLocation(shader.ID, "emissive");
 	glUniform1f(emissiveUniformID, static_cast<GLfloat>(emissive) );
 
 	GLuint currentMeshID = glGetUniformLocation(shader.ID, "currentMesh");
-	glUniform1f(currentMeshID, currentMesh);
+	glUniform1ui(currentMeshID, currentMesh);
+
 
 	camera.Matrix(shader, "camMatrix");
 	glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);

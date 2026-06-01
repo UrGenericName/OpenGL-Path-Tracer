@@ -2,7 +2,6 @@
 
 Texture::Texture(const char* image, GLenum texType, GLenum slot, GLenum format, GLenum pixelType) {
 
-	type = texType;
 	int widthImg, heightImg, numColCh;
 	stbi_set_flip_vertically_on_load(true);
 
@@ -49,4 +48,38 @@ void Texture::Unbind() {
 
 void Texture::Delete() {
 	glDeleteTextures(1, &ID);
+}
+
+void Texture::loadTextureArray(GLuint textureArrayID, std::vector<std::string>& textures, int width, int height) {
+
+	int maxTextureCount = textures.size();
+	glBindTexture(GL_TEXTURE_2D_ARRAY, textureArrayID);
+	glTexStorage3D(GL_TEXTURE_2D_ARRAY, 1, GL_RGB8, width, height, maxTextureCount);
+
+	stbi_set_flip_vertically_on_load(true);
+
+	for (int i = 0; i < textures.size(); ++i) {
+
+		const char* texturePath = textures[i].c_str();
+		int widthImg, heightImg, numColCh;
+
+		// Checks to make sure file name is valid (debugging is a pain otherwise)
+		if (!std::filesystem::exists(texturePath)) throw std::invalid_argument("Texture file path does not exist");
+
+		unsigned char* bytes = stbi_load(texturePath, &widthImg, &heightImg, &numColCh, 3);
+
+		if (widthImg != width || heightImg != height) throw std::invalid_argument("Texture \'" + textures[i] + "\' does not conform to " + std::to_string(width) + "x" + std::to_string(height));
+
+		glTexSubImage3D(GL_TEXTURE_2D_ARRAY, 0, 0, 0, i, widthImg, heightImg, 1, GL_RGB, GL_UNSIGNED_BYTE, bytes);
+
+		stbi_image_free(bytes);
+	}
+
+	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+	glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
+
 }

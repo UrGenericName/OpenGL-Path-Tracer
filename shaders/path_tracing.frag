@@ -1,5 +1,4 @@
 #version 430 core
-#extension GL_ARB_gpu_shader_int64 : enable
 
 struct Vertex {
     vec4 position;
@@ -18,8 +17,8 @@ layout(std430, binding = 1) readonly buffer IndexBuffer {
     uint indices[];
 };
 
-layout(std430, binding = 2) readonly buffer TextureHandlesBuffer { 
-    uint64_t textureHandles[]; 
+layout(std430, binding = 2) readonly buffer MeshTextureBuffer {
+    vec4 meshTextures[]; 
 };
 
 layout(std430, binding = 3) readonly buffer MeshHeaderBuffer {
@@ -37,22 +36,25 @@ in vec3 intersectionPoint;
 
 // UNIFORMS
 uniform sampler2D colorNoise;
-uniform uint currentMesh;
+
+uniform uint albedo;
+uniform uint normal;
+uniform uint roughness;
+uniform uint metallic;
+uniform sampler2DArray texturePool;
+
 uniform vec3 sun;
 uniform vec3 camPos;
-uniform sampler2D albedo;
-uniform sampler2D normal;
-uniform sampler2D roughness;
-uniform sampler2D metallic;
 uniform float emissive;
+uniform uint currentMesh;
 
 // DECLERATIONS
 void normalSpaceToWorldSpace(vec3 point, vec3 faceNormal, vec2 texCoord, vec3 inVector, out vec3 outVector);
 void calculateWorldSpaceTangentBitagent(vec3 point, vec3 faceNormal, vec2 texCoord, out vec3 tangent, out vec3 bitangent);
 bool intersect_triangle(vec3 orig, vec3 dir, vec3 vert0, vec3 vert1, vec3 vert2, out vec3 result);
 
-#define MAX_BRIGHTNESS 0.8
-#define MIN_BRIGHTNESS 0.4
+#define MAX_BRIGHTNESS 1
+#define MIN_BRIGHTNESS 0.5
 
 //#define DOUBLE_SIDED_REFLECTION
 
@@ -69,7 +71,7 @@ void main() {
     // Normal Map Local Vector
     vec3 normalMapVector;
     {
-        vec4 temp = texture(normal, texCoord);
+        vec4 temp = texture(texturePool, vec3(texCoord, normal));
         normalMapVector.x = 2.0f * temp.x - 1.0f;
         normalMapVector.y = 2.0f * temp.y - 1.0f;
         normalMapVector.z = 2.0f * temp.z - 1.0f;
@@ -84,14 +86,14 @@ void main() {
     }
 
     // Calculates reflection
-    {
+    if (currentMesh == 2) {
 
         vec3 incidentRay = normalize(intersectionPoint - camPos);
         vec3 reflectionBounceDir = reflect(incidentRay, faceNormal);
 
         uint meshCount = meshHeader.length();
         for (uint i = 0u; i < meshCount; ++i) {
-            
+
             if (i == currentMesh) continue;
 
             uint trigCount = uint(meshHeader[i].y) / 3u;
@@ -106,7 +108,19 @@ void main() {
                 vec3 result;
                 if (intersect_triangle(intersectionPoint + (-faceNormal * EPSILON), reflectionBounceDir, v0, v1, v2, result)) {
 
-                    FragColor = texelFetch(colorNoise, ivec2(i, 0), 0);
+                    vec2 t0 = vertices[indexStartPointer + (3*j) + 0].texUV;
+                    vec2 t1 = vertices[indexStartPointer + (3*j) + 1].texUV;
+                    vec2 t2 = vertices[indexStartPointer + (3*j) + 2].texUV;
+                    
+                    // some bullshit to get the uv coords
+                    float u = result.y; 
+                    float v = result.z;
+                    float w = 1.0f - u - v;
+                    vec2 uv = (w * t0) + (u * t1) + (v * t2);
+
+                    vec4 tint = vertices[ indices[ uint(meshHeader[i].x) ] ].color;
+
+                    FragColor = texture(texturePool, vec3(uv, meshTextures[i].x)) * tint;
                     return;
                 }
 
@@ -114,22 +128,10 @@ void main() {
         }
     }
 
-
-
-    /*
-                vec3 v0 = vertices[0].position.xyz;
-            vec3 v1 = vertices[1].position.xyz;
-            vec3 v2 = vertices[2].position.xyz;
-
-            vec3 result;
-            if (intersect_triangle(intersectionPoint, reflectionBounceDir, v0, v1, v2, result)) {
-                FragColor = vec4(0.0f, 1.0f, 1.0f, 1.0f);
-                return;
-            }*/
-
+    // Fall back lighting
     float tempDot = dot(faceNormal, normalize(sun));
     float brightness = tempDot * (MAX_BRIGHTNESS - MIN_BRIGHTNESS) + MIN_BRIGHTNESS;
-    FragColor = texture(albedo, texCoord) * vec4(color, 1.0f) * brightness;
+    FragColor = texture(texturePool, vec3(texCoord, albedo)) * vec4(color, 1.0f) * brightness;
 }
 
 
@@ -138,29 +140,40 @@ void main() {
 
 // Transforms normal map tangents into world space vectors
 void normalSpaceToWorldSpace(vec3 point, vec3 faceNormal, vec2 texCoord, vec3 inVector, out vec3 outVector) {
+
     vec3 tangent;
     vec3 bitangent;
+
     calculateWorldSpaceTangentBitagent(point, faceNormal, texCoord, tangent, bitangent);
+
     mat3 tangentToWorldSpaceMatrix = mat3(tangent, bitangent, faceNormal);
+
     outVector = normalize(tangentToWorldSpaceMatrix * inVector);
+
 }
 
 // Finds world space tangent and bitangent using stable screen derivatives
 void calculateWorldSpaceTangentBitagent(vec3 point, vec3 faceNormal, vec2 texCoord, out vec3 tangent, out vec3 bitangent) {
     vec3 pointDx = dFdx(point);
     vec3 pointDy = dFdy(point);
+
     vec2 texCoordDx = dFdx(texCoord);
     vec2 texCoordDy = dFdy(texCoord);
+
     vec3 crossDx = cross(faceNormal, pointDx);
     vec3 crossDy = cross(pointDy, faceNormal);
+
     tangent = (crossDy * texCoordDx.x) + (crossDx * texCoordDy.x);
     bitangent = (crossDy * texCoordDx.y) + (crossDx * texCoordDy.y);
+
     float invmax = inversesqrt(max(dot(tangent, tangent), dot(bitangent, bitangent)));
+
     tangent = tangent * invmax;
     bitangent = bitangent * invmax;
+
 }
 
-// Pure Möller-Trumbore ray-triangle intersection algorithm
+// Implementation of the Möller-Trumbore ray-triangle intersection algorithm
 bool intersect_triangle(vec3 orig, vec3 dir, vec3 vert0, vec3 vert1, vec3 vert2, out vec3 result) {
 
     vec3 edge1 = vert1 - vert0;

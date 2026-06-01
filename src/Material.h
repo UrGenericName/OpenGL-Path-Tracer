@@ -1,6 +1,7 @@
 #pragma once
 
 #include <glad/glad.h>
+#include <string>
 
 #include "Texture.h";
 
@@ -9,15 +10,16 @@
 #define MISSING_ROUGHNESS "textures/default/roughness_default.png"
 #define MISSING_METALLIC "textures/default/metallic_default.png"
 
+using namespace std;
+
 class Material {
 public:
 
-	Texture* albedo;
-	Texture* normal;
-	Texture* roughness;
-	Texture* metallic;
+	string albedo;
+	string normal;
+	string roughness;
+	string metallic;
 
-	Material(Texture* albedo = nullptr, Texture* normal = nullptr, Texture* roughness = nullptr, Texture* metallic = nullptr);
-	Material(const char* albedo, const char* normal = nullptr, const char* roughness = nullptr, const char* metallic = nullptr);
+	Material(string albedo = MISSING_ALBEDO, string normal = MISSING_NORMAL, string roughness = MISSING_ROUGHNESS, string metallic = MISSING_METALLIC);
 
 };

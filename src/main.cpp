@@ -8,9 +8,9 @@ int main() {
 	glfwInit();
 
 	// Pass info to glfw about the version and profile of OpenGL to use
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-	glfwWindowHint(GLFW_OPENGL_PROFILE, 0);
+	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
 	// Creates the actual glfw window
 	GLFWwindow* window = glfwCreateWindow(WIDTH, HEIGHT, "Graphcis", NULL, NULL);
@@ -30,37 +30,17 @@ int main() {
 	
 	Shader shaderProgram("shaders/path_tracing.vert", "shaders/path_tracing.frag");
 
-	/*
-	Material carBaseMat("textures/car_base_albedo.png", "textures/car_base_normal.png");
-	Mesh carBase("models/car_base.obj", carBaseMat);
-
-	Material carPartsMat("textures/car_parts_albedo.png", "textures/car_parts_normal.png");
-	Mesh carParts("models/car_parts.obj", carPartsMat);
-	*/
-
 	Scene scene;
 	scene.meshCollection.push_back(new Mesh("models/room/cubeA.obj"));
 	scene.meshCollection.push_back(new Mesh("models/room/cubeB.obj"));
-	scene.meshCollection.push_back(new Mesh("models/room/sphere.obj"));
+	scene.meshCollection.push_back(new Mesh("models/room/sphere.obj", glm::vec4(0.4f, 0.2f, 0.2f, 0.0f)));
 	scene.meshCollection.push_back(new Mesh("models/room/white_walls.obj"));
 	scene.meshCollection.push_back(new Mesh("models/room/light.obj", glm::vec4(1.0f, 0.8f, 0.8f, 0.0f), true));
 	scene.meshCollection.push_back(new Mesh("models/room/red_wall.obj", glm::vec4(1.0f, 0.0f, 0.0f, 0.0f)));
 	scene.meshCollection.push_back(new Mesh("models/room/green_wall.obj", glm::vec4(0.0f, 1.0f, 0.0f, 0.0f)));
 
-	glm::vec3 posA = scene.meshCollection[2]->vertices[0].position;
-	glm::vec3 posB = scene.meshCollection[2]->vertices[1].position;
-	glm::vec3 posC = scene.meshCollection[2]->vertices[2].position;
-
-	GLuint vertexSSBO, indicesSSBO, textureHandlesSSBO, meshHeaderSSBO;
-	scene.generateSSBOs(vertexSSBO, indicesSSBO, textureHandlesSSBO, meshHeaderSSBO);
-
-	printf("%f, %f, %f\n", posA.x, posA.y, posA.z);
-	printf("%f, %f, %f\n", posB.x, posB.y, posB.z);
-	printf("%f, %f, %f\n", posC.x, posC.y, posC.z);
-
-
-
 	shaderProgram.Activate();
+
 
 	Texture colorNoise("textures/color_noise.png", GL_TEXTURE_2D, GL_TEXTURE0, GL_RGB, GL_UNSIGNED_BYTE);
 
@@ -69,7 +49,7 @@ int main() {
 	int colorNoiseUniformLocation = glGetUniformLocation(shaderProgram.ID, "colorNoise");
 	glUniformHandleui64ARB(colorNoiseUniformLocation, handle);
 
-	glm::vec3 sun = { 1.0f, 1.0f, -1.0f };
+	glm::vec3 sun = { 1.0f, -1.0f, -1.0f };
 	int sunUniformLocation = glGetUniformLocation(shaderProgram.ID, "sun");
 	glUniform3f(sunUniformLocation, sun.x, sun.y, sun.z);
 
