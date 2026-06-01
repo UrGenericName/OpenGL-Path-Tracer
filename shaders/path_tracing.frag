@@ -86,7 +86,7 @@ void main() {
     }
 
     // Calculates reflection
-    if (currentMesh == 2) {
+    if (currentMesh <= 2) {
 
         vec3 incidentRay = normalize(intersectionPoint - camPos);
         vec3 reflectionBounceDir = reflect(incidentRay, faceNormal);
@@ -106,7 +106,8 @@ void main() {
                 vec3 v2 = vertices[indexStartPointer + (3*j) + 2].position.xyz;
 
                 vec3 result;
-                if (intersect_triangle(intersectionPoint + (-faceNormal * EPSILON), reflectionBounceDir, v0, v1, v2, result)) {
+                if (intersect_triangle(intersectionPoint, reflectionBounceDir, v0, v1, v2, result)) {
+
 
                     vec2 t0 = vertices[indexStartPointer + (3*j) + 0].texUV;
                     vec2 t1 = vertices[indexStartPointer + (3*j) + 1].texUV;

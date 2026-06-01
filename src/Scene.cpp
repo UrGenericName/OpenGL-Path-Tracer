@@ -1,6 +1,6 @@
 #include "Scene.h"
 
-Scene::Scene() {}
+Scene::Scene(unsigned int width, unsigned int height) : textureWidth(width), textureHeight(height) {}
 
 Scene::~Scene() {
 
@@ -14,7 +14,7 @@ void Scene::Draw(Shader& shader, Camera& camera) {
 
 	std::vector<glm::vec4> meshTexturesOutput;
 	GLuint vertexSSBO, indicesSSBO, textureMeshSSBO, meshHeaderSSBO, textureArray;
-	generateSSBOs(vertexSSBO, indicesSSBO, textureMeshSSBO, meshHeaderSSBO, textureArray, meshTexturesOutput);
+	generateSSBOs(textureWidth, textureHeight, vertexSSBO, indicesSSBO, textureMeshSSBO, meshHeaderSSBO, textureArray, meshTexturesOutput);
 
 	shader.Activate();
 
@@ -30,7 +30,7 @@ void Scene::Draw(Shader& shader, Camera& camera) {
 
 }
 
-void Scene::generateSSBOs(GLuint& vertexSSBO, GLuint& indicesSSBO, GLuint& meshTextureSSBO, GLuint& meshHeaderSSBO, GLuint& textureArray, std::vector<glm::vec4>& meshTexturesOutput) {
+void Scene::generateSSBOs(unsigned int width, unsigned int height, GLuint& vertexSSBO, GLuint& indicesSSBO, GLuint& meshTextureSSBO, GLuint& meshHeaderSSBO, GLuint& textureArray, std::vector<glm::vec4>& meshTexturesOutput) {
 
 	std::vector<Vertex> globalVertices;
 	std::vector<GLuint> globalIndices;
@@ -132,8 +132,6 @@ void Scene::generateSSBOs(GLuint& vertexSSBO, GLuint& indicesSSBO, GLuint& meshT
 	// 2D-TEXTURE ARRAY
 	glGenTextures(1, &textureArray);
 
-	GLuint width = 256;
-	GLuint height = 256;
 	GLuint maxTextureCount = texturePool.size();
 
 	std::vector<string> texturePoolVector(texturePool.begin(), texturePool.end());

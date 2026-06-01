@@ -30,7 +30,7 @@ int main() {
 	
 	Shader shaderProgram("shaders/path_tracing.vert", "shaders/path_tracing.frag");
 
-	Scene scene;
+	Scene scene(256, 256);
 	scene.meshCollection.push_back(new Mesh("models/room/cubeA.obj"));
 	scene.meshCollection.push_back(new Mesh("models/room/cubeB.obj"));
 	scene.meshCollection.push_back(new Mesh("models/room/sphere.obj", glm::vec4(0.4f, 0.2f, 0.2f, 0.0f)));
