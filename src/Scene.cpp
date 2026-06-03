@@ -10,19 +10,16 @@ Scene::~Scene() {
 
 }
 
-void Scene::Draw(Shader& shader, Camera& camera) {
+void Scene::Draw(Shader& shader, Camera& camera, GLFWwindow* window) {
 
-	std::vector<glm::vec4> meshTexturesOutput;
-	GLuint vertexSSBO, indicesSSBO, textureMeshSSBO, meshHeaderSSBO, textureArray;
-	generateSSBOs(textureWidth, textureHeight, vertexSSBO, indicesSSBO, textureMeshSSBO, meshHeaderSSBO, textureArray, meshTexturesOutput);
+	glClearColor(backgroundColor.x, backgroundColor.y, backgroundColor.z, 1.0f);	// sets the "clear" color
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);	// actually clears the background with color
 
-	shader.Activate();
+	camera.updateMatrix(45.0f, 0.1f, 100.0f);
+	camera.Inputs(window);
 
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D_ARRAY, textureArray);
-
-	GLuint texturePoolUniformLocation = glGetUniformLocation(shader.ID, "texturePool");
-	glUniform1i(texturePoolUniformLocation, 0);
+	int camPosUniformLocation = glGetUniformLocation(shader.ID, "camPos");
+	glUniform3f(camPosUniformLocation, camera.Position.x, camera.Position.y, camera.Position.z);
 
 	for (size_t i = 0; i < meshCollection.size(); ++i) {
 		meshCollection[i]->Draw(shader, camera, i, meshTexturesOutput);
@@ -139,5 +136,25 @@ void Scene::generateSSBOs(unsigned int width, unsigned int height, GLuint& verte
 
 	// output this (used for drawing)
 	meshTexturesOutput = meshTextures;
+
+}
+
+void Scene::link(Shader& shader) {
+
+	shader.Activate();
+
+	// TEXTURE ARRAY
+	generateSSBOs(textureWidth, textureHeight, vertexSSBO, indicesSSBO, textureMeshSSBO, meshHeaderSSBO, textureArray, meshTexturesOutput);
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D_ARRAY, textureArray);
+
+	// COLOR NOISE
+
+	// UNIFORMS
+	GLuint texturePoolUniformLocation = glGetUniformLocation(shader.ID, "texturePool");
+	glUniform1i(texturePoolUniformLocation, 0);
+
+	int backgroundColorLoc = glGetUniformLocation(shader.ID, "backgroundColor");
+	glUniform3f(backgroundColorLoc, backgroundColor.x, backgroundColor.y, backgroundColor.z);
 
 }

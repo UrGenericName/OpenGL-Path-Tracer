@@ -35,8 +35,6 @@ in vec3 geometricFaceNormal;
 in vec3 intersectionPoint;
 
 // UNIFORMS
-uniform sampler2D colorNoise;
-
 uniform uint albedo;
 uniform uint normal;
 uniform uint roughness;

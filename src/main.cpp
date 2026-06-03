@@ -25,32 +25,23 @@ int main() {
 
 	// loads OpenGL
 	gladLoadGL();
-
-
 	
+
+
 	Shader shaderProgram("shaders/path_tracing.vert", "shaders/path_tracing.frag");
+	shaderProgram.Activate();
 
 	Scene scene(256, 256);
 	scene.meshCollection.push_back(new Mesh("models/room/cubeA.obj"));
-	scene.meshCollection.push_back(new Mesh("models/room/cubeB.obj"));
+	scene.meshCollection.push_back(new Mesh("models/room/cubeB.obj", new Material("textures/brick.png")));
 	scene.meshCollection.push_back(new Mesh("models/room/sphere.obj", glm::vec4(0.4f, 0.2f, 0.2f, 0.0f)));
 	scene.meshCollection.push_back(new Mesh("models/room/white_walls.obj"));
 	scene.meshCollection.push_back(new Mesh("models/room/light.obj", glm::vec4(1.0f, 0.8f, 0.8f, 0.0f), true));
 	scene.meshCollection.push_back(new Mesh("models/room/red_wall.obj", glm::vec4(1.0f, 0.0f, 0.0f, 0.0f)));
 	scene.meshCollection.push_back(new Mesh("models/room/green_wall.obj", glm::vec4(0.0f, 1.0f, 0.0f, 0.0f)));
+	scene.link(shaderProgram);
 
-	shaderProgram.Activate();
-
-
-	Texture colorNoise("textures/color_noise.png", GL_TEXTURE_2D, GL_TEXTURE0, GL_RGB, GL_UNSIGNED_BYTE);
-
-	GLuint64 handle = glGetTextureHandleARB(colorNoise.ID);
-	glMakeTextureHandleResidentARB(handle);
-	int colorNoiseUniformLocation = glGetUniformLocation(shaderProgram.ID, "colorNoise");
-	glUniformHandleui64ARB(colorNoiseUniformLocation, handle);
-
-	int backgroundColorLoc = glGetUniformLocation(shaderProgram.ID, "backgroundColor");
-	glUniform3f(backgroundColorLoc, 0.07f, 0.13f, 0.17f);
+	Camera camera(WIDTH, HEIGHT, glm::vec3(0.0f, 0.0f, 0.0f));
 
 
 
@@ -62,21 +53,10 @@ int main() {
 	glCullFace(GL_BACK);
 	glFrontFace(GL_CCW);
 
-	Camera camera(WIDTH, HEIGHT, glm::vec3(0.0f, 0.0f, 0.0f));
-
-	int camPosUniformLocation = glGetUniformLocation(shaderProgram.ID, "camPos");
-
 	while (!glfwWindowShouldClose(window)) 
 	{
 
-		glClearColor(0.07f, 0.13f, 0.17f, 1.0f);	// sets the "clear" color
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);	// actually clears the background with color
-
-		camera.updateMatrix(45.0f, 0.1f, 100.0f);
-		camera.Inputs(window);
-
-		scene.Draw(shaderProgram, camera);
-		glUniform3f(camPosUniformLocation, camera.Position.x, camera.Position.y, camera.Position.z);
+		scene.Draw(shaderProgram, camera, window);
 
 		glfwSwapBuffers(window);
 
