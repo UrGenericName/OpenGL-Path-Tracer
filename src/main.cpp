@@ -49,9 +49,8 @@ int main() {
 	int colorNoiseUniformLocation = glGetUniformLocation(shaderProgram.ID, "colorNoise");
 	glUniformHandleui64ARB(colorNoiseUniformLocation, handle);
 
-	glm::vec3 sun = { 1.0f, -1.0f, -1.0f };
-	int sunUniformLocation = glGetUniformLocation(shaderProgram.ID, "sun");
-	glUniform3f(sunUniformLocation, sun.x, sun.y, sun.z);
+	int backgroundColorLoc = glGetUniformLocation(shaderProgram.ID, "backgroundColor");
+	glUniform3f(backgroundColorLoc, 0.07f, 0.13f, 0.17f);
 
 
 

@@ -43,7 +43,7 @@ uniform uint roughness;
 uniform uint metallic;
 uniform sampler2DArray texturePool;
 
-uniform vec3 sun;
+uniform vec3 backgroundColor;
 uniform vec3 camPos;
 uniform float emissive;
 uniform uint currentMesh;
@@ -54,11 +54,12 @@ void calculateWorldSpaceTangentBitagent(vec3 point, vec3 faceNormal, vec2 texCoo
 bool intersect_triangle(vec3 orig, vec3 dir, vec3 vert0, vec3 vert1, vec3 vert2, out vec3 result);
 
 #define MAX_BRIGHTNESS 1
-#define MIN_BRIGHTNESS 0.5
+#define MIN_BRIGHTNESS 0.2
 
 //#define DOUBLE_SIDED_REFLECTION
 
-#define EPSILON 0.000001f
+#define EPSILON 0.000001
+#define FAR_PLANE 999999
 
 void main() {
 
@@ -86,7 +87,19 @@ void main() {
     }
 
     // Calculates reflection
-    if (currentMesh <= 2) {
+    {
+        
+        float minFoundT = FAR_PLANE;        //
+        vec3 ref_v0, ref_v1, ref_v2;        //  data on the reflection found
+        vec2 ref_uv;                        //
+
+        uint ref_Mesh;                      // 
+        uint ref_Mesh_triangle;             //  data on the mesh that the ray reflected with
+        uint ref_Mesh_indexStartPointer;    // 
+
+        bool ref_Mesh_found = false;        //  whether we found a reflection or not
+
+
 
         vec3 incidentRay = normalize(intersectionPoint - camPos);
         vec3 reflectionBounceDir = reflect(incidentRay, faceNormal);
@@ -106,33 +119,52 @@ void main() {
                 vec3 v2 = vertices[indexStartPointer + (3*j) + 2].position.xyz;
 
                 vec3 result;
-                if (intersect_triangle(intersectionPoint, reflectionBounceDir, v0, v1, v2, result)) {
+                if (!intersect_triangle(intersectionPoint, reflectionBounceDir, v0, v1, v2, result)) continue;
 
-
-                    vec2 t0 = vertices[indexStartPointer + (3*j) + 0].texUV;
-                    vec2 t1 = vertices[indexStartPointer + (3*j) + 1].texUV;
-                    vec2 t2 = vertices[indexStartPointer + (3*j) + 2].texUV;
+                float t = result.x;
+                if (t < minFoundT) {    // mesh is closest mesh found so far
                     
-                    // some bullshit to get the uv coords
-                    float u = result.y; 
-                    float v = result.z;
-                    float w = 1.0f - u - v;
-                    vec2 uv = (w * t0) + (u * t1) + (v * t2);
+                    // update all reflection mesh data
+                    minFoundT = t;
+                    ref_uv = vec2(result.yz);
 
-                    vec4 tint = vertices[ indices[ uint(meshHeader[i].x) ] ].color;
+                    ref_v0 = v0;
+                    ref_v1 = v1;
+                    ref_v2 = v2;
 
-                    FragColor = texture(texturePool, vec3(uv, meshTextures[i].x)) * tint;
-                    return;
+                    ref_Mesh = i;
+                    ref_Mesh_triangle = j;
+                    ref_Mesh_indexStartPointer = indexStartPointer;
+                    ref_Mesh_found = true;
+
                 }
-
             }
         }
-    }
 
-    // Fall back lighting
-    float tempDot = dot(faceNormal, normalize(sun));
-    float brightness = tempDot * (MAX_BRIGHTNESS - MIN_BRIGHTNESS) + MIN_BRIGHTNESS;
-    FragColor = texture(texturePool, vec3(texCoord, albedo)) * vec4(color, 1.0f) * brightness;
+        // If mesh is found, take reflection mesh data and calculate color
+        if (ref_Mesh_found) {
+
+            vec2 ref_t0 = vertices[ref_Mesh_indexStartPointer + (3 * ref_Mesh_triangle) + 0].texUV;
+            vec2 ref_t1 = vertices[ref_Mesh_indexStartPointer + (3 * ref_Mesh_triangle) + 1].texUV;
+            vec2 ref_t2 = vertices[ref_Mesh_indexStartPointer + (3 * ref_Mesh_triangle) + 2].texUV;
+                    
+            // some bullshit to get the uv coords
+            float u = ref_uv.x; 
+            float v = ref_uv.y;
+            float w = 1.0f - u - v;
+            vec2 uv = (w * ref_t0) + (u * ref_t1) + (v * ref_t2);
+
+            vec4 tint = vertices[ indices[ uint(meshHeader[ref_Mesh].x) ] ].color;
+
+            FragColor = texture(texturePool, vec3(uv, meshTextures[ref_Mesh].x)) * tint * 0.6f;
+
+            return;   
+
+        }
+
+        FragColor = vec4(backgroundColor, 1.0f);
+
+    }
 }
 
 

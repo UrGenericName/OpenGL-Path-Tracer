@@ -191,8 +191,7 @@ bool Mesh::importObj(const char* fileName, glm::vec4 importColor) {
 
 				}
 
-				parsedNormals.push_back(glm::vec4(stof(x), stof(y), stof(z), 0.0f));
-				parsedNormals[parsedNormals.size() - 1] *= -1;	// inverts normals
+				parsedNormals.push_back(glm::vec4(stof(x), -stof(y), stof(z), 0.0f));
 				continue;
 			}
 
