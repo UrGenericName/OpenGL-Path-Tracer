@@ -33,15 +33,16 @@ int main() {
 
 	Scene scene(256, 256);
 	scene.meshCollection.push_back(new Mesh("models/room/cubeA.obj"));
-	scene.meshCollection.push_back(new Mesh("models/room/cubeB.obj", new Material("textures/brick.png")));
+	scene.meshCollection.push_back(new Mesh("models/room/cubeB.obj", new Material("textures/metal_albedo.png", "textures/metal_normal.png", "textures/metal_roughness.png")));
 	scene.meshCollection.push_back(new Mesh("models/room/sphere.obj", glm::vec4(0.4f, 0.2f, 0.2f, 0.0f)));
 	scene.meshCollection.push_back(new Mesh("models/room/white_walls.obj"));
 	scene.meshCollection.push_back(new Mesh("models/room/light.obj", glm::vec4(1.0f, 0.8f, 0.8f, 0.0f), true));
 	scene.meshCollection.push_back(new Mesh("models/room/red_wall.obj", glm::vec4(1.0f, 0.0f, 0.0f, 0.0f)));
 	scene.meshCollection.push_back(new Mesh("models/room/green_wall.obj", glm::vec4(0.0f, 1.0f, 0.0f, 0.0f)));
+
 	scene.link(shaderProgram);
 
-	Camera camera(WIDTH, HEIGHT, glm::vec3(0.0f, 0.0f, 0.0f));
+	Camera camera(WIDTH, HEIGHT, glm::vec3(0.0f, -12.0f, 4.5f));
 
 
 

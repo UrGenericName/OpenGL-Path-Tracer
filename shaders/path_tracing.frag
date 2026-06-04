@@ -140,6 +140,7 @@ void main() {
         }
 
         // If mesh is found, take reflection mesh data and calculate color
+        vec3 reflectionColor;
         if (ref_Mesh_found) {
 
             vec2 ref_t0 = vertices[ref_Mesh_indexStartPointer + (3 * ref_Mesh_triangle) + 0].texUV;
@@ -154,13 +155,15 @@ void main() {
 
             vec4 tint = vertices[ indices[ uint(meshHeader[ref_Mesh].x) ] ].color;
 
-            FragColor = texture(texturePool, vec3(uv, meshTextures[ref_Mesh].x)) * tint * 0.6f;
-
-            return;   
+            reflectionColor = (texture(texturePool, vec3(uv, meshTextures[ref_Mesh].x)) * tint * 0.6f ).rgb;
 
         }
 
-        FragColor = vec4(backgroundColor, 1.0f);
+        vec3 albedoColor = texture(texturePool, vec3(texCoord, albedo)).rgb * color;
+        float roughnessValue = texture(texturePool, vec3(texCoord, roughness)).r;
+
+        vec3 finalColor = (roughnessValue * albedoColor) + ( (1 - roughnessValue) * reflectionColor.rgb );
+        FragColor = vec4(finalColor, 1.0f);
 
     }
 }
