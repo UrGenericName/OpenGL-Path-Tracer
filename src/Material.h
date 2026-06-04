@@ -5,10 +5,10 @@
 
 #include "Texture.h";
 
-#define DEFAULT_ALBEDO "textures/default/albedo_default.png"
-#define DEFAULT_NORMAL "textures/default/normal_default.png"
-#define DEFAULT_ROUGHNESS "textures/default/roughness_default.png"
-#define DEFAULT_METALLIC "textures/default/metallic_default.png"
+#define DEFAULT_ALBEDO "textures/core/default/albedo_default.png"
+#define DEFAULT_NORMAL "textures/core/default/normal_default.png"
+#define DEFAULT_ROUGHNESS "textures/core/default/roughness_default.png"
+#define DEFAULT_METALLIC "textures/core/default/metallic_default.png"
 
 using namespace std;
 
