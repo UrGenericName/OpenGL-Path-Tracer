@@ -2,7 +2,7 @@
 
 using namespace std;
 
-Mesh::Mesh(std::vector<Vertex>& i_vertices, std::vector<GLuint>& i_indices, Material* i_material) {
+Mesh::Mesh(std::vector<Vertex>& i_vertices, std::vector<GLuint>& i_indices, Material* i_material, bool i_emissive) {
 
 	vertices = i_vertices;
 	indices = i_indices;
@@ -10,6 +10,7 @@ Mesh::Mesh(std::vector<Vertex>& i_vertices, std::vector<GLuint>& i_indices, Mate
 	MeshSetup();
 
 	material = i_material;
+	emissive = i_emissive;
 
 }
 
@@ -25,12 +26,13 @@ Mesh::Mesh(std::vector<Vertex>& i_vertices, std::vector<GLuint>& i_indices, bool
 
 }
 
-Mesh::Mesh(const char* fileName, Material* i_material, glm::vec4 importColor) {
+Mesh::Mesh(const char* fileName, Material* i_material, glm::vec4 importColor, bool i_emissive) {
 
 	importObj(fileName, importColor);
 	MeshSetup();
 
 	material = i_material;
+	emissive = i_emissive;
 
 }
 

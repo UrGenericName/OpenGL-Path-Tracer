@@ -5,10 +5,10 @@
 
 #include "Texture.h";
 
-#define MISSING_ALBEDO "textures/default/albedo_default.png"
-#define MISSING_NORMAL "textures/default/normal_default.png"
-#define MISSING_ROUGHNESS "textures/default/roughness_default.png"
-#define MISSING_METALLIC "textures/default/metallic_default.png"
+#define DEFAULT_ALBEDO "textures/default/albedo_default.png"
+#define DEFAULT_NORMAL "textures/default/normal_default.png"
+#define DEFAULT_ROUGHNESS "textures/default/roughness_default.png"
+#define DEFAULT_METALLIC "textures/default/metallic_default.png"
 
 using namespace std;
 
@@ -20,6 +20,6 @@ public:
 	string roughness;
 	string metallic;
 
-	Material(string albedo = MISSING_ALBEDO, string normal = MISSING_NORMAL, string roughness = MISSING_ROUGHNESS, string metallic = MISSING_METALLIC);
+	Material(string albedo = DEFAULT_ALBEDO, string normal = DEFAULT_NORMAL, string roughness = DEFAULT_ROUGHNESS, string metallic = DEFAULT_METALLIC);
 
 };

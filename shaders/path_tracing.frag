@@ -54,6 +54,8 @@ bool intersect_triangle(vec3 orig, vec3 dir, vec3 vert0, vec3 vert1, vec3 vert2,
 #define MAX_BRIGHTNESS 1
 #define MIN_BRIGHTNESS 0.2
 
+#define BOUNCES 1
+
 //#define DOUBLE_SIDED_REFLECTION
 
 #define EPSILON 0.000001
@@ -84,9 +86,16 @@ void main() {
         faceNormal = normalize(faceNormal);
     }
 
-    // Calculates reflection
+    // Calculate reflection
+    vec3 averageReflectionColor;
+    vec3 reflectionIntersection = intersectionPoint;
+    vec3 origin = camPos;
+
+    uint bounceCount = 0;
+    while (bounceCount < BOUNCES) 
     {
-        
+
+        // Calculates reflection
         float minFoundT = FAR_PLANE;        //
         vec3 ref_v0, ref_v1, ref_v2;        //  data on the reflection found
         vec2 ref_uv;                        //
@@ -97,50 +106,50 @@ void main() {
 
         bool ref_Mesh_found = false;        //  whether we found a reflection or not
 
-
-
-        vec3 incidentRay = normalize(intersectionPoint - camPos);
+        vec3 incidentRay = normalize(reflectionIntersection - origin);
         vec3 reflectionBounceDir = reflect(incidentRay, faceNormal);
 
-        uint meshCount = meshHeader.length();
-        for (uint i = 0u; i < meshCount; ++i) {
+        {
 
-            if (i == currentMesh) continue;
+            uint meshCount = meshHeader.length();
+            for (uint i = 0u; i < meshCount; ++i) {
 
-            uint trigCount = uint(meshHeader[i].y) / 3u;
-            for (uint j = 0u; j < trigCount; ++j) {
+                if (i == currentMesh) continue;
 
-                uint indexStartPointer = uint(meshHeader[i].x);
+                uint trigCount = uint(meshHeader[i].y) / 3u;
+                for (uint j = 0u; j < trigCount; ++j) {
 
-                vec3 v0 = vertices[indexStartPointer + (3*j) + 0].position.xyz;
-                vec3 v1 = vertices[indexStartPointer + (3*j) + 1].position.xyz;
-                vec3 v2 = vertices[indexStartPointer + (3*j) + 2].position.xyz;
+                    uint indexStartPointer = uint(meshHeader[i].x);
 
-                vec3 result;
-                if (!intersect_triangle(intersectionPoint, reflectionBounceDir, v0, v1, v2, result)) continue;
+                    vec3 v0 = vertices[indexStartPointer + (3*j) + 0].position.xyz;
+                    vec3 v1 = vertices[indexStartPointer + (3*j) + 1].position.xyz;
+                    vec3 v2 = vertices[indexStartPointer + (3*j) + 2].position.xyz;
 
-                float t = result.x;
-                if (t < minFoundT) {    // mesh is closest mesh found so far
+                    vec3 result;
+                    if (!intersect_triangle(reflectionIntersection, reflectionBounceDir, v0, v1, v2, result)) continue;
+
+                    float t = result.x;
+                    if (t < minFoundT) {    // mesh is closest mesh found so far
                     
-                    // update all reflection mesh data
-                    minFoundT = t;
-                    ref_uv = vec2(result.yz);
+                        // update all reflection mesh data
+                        minFoundT = t;
+                        ref_uv = vec2(result.yz);
 
-                    ref_v0 = v0;
-                    ref_v1 = v1;
-                    ref_v2 = v2;
+                        ref_v0 = v0;
+                        ref_v1 = v1;
+                        ref_v2 = v2;
 
-                    ref_Mesh = i;
-                    ref_Mesh_triangle = j;
-                    ref_Mesh_indexStartPointer = indexStartPointer;
-                    ref_Mesh_found = true;
+                        ref_Mesh = i;
+                        ref_Mesh_triangle = j;
+                        ref_Mesh_indexStartPointer = indexStartPointer;
+                        ref_Mesh_found = true;
 
+                    }
                 }
             }
         }
 
         // If mesh is found, take reflection mesh data and calculate color
-        vec3 reflectionColor;
         if (ref_Mesh_found) {
 
             vec2 ref_t0 = vertices[ref_Mesh_indexStartPointer + (3 * ref_Mesh_triangle) + 0].texUV;
@@ -155,17 +164,30 @@ void main() {
 
             vec4 tint = vertices[ indices[ uint(meshHeader[ref_Mesh].x) ] ].color;
 
-            reflectionColor = (texture(texturePool, vec3(uv, meshTextures[ref_Mesh].x)) * tint * 0.6f ).rgb;
+            averageReflectionColor += (texture(texturePool, vec3(uv, meshTextures[ref_Mesh].x)) * tint * 0.6f ).rgb;
 
+            // calculate new values for next iteration
+            origin = reflectionIntersection;
+            reflectionIntersection = reflectionIntersection + ( minFoundT * reflectionBounceDir );
+
+            ++bounceCount;
+
+        } else {
+            break;  // ray didn't hit anything, so break out of loop
         }
-
-        vec3 albedoColor = texture(texturePool, vec3(texCoord, albedo)).rgb * color;
-        float roughnessValue = texture(texturePool, vec3(texCoord, roughness)).r;
-
-        vec3 finalColor = (roughnessValue * albedoColor) + ( (1 - roughnessValue) * reflectionColor.rgb );
-        FragColor = vec4(finalColor, 1.0f);
-
     }
+
+    vec3 finalReflectionColor = backgroundColor;
+    if (bounceCount != 0) {
+        finalReflectionColor = averageReflectionColor / bounceCount;
+    }
+    
+    // Combine all texture maps to single color
+    vec3 albedoColor = texture(texturePool, vec3(texCoord, albedo)).rgb * color;
+    float roughnessValue = texture(texturePool, vec3(texCoord, roughness)).r;
+
+    vec3 finalColor = ((roughnessValue * albedoColor) + ((1 - roughnessValue) * finalReflectionColor));
+    FragColor = vec4(finalColor, 1.0f);
 }
 
 
