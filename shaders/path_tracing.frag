@@ -47,6 +47,7 @@ uniform float emissive;
 uniform uint currentMesh;
 
 // DECLERATIONS
+void calculatePath(vec3 init_Intersection, vec3 init_Origin, vec3 init_FaceNormal, out float totalBrightness, out vec3 totalReflectionColor, out uint bounceCount);
 void normalSpaceToWorldSpace(vec3 point, vec3 faceNormal, vec2 texCoord, vec3 inVector, out vec3 outVector);
 void calculateWorldSpaceTangentBitagent(vec3 point, vec3 faceNormal, vec2 texCoord, out vec3 tangent, out vec3 bitangent);
 bool intersect_triangle(vec3 orig, vec3 dir, vec3 vert0, vec3 vert1, vec3 vert2, out vec3 result);
@@ -54,9 +55,9 @@ bool intersect_triangle(vec3 orig, vec3 dir, vec3 vert0, vec3 vert1, vec3 vert2,
 #define MAX_BRIGHTNESS 1
 #define MIN_BRIGHTNESS 0.2
 
-#define BOUNCES 1
+#define BOUNCES 16
 
-//#define DOUBLE_SIDED_REFLECTION
+#define DOUBLE_SIDED_REFLECTION false
 
 #define EPSILON 0.000001
 #define FAR_PLANE 999999
@@ -87,11 +88,38 @@ void main() {
     }
 
     // Calculate reflection
-    vec3 averageReflectionColor;
-    vec3 reflectionIntersection = intersectionPoint;
-    vec3 origin = camPos;
+    uint bounceCount;
+    float totalBrightness;
+    vec3 totalReflectionColor;
+    {
+        calculatePath(intersectionPoint, camPos, faceNormal, totalBrightness, totalReflectionColor, bounceCount);
+    }
 
-    uint bounceCount = 0;
+    vec3 finalReflectionColor = backgroundColor;
+    if (bounceCount != 0) {
+        finalReflectionColor = totalReflectionColor / bounceCount;
+    }
+    
+    // Combine all texture maps to single color
+    vec3 albedoColor = texture(texturePool, vec3(texCoord, albedo)).rgb * color;
+    float roughnessValue = texture(texturePool, vec3(texCoord, roughness)).r;
+
+    vec3 finalColor = vec3(finalReflectionColor);
+    FragColor = vec4(finalColor, 1.0f);
+}
+
+
+
+// Calculates render information for a single path (brightness, color, number of completed bounces)
+void calculatePath(vec3 init_Intersection, vec3 init_Origin, vec3 init_FaceNormal, out float totalBrightness, out vec3 totalReflectionColor, out uint bounceCount) {
+
+    vec3 ref_intersection = init_Intersection;
+    vec3 ref_origin = init_Origin;
+    vec3 ref_faceNormal = init_FaceNormal;
+
+    totalBrightness = 0;
+    totalReflectionColor = vec3(0);
+    bounceCount = 0;
     while (bounceCount < BOUNCES) 
     {
 
@@ -106,15 +134,13 @@ void main() {
 
         bool ref_Mesh_found = false;        //  whether we found a reflection or not
 
-        vec3 incidentRay = normalize(reflectionIntersection - origin);
-        vec3 reflectionBounceDir = reflect(incidentRay, faceNormal);
+        vec3 incidentRay = normalize(ref_intersection - ref_origin);
+        vec3 reflectionBounceDir = reflect(incidentRay, ref_faceNormal);
 
         {
 
             uint meshCount = meshHeader.length();
             for (uint i = 0u; i < meshCount; ++i) {
-
-                if (i == currentMesh) continue;
 
                 uint trigCount = uint(meshHeader[i].y) / 3u;
                 for (uint j = 0u; j < trigCount; ++j) {
@@ -126,7 +152,7 @@ void main() {
                     vec3 v2 = vertices[indexStartPointer + (3*j) + 2].position.xyz;
 
                     vec3 result;
-                    if (!intersect_triangle(reflectionIntersection, reflectionBounceDir, v0, v1, v2, result)) continue;
+                    if (!intersect_triangle(ref_intersection, reflectionBounceDir, v0, v1, v2, result)) continue;
 
                     float t = result.x;
                     if (t < minFoundT) {    // mesh is closest mesh found so far
@@ -151,24 +177,47 @@ void main() {
 
         // If mesh is found, take reflection mesh data and calculate color
         if (ref_Mesh_found) {
-
+            
             vec2 ref_t0 = vertices[ref_Mesh_indexStartPointer + (3 * ref_Mesh_triangle) + 0].texUV;
             vec2 ref_t1 = vertices[ref_Mesh_indexStartPointer + (3 * ref_Mesh_triangle) + 1].texUV;
             vec2 ref_t2 = vertices[ref_Mesh_indexStartPointer + (3 * ref_Mesh_triangle) + 2].texUV;
                     
-            // some bullshit to get the uv coords
+            // grabs uv weights from moller-trumbore
             float u = ref_uv.x; 
             float v = ref_uv.y;
             float w = 1.0f - u - v;
-            vec2 uv = (w * ref_t0) + (u * ref_t1) + (v * ref_t2);
+            vec2 ref_uv = (w * ref_t0) + (u * ref_t1) + (v * ref_t2);   // applies weights
 
             vec4 tint = vertices[ indices[ uint(meshHeader[ref_Mesh].x) ] ].color;
 
-            averageReflectionColor += (texture(texturePool, vec3(uv, meshTextures[ref_Mesh].x)) * tint * 0.6f ).rgb;
+            totalReflectionColor += (texture(texturePool, vec3(ref_uv, meshTextures[ref_Mesh].x)) * tint * 0.6f ).rgb;
 
             // calculate new values for next iteration
-            origin = reflectionIntersection;
-            reflectionIntersection = reflectionIntersection + ( minFoundT * reflectionBounceDir );
+            ref_origin = ref_intersection;
+            ref_intersection = ref_intersection + ( minFoundT * reflectionBounceDir );
+            
+            vec3 ref_GeometricFaceNormal;
+            {
+                vec3 normal_v0 = vertices[ref_Mesh_indexStartPointer + (3 * ref_Mesh_triangle) + 0].normal.xyz;
+                vec3 normal_v1 = vertices[ref_Mesh_indexStartPointer + (3 * ref_Mesh_triangle) + 1].normal.xyz;
+                vec3 normal_v2 = vertices[ref_Mesh_indexStartPointer + (3 * ref_Mesh_triangle) + 2].normal.xyz;
+                ref_GeometricFaceNormal = (w * normal_v0) + (u * normal_v1) + (v * normal_v2);
+            }
+
+            vec3 ref_NormalMapVector;
+            {
+                uint ref_uv_normalMap = uint(meshTextures[ref_Mesh].y);
+                vec4 temp = texture(texturePool, vec3(ref_uv, ref_uv_normalMap));
+                ref_NormalMapVector.x = 2.0f * temp.x - 1.0f;
+                ref_NormalMapVector.y = 2.0f * temp.y - 1.0f;
+                ref_NormalMapVector.z = 2.0f * temp.z - 1.0f;
+                ref_NormalMapVector = normalize(ref_NormalMapVector);
+            }
+
+            normalSpaceToWorldSpace(ref_intersection, normalize(ref_GeometricFaceNormal), ref_uv, ref_NormalMapVector, ref_faceNormal);
+            ref_faceNormal = normalize(ref_faceNormal);
+
+            totalBrightness += meshHeader[ref_Mesh].z;
 
             ++bounceCount;
 
@@ -177,22 +226,7 @@ void main() {
         }
     }
 
-    vec3 finalReflectionColor = backgroundColor;
-    if (bounceCount != 0) {
-        finalReflectionColor = averageReflectionColor / bounceCount;
-    }
-    
-    // Combine all texture maps to single color
-    vec3 albedoColor = texture(texturePool, vec3(texCoord, albedo)).rgb * color;
-    float roughnessValue = texture(texturePool, vec3(texCoord, roughness)).r;
-
-    vec3 finalColor = ((roughnessValue * albedoColor) + ((1 - roughnessValue) * finalReflectionColor));
-    FragColor = vec4(finalColor, 1.0f);
 }
-
-
-
-
 
 // Transforms normal map tangents into world space vectors
 void normalSpaceToWorldSpace(vec3 point, vec3 faceNormal, vec2 texCoord, vec3 inVector, out vec3 outVector) {
@@ -237,12 +271,12 @@ bool intersect_triangle(vec3 orig, vec3 dir, vec3 vert0, vec3 vert1, vec3 vert2,
     vec3 pvec = cross(dir, edge2);
     float det = dot(edge1, pvec);
     
-    #ifdef DOUBLE_SIDED_REFLECTION
+    if (DOUBLE_SIDED_REFLECTION) {
         if (abs(det) < EPSILON) return false;
-    #else
+    } else {
         if (det < EPSILON) return false;
-    #endif
-    
+    }
+
     vec3 tvec = orig - vert0;
     float u = dot(tvec, pvec);
     if (u < 0.0f || u > det) return false;

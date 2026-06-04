@@ -15,8 +15,8 @@ void Scene::Draw(Shader& shader, Camera& camera, GLFWwindow* window) {
 	glClearColor(backgroundColor.x, backgroundColor.y, backgroundColor.z, 1.0f);	// sets the "clear" color
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);	// actually clears the background with color
 
-	camera.updateMatrix(45.0f, 0.1f, 100.0f);
 	camera.Inputs(window);
+	camera.updateMatrix(45.0f, 0.1f, 100.0f);
 
 	int camPosUniformLocation = glGetUniformLocation(shader.ID, "camPos");
 	glUniform3f(camPosUniformLocation, camera.Position.x, camera.Position.y, camera.Position.z);
