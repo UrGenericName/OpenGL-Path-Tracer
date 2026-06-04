@@ -2,6 +2,8 @@
 
 Texture::Texture(const char* image, GLenum texType, GLenum slot, GLenum format, GLenum pixelType) {
 
+	type = texType;
+
 	int widthImg, heightImg, numColCh;
 	stbi_set_flip_vertically_on_load(true);
 
@@ -13,19 +15,19 @@ Texture::Texture(const char* image, GLenum texType, GLenum slot, GLenum format, 
 	GLuint texture;
 	glGenTextures(1, &ID);
 	glActiveTexture(slot);
-	glBindTexture(texType, ID);
+	glBindTexture(type, ID);
 
-	glTexParameteri(texType, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(texType, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(type, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(type, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-	glTexParameteri(texType, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTexParameteri(texType, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glTexParameteri(type, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(type, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
-	glTexImage2D(texType, 0, GL_RGBA, widthImg, heightImg, 0, format, pixelType, bytes);
-	glGenerateMipmap(texType);
+	glTexImage2D(type, 0, GL_RGBA, widthImg, heightImg, 0, format, pixelType, bytes);
+	glGenerateMipmap(type);
 
 	stbi_image_free(bytes);
-	glBindTexture(texType, 0);
+	glBindTexture(type, 0);
 
 }
 

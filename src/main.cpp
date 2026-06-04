@@ -32,13 +32,13 @@ int main() {
 	shaderProgram.Activate();
 
 	Scene scene(256, 256);
-	scene.meshCollection.push_back(new Mesh("models/room/cubeA.obj", new Material("textures/brick.png", "textures/metal_normal.png", "textures/roughness_reflective.png")));
-	scene.meshCollection.push_back(new Mesh("models/room/cubeB.obj", new Material(DEFAULT_ALBEDO, DEFAULT_NORMAL, "textures/roughness_reflective.png")));
-	scene.meshCollection.push_back(new Mesh("models/room/sphere.obj", new Material(DEFAULT_ALBEDO, DEFAULT_NORMAL, "textures/roughness_reflective.png")));
+	scene.meshCollection.push_back(new Mesh("models/room/cubeA.obj", new Material(DEFAULT_ALBEDO, DEFAULT_NORMAL, "textures/roughness_c.png")));
+	scene.meshCollection.push_back(new Mesh("models/room/cubeB.obj", new Material(DEFAULT_ALBEDO, DEFAULT_NORMAL, "textures/roughness_c.png")));
+	scene.meshCollection.push_back(new Mesh("models/room/sphere.obj", new Material(DEFAULT_ALBEDO, DEFAULT_NORMAL, "textures/roughness_c.png")));
 	scene.meshCollection.push_back(new Mesh("models/room/white_walls.obj", new Material(DEFAULT_ALBEDO, DEFAULT_NORMAL)));
-	scene.meshCollection.push_back(new Mesh("models/room/light.obj", new Material(DEFAULT_ALBEDO, DEFAULT_NORMAL), glm::vec4(1.0f, 1.0f, .2f, 0.0f), true));
-	scene.meshCollection.push_back(new Mesh("models/room/red_wall.obj", new Material(DEFAULT_ALBEDO, DEFAULT_NORMAL, "textures/roughness_reflective.png"), glm::vec4(1.0f, 0.0f, 0.0f, 0.0f)));
-	scene.meshCollection.push_back(new Mesh("models/room/green_wall.obj", new Material(DEFAULT_ALBEDO, DEFAULT_NORMAL), glm::vec4(0.0f, 1.0f, 0.0f, 0.0f)));
+	scene.meshCollection.push_back(new Mesh("models/room/light.obj", new Material(DEFAULT_ALBEDO, DEFAULT_NORMAL, "textures/roughness_a.png"), glm::vec4(1.0f, 1.0f, 0.9f, 0.0f), true));
+	scene.meshCollection.push_back(new Mesh("models/room/red_wall.obj", new Material(DEFAULT_ALBEDO, DEFAULT_NORMAL, "textures/roughness_c.png"), glm::vec4(1.0f, 0.0f, 0.0f, 0.0f)));
+	scene.meshCollection.push_back(new Mesh("models/room/green_wall.obj", new Material(DEFAULT_ALBEDO, DEFAULT_NORMAL, "textures/roughness_c.png"), glm::vec4(0.0f, 1.0f, 0.0f, 0.0f)));
 
 	scene.link(shaderProgram);
 

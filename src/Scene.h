@@ -2,7 +2,10 @@
 
 #include <vector>
 #include <set>
+#include <random>
 #include "Mesh.h"
+
+#define COLOR_NOISE "textures/core/color_noise.png"
 
 class Scene {
 public:
@@ -25,5 +28,11 @@ private:
 	// Cached data
 	std::vector<glm::vec4> meshTexturesOutput;
 	GLuint vertexSSBO, indicesSSBO, textureMeshSSBO, meshHeaderSSBO, textureArray;
+
+	Texture* colorNoise;
+
+	inline static std::random_device m_rd;
+	inline static std::minstd_rand0 m_gen{ m_rd() };
+	inline static std::uniform_int_distribution<uint32_t> m_distrib{ 0, (std::numeric_limits<uint32_t>::max)() };
 
 };

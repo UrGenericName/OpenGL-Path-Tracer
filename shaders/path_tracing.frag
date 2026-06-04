@@ -40,22 +40,30 @@ uniform uint normal;
 uniform uint roughness;
 uniform uint metallic;
 uniform sampler2DArray texturePool;
+uniform sampler2D colorNoise;
 
+uniform uint seed;
 uniform vec3 backgroundColor;
 uniform vec3 camPos;
 uniform float emissive;
 uniform uint currentMesh;
 
 // DECLERATIONS
+void randomizeNormal(uint seed, float roughness, inout vec3 normal);
 void calculatePath(vec3 init_Intersection, vec3 init_Origin, vec3 init_FaceNormal, out float totalBrightness, out vec3 totalReflectionColor, out uint bounceCount);
 void normalSpaceToWorldSpace(vec3 point, vec3 faceNormal, vec2 texCoord, vec3 inVector, out vec3 outVector);
 void calculateWorldSpaceTangentBitagent(vec3 point, vec3 faceNormal, vec2 texCoord, out vec3 tangent, out vec3 bitangent);
 bool intersect_triangle(vec3 orig, vec3 dir, vec3 vert0, vec3 vert1, vec3 vert2, out vec3 result);
 
-#define MAX_BRIGHTNESS 1
-#define MIN_BRIGHTNESS 0.2
+const uint pixelSeed = (uint(gl_FragCoord.x) * 1664525u + uint(gl_FragCoord.y) * 1013904223u) ^ floatBitsToUint(intersectionPoint.x) ^ floatBitsToUint(texCoord.y) ^ (seed * 2246822519u);
 
-#define BOUNCES 16
+#define MAX_BRIGHTNESS 1.0f
+#define MIN_BRIGHTNESS 0.0f
+
+#define MAX_ROUGHNESS 1.0f
+#define MIN_ROUGHNESS 0.0f
+
+#define BOUNCES 8
 
 #define DOUBLE_SIDED_REFLECTION false
 
@@ -73,16 +81,17 @@ void main() {
     // Normal Map Local Vector
     vec3 normalMapVector;
     {
-        vec4 temp = texture(texturePool, vec3(texCoord, normal));
-        normalMapVector.x = 2.0f * temp.x - 1.0f;
-        normalMapVector.y = 2.0f * temp.y - 1.0f;
-        normalMapVector.z = 2.0f * temp.z - 1.0f;
+        vec3 temp = texture(texturePool, vec3(texCoord, normal)).xyz;
+        normalMapVector = 2.0f * temp - 1.0f;
         normalMapVector = normalize(normalMapVector);
     }
 
     // Calculates face normal from normal map
     vec3 faceNormal;
     {
+        float roughnessValue = texture(texturePool, vec3(texCoord, roughness)).r;
+        randomizeNormal(pixelSeed, roughnessValue, normalMapVector);
+
         normalSpaceToWorldSpace(intersectionPoint, normalize(geometricFaceNormal), texCoord, normalMapVector, faceNormal);
         faceNormal = normalize(faceNormal);
     }
@@ -103,12 +112,32 @@ void main() {
     // Combine all texture maps to single color
     vec3 albedoColor = texture(texturePool, vec3(texCoord, albedo)).rgb * color;
     float roughnessValue = texture(texturePool, vec3(texCoord, roughness)).r;
-
-    vec3 finalColor = vec3(finalReflectionColor);
+    
+    vec3 finalColor = (albedoColor + finalReflectionColor) / 2;
+    float finalBrightness = (totalBrightness * (MAX_BRIGHTNESS - MIN_BRIGHTNESS)) + MIN_BRIGHTNESS;
     FragColor = vec4(finalColor, 1.0f);
 }
 
+void randomizeNormal(uint seed, float roughness, inout vec3 normal) {
+    
+    // clamp min and max
+    roughness = (roughness * (MAX_ROUGHNESS - MIN_ROUGHNESS)) + MIN_ROUGHNESS;
 
+    ivec2 dimensions = textureSize(colorNoise, 0);
+    uint width = uint(dimensions.x);
+    uint height = uint(dimensions.y);
+
+    seed %= (width * height);
+    uint y = seed / width;
+    uint x = seed - (y * width);
+
+    vec3 randomVector = texelFetch(colorNoise, ivec2(x, y), 0).rgb;
+    randomVector = 2.0f * randomVector - 1.0f;
+    randomVector = normalize(randomVector);
+
+    normal = normalize( ((1 - roughness) * normal) + (roughness * randomVector) );
+
+}
 
 // Calculates render information for a single path (brightness, color, number of completed bounces)
 void calculatePath(vec3 init_Intersection, vec3 init_Origin, vec3 init_FaceNormal, out float totalBrightness, out vec3 totalReflectionColor, out uint bounceCount) {
@@ -189,8 +218,7 @@ void calculatePath(vec3 init_Intersection, vec3 init_Origin, vec3 init_FaceNorma
             vec2 ref_uv = (w * ref_t0) + (u * ref_t1) + (v * ref_t2);   // applies weights
 
             vec4 tint = vertices[ indices[ uint(meshHeader[ref_Mesh].x) ] ].color;
-
-            totalReflectionColor += (texture(texturePool, vec3(ref_uv, meshTextures[ref_Mesh].x)) * tint * 0.6f ).rgb;
+            totalReflectionColor += (texture(texturePool, vec3(ref_uv, meshTextures[ref_Mesh].x)) * tint ).rgb;
 
             // calculate new values for next iteration
             ref_origin = ref_intersection;
@@ -213,6 +241,9 @@ void calculatePath(vec3 init_Intersection, vec3 init_Origin, vec3 init_FaceNorma
                 ref_NormalMapVector.z = 2.0f * temp.z - 1.0f;
                 ref_NormalMapVector = normalize(ref_NormalMapVector);
             }
+
+            float roughnessValue = texture(texturePool, vec3(ref_uv, roughness)).r;
+            randomizeNormal(pixelSeed, roughnessValue, ref_NormalMapVector);
 
             normalSpaceToWorldSpace(ref_intersection, normalize(ref_GeometricFaceNormal), ref_uv, ref_NormalMapVector, ref_faceNormal);
             ref_faceNormal = normalize(ref_faceNormal);

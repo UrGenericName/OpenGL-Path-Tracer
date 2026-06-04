@@ -21,6 +21,9 @@ void Scene::Draw(Shader& shader, Camera& camera, GLFWwindow* window) {
 	int camPosUniformLocation = glGetUniformLocation(shader.ID, "camPos");
 	glUniform3f(camPosUniformLocation, camera.Position.x, camera.Position.y, camera.Position.z);
 
+	int seedColorLoc = glGetUniformLocation(shader.ID, "seed");
+	glUniform1ui(seedColorLoc, m_distrib(m_gen));
+
 	for (size_t i = 0; i < meshCollection.size(); ++i) {
 		meshCollection[i]->Draw(shader, camera, i, meshTexturesOutput);
 	}
@@ -149,10 +152,14 @@ void Scene::link(Shader& shader) {
 	glBindTexture(GL_TEXTURE_2D_ARRAY, textureArray);
 
 	// COLOR NOISE
+	colorNoise = new Texture(COLOR_NOISE);
+	glActiveTexture(GL_TEXTURE1);
+	colorNoise->texUnit(shader, "colorNoise", 1);
+	colorNoise->Bind();
 
 	// UNIFORMS
-	GLuint texturePoolUniformLocation = glGetUniformLocation(shader.ID, "texturePool");
-	glUniform1i(texturePoolUniformLocation, 0);
+	GLuint texturePoolUniformLoc = glGetUniformLocation(shader.ID, "texturePool");
+	glUniform1i(texturePoolUniformLoc, 0);
 
 	int backgroundColorLoc = glGetUniformLocation(shader.ID, "backgroundColor");
 	glUniform3f(backgroundColorLoc, backgroundColor.x, backgroundColor.y, backgroundColor.z);
