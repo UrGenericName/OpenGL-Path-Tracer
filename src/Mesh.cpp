@@ -2,7 +2,7 @@
 
 using namespace std;
 
-Mesh::Mesh(std::vector<Vertex>& i_vertices, std::vector<GLuint>& i_indices, Material* i_material, bool i_emissive) {
+Mesh::Mesh(std::vector<Vertex>& i_vertices, std::vector<GLuint>& i_indices, Material* i_material, float i_emissive) {
 
 	vertices = i_vertices;
 	indices = i_indices;
@@ -14,7 +14,7 @@ Mesh::Mesh(std::vector<Vertex>& i_vertices, std::vector<GLuint>& i_indices, Mate
 
 }
 
-Mesh::Mesh(std::vector<Vertex>& i_vertices, std::vector<GLuint>& i_indices, bool i_emissive) {
+Mesh::Mesh(std::vector<Vertex>& i_vertices, std::vector<GLuint>& i_indices, float i_emissive) {
 
 	vertices = i_vertices;
 	indices = i_indices;
@@ -26,7 +26,7 @@ Mesh::Mesh(std::vector<Vertex>& i_vertices, std::vector<GLuint>& i_indices, bool
 
 }
 
-Mesh::Mesh(const char* fileName, Material* i_material, glm::vec4 importColor, bool i_emissive) {
+Mesh::Mesh(const char* fileName, Material* i_material, glm::vec4 importColor, float i_emissive) {
 
 	importObj(fileName, importColor);
 	MeshSetup();
@@ -36,7 +36,7 @@ Mesh::Mesh(const char* fileName, Material* i_material, glm::vec4 importColor, bo
 
 }
 
-Mesh::Mesh(const char* fileName, glm::vec4 importColor, bool i_emissive) {
+Mesh::Mesh(const char* fileName, glm::vec4 importColor, float i_emissive) {
 
 	importObj(fileName, importColor);
 	MeshSetup();
@@ -86,25 +86,25 @@ void Mesh::Draw(Shader& shader, Camera& camera, GLuint currentMesh, std::vector<
 	VAO.Bind();
 
 	// Uniforms for the index location of each texture
-	GLuint albedoUniformID = glGetUniformLocation(shader.ID, "albedo");
-	glUniform1ui(albedoUniformID, meshTextures[currentMesh].x);
+	GLuint albedoUniformLoc = glGetUniformLocation(shader.ID, "albedo");
+	glUniform1ui(albedoUniformLoc, meshTextures[currentMesh].x);
 
-	GLuint normalUniformID = glGetUniformLocation(shader.ID, "normal");
-	glUniform1ui(normalUniformID, meshTextures[currentMesh].y);
+	GLuint normalUniformLoc = glGetUniformLocation(shader.ID, "normal");
+	glUniform1ui(normalUniformLoc, meshTextures[currentMesh].y);
 
-	GLuint roughnessUniformID = glGetUniformLocation(shader.ID, "roughness");
-	glUniform1ui(roughnessUniformID, meshTextures[currentMesh].z);
+	GLuint roughnessUniformLoc = glGetUniformLocation(shader.ID, "roughness");
+	glUniform1ui(roughnessUniformLoc, meshTextures[currentMesh].z);
 
-	GLuint metallicUniformID = glGetUniformLocation(shader.ID, "metallic");
-	glUniform1ui(metallicUniformID, meshTextures[currentMesh].w);
+	GLuint metallicUniformLoc = glGetUniformLocation(shader.ID, "metallic");
+	glUniform1ui(metallicUniformLoc, meshTextures[currentMesh].w);
 
 
 	// Other unfiorms
-	GLuint emissiveUniformID = glGetUniformLocation(shader.ID, "emissive");
-	glUniform1f(emissiveUniformID, static_cast<GLfloat>(emissive) );
+	GLuint emissiveUniformLoc = glGetUniformLocation(shader.ID, "emissive");
+	glUniform1f(emissiveUniformLoc, static_cast<GLfloat>(emissive) );
 
-	GLuint currentMeshID = glGetUniformLocation(shader.ID, "currentMesh");
-	glUniform1ui(currentMeshID, currentMesh);
+	GLuint currentMeshLoc = glGetUniformLocation(shader.ID, "currentMesh");
+	glUniform1ui(currentMeshLoc, currentMesh);
 
 
 	camera.Matrix(shader, "camMatrix");
