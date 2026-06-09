@@ -8,6 +8,7 @@ out vec3 color;
 out vec2 texCoord;
 out vec3 geometricFaceNormal;
 out vec3 intersectionPoint;
+out vec3 rayOrientation;
 
 uniform mat4 camMatrix;
 uniform vec3 camPos;
@@ -20,4 +21,5 @@ void main()
 	texCoord = aTexCoord;
 	geometricFaceNormal = aNormal.xyz;
 	intersectionPoint = aPos.xyz;
+	rayOrientation = aPos.xyz - camPos;
 }

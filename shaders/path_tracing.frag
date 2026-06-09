@@ -33,8 +33,14 @@ in vec3 color;
 in vec2 texCoord;
 in vec3 geometricFaceNormal;
 in vec3 intersectionPoint;
+in vec3 rayOrientation;
 
 // UNIFORMS
+uniform uint debugMode;
+uniform bool debugLambertian;
+uniform uint SAMPLES;
+uniform uint BOUNCES;
+
 uniform uint albedo;
 uniform uint normal;
 uniform uint roughness;
@@ -45,10 +51,12 @@ uniform sampler2D colorNoise;
 uniform uint seed;
 uniform vec3 backgroundColor;
 uniform vec3 camPos;
+uniform vec3 camOrientation;
 uniform float emissive;
 uniform uint currentMesh;
 
 // DECLERATIONS
+bool drawDebug(uint debugMode);
 void calculateSample(out vec3 outputColor, uint sampleCount);
 void randomizeNormal(uint seed, float roughness, inout vec3 normal);
 void calculatePath(vec3 init_Intersection, vec3 init_Origin, vec3 init_FaceNormal, out float totalBrightness, out vec3 totalReflectionColor, out uint bounceCount);
@@ -64,15 +72,20 @@ const uint pixelSeed = (uint(gl_FragCoord.x) * 1664525u + uint(gl_FragCoord.y) *
 #define MAX_ROUGHNESS 1.0f
 #define MIN_ROUGHNESS 0.0f
 
-#define BOUNCES 16
-#define SAMPLE_SIZE 32
-
 #define DOUBLE_SIDED_REFLECTION false
 
 #define EPSILON 0.000001
 #define FAR_PLANE 999999
 
+#define DEBUG_DISABLED 0
+#define DEBUG_ALBEDO 1
+#define DEBUG_NORMAL 2
+#define DEBUG_ROUGHNESS 3
+#define DEBUG_METALLIC 4
+
 void main() {
+
+    if (drawDebug(debugMode)) return;
 
     // Early exit for emissive geometry
     if (emissive != 0.0f) {
@@ -82,14 +95,51 @@ void main() {
 
     vec3 totalColor = vec3(0);
 
-    for (int i = 0; i < SAMPLE_SIZE; ++i) {
+    for (int i = 0; i < SAMPLES; ++i) {
         vec3 outputColor;
         calculateSample(outputColor, i);
         totalColor += outputColor;
     }
 
-    vec3 finalColor = totalColor /= SAMPLE_SIZE;
+    vec3 finalColor = totalColor /= SAMPLES;
     FragColor = vec4(finalColor, 1.0f);
+
+}
+
+bool drawDebug(uint debugMode) {
+
+    float brightness = 1.0f;
+    if (debugLambertian) {
+
+        const float lambertianMin = 0.5f;
+        const float lambertianMax = 1.0f;
+
+        brightness = abs( dot(normalize(camOrientation), normalize(geometricFaceNormal)) );
+        brightness = brightness * (lambertianMax - lambertianMin) + lambertianMin;
+
+    }
+
+    switch ( debugMode ) {
+
+        case DEBUG_ALBEDO:
+            FragColor = vec4( texture(texturePool, vec3(texCoord, albedo)).rgb * brightness, 1.0f );
+            return true;
+
+        case DEBUG_NORMAL:
+            FragColor = vec4( texture(texturePool, vec3(texCoord, normal)).rgb * brightness, 1.0f );
+            return true;
+
+        case DEBUG_ROUGHNESS:
+            FragColor = vec4( texture(texturePool, vec3(texCoord, roughness)).rgb * brightness, 1.0f );
+            return true;
+
+        case DEBUG_METALLIC:
+            FragColor = vec4( texture(texturePool, vec3(texCoord, metallic)).rgb * brightness, 1.0f );
+            return true;
+
+    }
+
+    return false;
 
 }
 

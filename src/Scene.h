@@ -3,6 +3,7 @@
 #include <vector>
 #include <set>
 #include <random>
+#include "ImguiWindow.h"
 #include "Mesh.h"
 
 #define COLOR_NOISE "textures/core/color_noise.png"
@@ -30,6 +31,7 @@ private:
 	GLuint vertexSSBO, indicesSSBO, textureMeshSSBO, meshHeaderSSBO, textureArray;
 
 	Texture* colorNoise;
+	ImguiWindow imguiWindow;
 
 	inline static std::random_device m_rd;
 	inline static std::minstd_rand0 m_gen{ m_rd() };

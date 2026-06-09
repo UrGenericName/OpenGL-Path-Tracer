@@ -11,6 +11,7 @@
 #include <glm/gtx/vector_angle.hpp>
 
 #include "shaderClass.h"
+#include "ImguiWindow.h"
 
 #define SENSITIVITY_DEFAULT 100.0f;
 #define SPEED_DEFAULT 0.1f;
@@ -30,7 +31,7 @@ public:
 
 	void updateMatrix(float FOVdeg, float nearPlane, float farPlane);
 	void Matrix(Shader& shader, const char* uniform);
-	void Inputs(GLFWwindow* window);
+	void Inputs(GLFWwindow* window, ImguiWindow& imguiWindow);
 
 private:
 

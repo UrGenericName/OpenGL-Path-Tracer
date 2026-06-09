@@ -20,7 +20,7 @@ void Camera::Matrix(Shader& shader, const char* uniform) {
 
 }
 
-void Camera::Inputs(GLFWwindow* window) {
+void Camera::Inputs(GLFWwindow* window, ImguiWindow& imguiWindow) {
 
 	// MOVEMENT (w, a, s, d)
 	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
@@ -52,7 +52,7 @@ void Camera::Inputs(GLFWwindow* window) {
 
 
 	// MOUSE MOVEMENT
-	if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
+	if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS) {
 		glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
 
 		if (firstClick) {
@@ -79,7 +79,7 @@ void Camera::Inputs(GLFWwindow* window) {
 
 		glfwSetCursorPos(window, (width / 2), (height / 2));
 
-	} else if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_RELEASE) {
+	} else if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_RELEASE) {
 		glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 		firstClick = true;
 	}
@@ -102,6 +102,11 @@ void Camera::Inputs(GLFWwindow* window) {
 			speedUp = false;
 		}
 
+	}
+
+	// DEBUG WINDOW
+	if (glfwGetKey(window, GLFW_KEY_F) == GLFW_PRESS) {
+		imguiWindow.drawWindow = !imguiWindow.drawWindow;	// move position foward from orientation
 	}
 
 }

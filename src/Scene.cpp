@@ -12,21 +12,40 @@ Scene::~Scene() {
 
 void Scene::Draw(Shader& shader, Camera& camera, GLFWwindow* window) {
 
+	shader.Activate();
+
 	glClearColor(backgroundColor.x, backgroundColor.y, backgroundColor.z, 1.0f);	// sets the "clear" color
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);	// actually clears the background with color
 
-	camera.Inputs(window);
+	camera.Inputs(window, imguiWindow);
 	camera.updateMatrix(45.0f, 0.1f, 100.0f);
 
 	int camPosUniformLocation = glGetUniformLocation(shader.ID, "camPos");
 	glUniform3f(camPosUniformLocation, camera.Position.x, camera.Position.y, camera.Position.z);
 
+	int camOrientationUniformLocation = glGetUniformLocation(shader.ID, "camOrientation");
+	glUniform3f(camOrientationUniformLocation, camera.Orientation.x, camera.Orientation.y, camera.Orientation.z);
+
 	int seedColorLoc = glGetUniformLocation(shader.ID, "seed");
 	glUniform1ui(seedColorLoc, m_distrib(m_gen));
+
+	int debugModeLoc = glGetUniformLocation(shader.ID, "debugMode");
+	glUniform1ui(debugModeLoc, static_cast<unsigned int> (imguiWindow.debugMode) );
+
+	int debugLambertianLoc = glGetUniformLocation(shader.ID, "debugLambertian");
+	glUniform1i(debugLambertianLoc, imguiWindow.debugLambertian);
+
+	int debugBouncesLoc = glGetUniformLocation(shader.ID, "BOUNCES");
+	glUniform1ui(debugBouncesLoc, static_cast<unsigned int> (imguiWindow.debugBounces));
+
+	int debugSamplesLoc = glGetUniformLocation(shader.ID, "SAMPLES");
+	glUniform1ui(debugSamplesLoc, static_cast<unsigned int> (imguiWindow.debugSamples));
 
 	for (size_t i = 0; i < meshCollection.size(); ++i) {
 		meshCollection[i]->Draw(shader, camera, i, meshTexturesOutput);
 	}
+
+	imguiWindow.drawImgui();
 
 }
 

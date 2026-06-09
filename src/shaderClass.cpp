@@ -45,6 +45,10 @@ Shader::Shader(const char* vertexFile, const char* fragmentFile) {
     glDeleteShader(fragmentShader);
 }
 
+Shader::~Shader() {
+    Delete();
+}
+
 void Shader::Activate() {
     glUseProgram(ID);
 }
