@@ -4,6 +4,9 @@
 #include <backends/imgui_impl_opengl3.h>
 #include <backends/imgui_impl_glfw.h>
 
+#define MAX_BOUNCES 10
+#define MAX_SAMPLES 10
+
 class ImguiWindow {
 public:
 

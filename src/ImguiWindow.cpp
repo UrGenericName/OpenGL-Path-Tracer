@@ -27,12 +27,17 @@ void ImguiWindow::drawImgui() {
     NewFrame();
 
     Begin("Debug");
-
-    Text("Render Visualization Mode:");
     Separator();
 
     if (BeginTable("ShaderLayoutTable", 2)) {
 
+        TableSetupColumn("Render Visualization");
+        TableSetupColumn("Settings");
+        TableHeadersRow();
+        
+        TableNextRow();
+        
+        // RENDER VISUALIZATION
         TableNextColumn();
         RadioButton("Disabled", &debugMode, static_cast<int>(DebugTypes::DISABLED));
         RadioButton("Albedo", &debugMode, static_cast<int>(DebugTypes::ALBEDO));
@@ -40,10 +45,11 @@ void ImguiWindow::drawImgui() {
         RadioButton("Roughness", &debugMode, static_cast<int>(DebugTypes::ROUGHNESS));
         RadioButton("Metallic", &debugMode, static_cast<int>(DebugTypes::METALLIC));
 
+        // SETTINGS
         TableNextColumn();
         Checkbox("Lambertian Shading", &debugLambertian);
-        SliderInt("Bounces", &debugBounces, 1, 10);
-        SliderInt("Samples", &debugSamples, 1, 10);
+        SliderInt("Bounces", &debugBounces, 1, MAX_BOUNCES);
+        SliderInt("Samples", &debugSamples, 1, MAX_SAMPLES);
 
         EndTable();
     }
