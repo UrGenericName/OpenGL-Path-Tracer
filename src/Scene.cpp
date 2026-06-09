@@ -41,6 +41,12 @@ void Scene::Draw(Shader& shader, Camera& camera, GLFWwindow* window) {
 	int debugSamplesLoc = glGetUniformLocation(shader.ID, "SAMPLES");
 	glUniform1ui(debugSamplesLoc, static_cast<unsigned int> (imguiWindow.debugSamples));
 
+	int debugForceRoughnessLoc = glGetUniformLocation(shader.ID, "debugForceRoughness");
+	glUniform1i(debugForceRoughnessLoc, imguiWindow.debugForceRoughness);
+
+	int debugForceRoughnessAmountLoc = glGetUniformLocation(shader.ID, "debugForceRoughnessAmount");
+	glUniform1f(debugForceRoughnessAmountLoc, imguiWindow.debugForceRoughnessAmount);
+
 	for (size_t i = 0; i < meshCollection.size(); ++i) {
 		meshCollection[i]->Draw(shader, camera, i, meshTexturesOutput);
 	}

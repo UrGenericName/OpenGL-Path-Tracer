@@ -54,6 +54,25 @@ void ImguiWindow::drawImgui() {
         EndTable();
     }
 
+    if (BeginTable("ShaderLayoutTable", 2)) {
+
+        TableSetupColumn("Misc");
+        TableSetupColumn("");
+        TableHeadersRow();
+
+        TableNextRow();
+
+        TableNextColumn();
+        BeginDisabled(!debugForceRoughness);
+        SliderFloat("Roughness", &debugForceRoughnessAmount, 0, 1);
+        EndDisabled();
+
+        TableNextColumn();
+        Checkbox("Force Roughness", &debugForceRoughness);
+        EndTable();
+
+    }
+
     End();
 
     Render();

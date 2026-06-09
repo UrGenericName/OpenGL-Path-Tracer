@@ -38,6 +38,9 @@ in vec3 rayOrientation;
 // UNIFORMS
 uniform uint debugMode;
 uniform bool debugLambertian;
+uniform bool debugForceRoughness;
+uniform float debugForceRoughnessAmount;
+
 uniform uint SAMPLES;
 uniform uint BOUNCES;
 
@@ -157,10 +160,13 @@ void calculateSample(out vec3 outputColor, uint sampleCount) {
     vec3 faceNormal;
     {
         float roughnessValue = texture(texturePool, vec3(texCoord, roughness)).r;
-        randomizeNormal(pixelSeed + sampleCount, roughnessValue, normalMapVector);
+        uint localSeed = pixelSeed + sampleCount + uint(rayOrientation.x * rayOrientation.y * rayOrientation.z * 10000);    // generally random for each calculateSample call
+
+        randomizeNormal(localSeed, roughnessValue, normalMapVector);
 
         normalSpaceToWorldSpace(intersectionPoint, normalize(geometricFaceNormal), texCoord, normalMapVector, faceNormal);
         faceNormal = normalize(faceNormal);
+
     }
 
     // Calculate reflection
@@ -176,7 +182,7 @@ void calculateSample(out vec3 outputColor, uint sampleCount) {
     vec3 tint = vertices[ indices[ uint(meshHeader[currentMesh].x) ] ].color.xyz;
     float roughnessValue = texture(texturePool, vec3(texCoord, roughness)).r;
     
-    vec3 finalColor = (roughness * albedoColor) + ((1 - roughness) * reflectionColor);
+    vec3 finalColor = reflectionColor;
     //float finalBrightness = (totalBrightness * (MAX_BRIGHTNESS - MIN_BRIGHTNESS)) + MIN_BRIGHTNESS;
     outputColor = vec3(brightness);
 
@@ -184,6 +190,8 @@ void calculateSample(out vec3 outputColor, uint sampleCount) {
 
 void randomizeNormal(uint seed, float roughness, inout vec3 normal) {
     
+    if (debugForceRoughness) roughness = debugForceRoughnessAmount;
+
     // clamp min and max
     roughness = (roughness * (MAX_ROUGHNESS - MIN_ROUGHNESS)) + MIN_ROUGHNESS;
 
