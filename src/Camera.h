@@ -21,13 +21,13 @@ public:
 	glm::vec3 Position;
 	glm::vec3 Orientation = glm::vec3(0.0f, 1.0f, 0.0f);
 
-	int width;
-	int height;
+	unsigned int width;
+	unsigned int height;
 
 	float speed = SPEED_DEFAULT;
 	float sensitivity = SENSITIVITY_DEFAULT;
 
-	Camera(int width, int height, glm::vec3 position);
+	Camera(unsigned int width, unsigned int height, glm::vec3 position);
 
 	void updateMatrix(float FOVdeg, float nearPlane, float farPlane);
 	void Matrix(Shader& shader, const char* uniform);
@@ -39,5 +39,6 @@ private:
 
 	bool speedUp = false;	// used in the speed up section of Inputs(...)
 	bool firstClick = true;	// just to avoid camera snapping when initially selecting window
+
 	const glm::vec3 Up = glm::vec3(0.0f, 0.0f, 1.0f);	// a const vector used to define the up vector
 };

@@ -26,7 +26,7 @@ layout(std430, binding = 3) readonly buffer MeshHeaderBuffer {
 };
 
 // OUTPUT
-out vec4 FragColor;
+layout(location = 0) out vec4 FragColor;
 
 // INPUTS
 in vec3 color;
@@ -36,21 +36,24 @@ in vec3 intersectionPoint;
 in vec3 rayOrientation;
 
 // UNIFORMS
+layout(binding = 0) uniform sampler2DArray texturePool;
+layout(binding = 1) uniform sampler2D colorNoise;
+layout(rgba32f, binding = 2) uniform image2D frameBuffer;
+
 uniform uint debugMode;
 uniform bool debugLambertian;
 uniform bool debugForceRoughness;
 uniform float debugForceRoughnessAmount;
 
-uniform uint SAMPLES;
-uniform uint BOUNCES;
+uniform uint maxSamples;
+uniform uint maxBounces;
 
 uniform uint albedo;
 uniform uint normal;
 uniform uint roughness;
 uniform uint metallic;
-uniform sampler2DArray texturePool;
-uniform sampler2D colorNoise;
 
+uniform uint frame;
 uniform uint seed;
 uniform vec3 backgroundColor;
 uniform vec3 camPos;
@@ -87,6 +90,8 @@ const uint pixelSeed = (uint(gl_FragCoord.x) * 1664525u + uint(gl_FragCoord.y) *
 #define DEBUG_METALLIC 4
 
 void main() {
+    
+    ivec2 pixelCoords = ivec2(gl_FragCoord.xy);
 
     if (drawDebug(debugMode)) return;
 
@@ -96,16 +101,25 @@ void main() {
         return;
     }
 
-    vec3 totalColor = vec3(0);
+    vec3 outputColor = vec3(0);
 
-    for (int i = 0; i < SAMPLES; ++i) {
-        vec3 outputColor;
-        calculateSample(outputColor, i);
-        totalColor += outputColor;
+    calculateSample(outputColor, frame);
+
+    if (frame == 0) {
+        FragColor = vec4(outputColor, 1.0f);
+        imageStore(frameBuffer, pixelCoords, vec4(outputColor, 1.0f));
+        return;
     }
 
-    vec3 finalColor = totalColor /= SAMPLES;
-    FragColor = vec4(finalColor, 1.0f);
+    vec3 accumulated = imageLoad(frameBuffer, pixelCoords).xyz;
+    float weight = 1.0f / float(frame);
+
+    outputColor = mix(accumulated, outputColor, weight);
+
+    FragColor = vec4(outputColor, 1.0f);
+
+    // Writes updated average back to the frame buffer
+    imageStore(frameBuffer, pixelCoords, vec4(outputColor, 1.0f));
 
 }
 
@@ -172,9 +186,9 @@ void calculateSample(out vec3 outputColor, uint sampleCount) {
     // Calculate reflection
     uint bounceCount;
     float brightness;
-    vec3 reflectionColor;
+    vec3 accumulatedAlbedo;
     {
-        calculatePath(intersectionPoint, camPos, faceNormal, brightness, reflectionColor, bounceCount);
+        calculatePath(intersectionPoint, camPos, faceNormal, brightness, accumulatedAlbedo, bounceCount);
     }
     
     // Combine all texture maps to single color
@@ -182,9 +196,9 @@ void calculateSample(out vec3 outputColor, uint sampleCount) {
     vec3 tint = vertices[ indices[ uint(meshHeader[currentMesh].x) ] ].color.xyz;
     float roughnessValue = texture(texturePool, vec3(texCoord, roughness)).r;
     
-    vec3 finalColor = reflectionColor;
+    vec3 finalColor = (accumulatedAlbedo * albedoColor * tint * brightness);
     //float finalBrightness = (totalBrightness * (MAX_BRIGHTNESS - MIN_BRIGHTNESS)) + MIN_BRIGHTNESS;
-    outputColor = vec3(brightness);
+    outputColor = vec3(finalColor);
 
 }
 
@@ -212,16 +226,17 @@ void randomizeNormal(uint seed, float roughness, inout vec3 normal) {
 }
 
 // Calculates render information for a single path (brightness, color, number of completed bounces)
-void calculatePath(vec3 init_Intersection, vec3 init_Origin, vec3 init_FaceNormal, out float brightness, out vec3 reflectionColor, out uint bounceCount) {
+void calculatePath(vec3 init_Intersection, vec3 init_Origin, vec3 init_FaceNormal, out float brightness, out vec3 accumulatedAlbedo, out uint bounceCount) {
 
     vec3 ref_intersection = init_Intersection;
     vec3 ref_origin = init_Origin;
     vec3 ref_faceNormal = init_FaceNormal;
 
+    accumulatedAlbedo = vec3(1);
+
     brightness = 0;
-    reflectionColor = backgroundColor;
     bounceCount = 0;
-    while (bounceCount < BOUNCES) 
+    while (bounceCount < maxBounces) 
     {
 
         // Calculates reflection
@@ -293,7 +308,7 @@ void calculatePath(vec3 init_Intersection, vec3 init_Origin, vec3 init_FaceNorma
             vec3 tint = vertices[ indices[ uint(meshHeader[ref_Mesh].x) ] ].color.xyz;
             float roughnessValue = texture(texturePool, vec3(ref_uv, roughness)).r;
 
-            reflectionColor = ( (albedoColor * tint) + reflectionColor ) / (bounceCount + 1);
+            accumulatedAlbedo *= albedoColor * tint;
 
             // calculate new values for next iteration
             ref_origin = ref_intersection;
@@ -332,6 +347,8 @@ void calculatePath(vec3 init_Intersection, vec3 init_Origin, vec3 init_FaceNorma
             break;  // ray didn't hit anything, so break out of loop
         }
     }
+
+    if (bounceCount == 0) accumulatedAlbedo = backgroundColor;
 
 }
 

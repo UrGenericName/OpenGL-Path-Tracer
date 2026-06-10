@@ -7,16 +7,20 @@
 
 #include "shaderClass.h";
 
-#define DEFAULT_TEX_TYPE	GL_TEXTURE_2D
-#define DEFAULT_SLOT		GL_TEXTURE0
-#define DEFAULT_FORMAT		GL_RGB
-#define DEFAULT_PIXEL_TYPE	GL_UNSIGNED_BYTE
+#define DEFAULT_TEX_TYPE		GL_TEXTURE_2D
+#define DEFAULT_SLOT			GL_TEXTURE0
+#define DEFAULT_FORMAT			GL_RGB
+#define DEFAULT_PIXEL_TYPE		GL_UNSIGNED_BYTE
+#define DEFAULT_FILTER_PARAM	GL_LINEAR
+#define DEFAULT_WRAP_PARAM		GL_REPEAT
 
 class Texture {
 public:
 	GLuint ID;
 	GLenum type;
-	Texture(const char* image, GLenum texType = DEFAULT_TEX_TYPE, GLenum slot = DEFAULT_SLOT, GLenum format = DEFAULT_FORMAT, GLenum pixelType = DEFAULT_PIXEL_TYPE);
+
+	Texture(GLenum texType = DEFAULT_TEX_TYPE, GLenum slot = DEFAULT_SLOT);
+	Texture(const char* image, GLenum texType = DEFAULT_TEX_TYPE, GLenum slot = DEFAULT_SLOT, GLenum format = DEFAULT_FORMAT, GLenum pixelType = DEFAULT_PIXEL_TYPE, GLint filterParam = DEFAULT_FILTER_PARAM, GLint wrapParam = DEFAULT_WRAP_PARAM);
 
 	void texUnit(Shader &shader, const char* uniform, GLuint unit);
 	void Bind();

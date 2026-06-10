@@ -1,6 +1,16 @@
 #include "Texture.h"
 
-Texture::Texture(const char* image, GLenum texType, GLenum slot, GLenum format, GLenum pixelType) {
+Texture::Texture(GLenum texType, GLenum slot) {
+
+	type = texType;
+
+	glGenTextures(1, &ID);
+	glActiveTexture(slot);
+	glBindTexture(type, ID);
+
+}
+
+Texture::Texture(const char* image, GLenum texType, GLenum slot, GLenum format, GLenum pixelType, GLint filterParam, GLint wrapParam) {
 
 	type = texType;
 
@@ -12,16 +22,15 @@ Texture::Texture(const char* image, GLenum texType, GLenum slot, GLenum format, 
 
 	unsigned char* bytes = stbi_load(image, &widthImg, &heightImg, &numColCh, 0);
 
-	GLuint texture;
 	glGenTextures(1, &ID);
 	glActiveTexture(slot);
 	glBindTexture(type, ID);
 
-	glTexParameteri(type, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(type, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(type, GL_TEXTURE_MIN_FILTER, filterParam);
+	glTexParameteri(type, GL_TEXTURE_MAG_FILTER, filterParam);
 
-	glTexParameteri(type, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTexParameteri(type, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glTexParameteri(type, GL_TEXTURE_WRAP_S, wrapParam);
+	glTexParameteri(type, GL_TEXTURE_WRAP_T, wrapParam);
 
 	glTexImage2D(type, 0, GL_RGBA, widthImg, heightImg, 0, format, pixelType, bytes);
 	glGenerateMipmap(type);

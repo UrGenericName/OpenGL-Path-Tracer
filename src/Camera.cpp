@@ -1,6 +1,6 @@
 #include "Camera.h"
 
-Camera::Camera(int i_width, int i_height, glm::vec3 i_position) : width(i_width), height(i_height), Position(i_position) {};
+Camera::Camera(unsigned int i_width, unsigned int i_height, glm::vec3 i_position) : width(i_width), height(i_height), Position(i_position) {};
 
 void Camera::updateMatrix(float FOVdeg, float nearPlane, float farPlane) {
 

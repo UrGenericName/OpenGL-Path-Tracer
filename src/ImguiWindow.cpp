@@ -29,6 +29,8 @@ void ImguiWindow::drawImgui() {
     Begin("Debug");
     Separator();
 
+    Text("Frame: %d", frame);
+
     if (BeginTable("ShaderLayoutTable", 2)) {
 
         TableSetupColumn("Render Visualization");
@@ -48,8 +50,8 @@ void ImguiWindow::drawImgui() {
         // SETTINGS
         TableNextColumn();
         Checkbox("Lambertian Shading", &debugLambertian);
-        SliderInt("Bounces", &debugBounces, 1, MAX_BOUNCES);
-        SliderInt("Samples", &debugSamples, 1, MAX_SAMPLES);
+        SliderInt("Bounces", &maxBounces, 1, MAX_BOUNCES);
+        SliderInt("Samples", &maxSamples, 1, MAX_SAMPLES);
 
         EndTable();
     }
@@ -72,6 +74,8 @@ void ImguiWindow::drawImgui() {
         EndTable();
 
     }
+
+    if (Button("Clear Frames")) frame = 0;
 
     End();
 

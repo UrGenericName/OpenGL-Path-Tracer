@@ -151,6 +151,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="src\FBO.cpp" />
     <ClCompile Include="imgui\backends\imgui_impl_glfw.cpp" />
     <ClCompile Include="imgui\backends\imgui_impl_opengl3.cpp" />
     <ClCompile Include="imgui\imgui.cpp" />
@@ -185,6 +186,7 @@
     <ClCompile Include="src\ImguiWindow.cpp">
       <FileType>CppCode</FileType>
     </ClCompile>
+    <ClInclude Include="src\FBO.h" />
     <ClInclude Include="src\ImguiWindow.h" />
     <ClInclude Include="imgui\backends\imgui_impl_glfw.h" />
     <ClInclude Include="imgui\backends\imgui_impl_opengl3.h" />

@@ -1,6 +1,6 @@
 #include "Scene.h"
 
-Scene::Scene(unsigned int width, unsigned int height) : textureWidth(width), textureHeight(height) {}
+Scene::Scene(Camera& i_camera, unsigned int i_textureWidth, unsigned int i_textureHeight) : camera(i_camera), textureWidth(i_textureWidth), textureHeight(i_textureHeight) {}
 
 Scene::~Scene() {
 
@@ -10,15 +10,37 @@ Scene::~Scene() {
 
 }
 
-void Scene::Draw(Shader& shader, Camera& camera, GLFWwindow* window) {
-
+void Scene::Draw(Shader& shader, GLFWwindow* window) {
 	shader.Activate();
 
-	glClearColor(backgroundColor.x, backgroundColor.y, backgroundColor.z, 1.0f);	// sets the "clear" color
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);	// actually clears the background with color
-
+	// update camera and uniforms
 	camera.Inputs(window, imguiWindow);
 	camera.updateMatrix(45.0f, 0.1f, 100.0f);
+
+	generateUniforms(shader, camera);
+
+	glViewport(0, 0, camera.width, camera.height);
+	glClearColor(backgroundColor.x, backgroundColor.y, backgroundColor.z, 1.0f);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+
+	// FRAME BUFFER
+	frameBuffer->Bind();
+	glActiveTexture(GL_TEXTURE2);
+	glBindTexture(GL_TEXTURE_2D, frameBuffer->texture->ID);
+	frameBuffer->Unbind();
+
+
+	for (size_t i = 0; i < meshCollection.size(); ++i) {
+		meshCollection[i]->Draw(shader, camera, i, meshTexturesOutput);
+	}
+
+	imguiWindow.drawImgui();
+
+	++imguiWindow.frame;
+}
+
+void Scene::generateUniforms(Shader& shader, Camera& camera) {
 
 	int camPosUniformLocation = glGetUniformLocation(shader.ID, "camPos");
 	glUniform3f(camPosUniformLocation, camera.Position.x, camera.Position.y, camera.Position.z);
@@ -30,16 +52,10 @@ void Scene::Draw(Shader& shader, Camera& camera, GLFWwindow* window) {
 	glUniform1ui(seedColorLoc, m_distrib(m_gen));
 
 	int debugModeLoc = glGetUniformLocation(shader.ID, "debugMode");
-	glUniform1ui(debugModeLoc, static_cast<unsigned int> (imguiWindow.debugMode) );
+	glUniform1ui(debugModeLoc, static_cast<unsigned int> (imguiWindow.debugMode));
 
 	int debugLambertianLoc = glGetUniformLocation(shader.ID, "debugLambertian");
 	glUniform1i(debugLambertianLoc, imguiWindow.debugLambertian);
-
-	int debugBouncesLoc = glGetUniformLocation(shader.ID, "BOUNCES");
-	glUniform1ui(debugBouncesLoc, static_cast<unsigned int> (imguiWindow.debugBounces));
-
-	int debugSamplesLoc = glGetUniformLocation(shader.ID, "SAMPLES");
-	glUniform1ui(debugSamplesLoc, static_cast<unsigned int> (imguiWindow.debugSamples));
 
 	int debugForceRoughnessLoc = glGetUniformLocation(shader.ID, "debugForceRoughness");
 	glUniform1i(debugForceRoughnessLoc, imguiWindow.debugForceRoughness);
@@ -47,11 +63,14 @@ void Scene::Draw(Shader& shader, Camera& camera, GLFWwindow* window) {
 	int debugForceRoughnessAmountLoc = glGetUniformLocation(shader.ID, "debugForceRoughnessAmount");
 	glUniform1f(debugForceRoughnessAmountLoc, imguiWindow.debugForceRoughnessAmount);
 
-	for (size_t i = 0; i < meshCollection.size(); ++i) {
-		meshCollection[i]->Draw(shader, camera, i, meshTexturesOutput);
-	}
+	int frameLoc = glGetUniformLocation(shader.ID, "frame");
+	glUniform1ui(frameLoc, imguiWindow.frame);
 
-	imguiWindow.drawImgui();
+	int maxBouncesLoc = glGetUniformLocation(shader.ID, "maxBounces");
+	glUniform1ui(maxBouncesLoc, static_cast<unsigned int>(imguiWindow.maxBounces));
+
+	int maxSamplesLoc = glGetUniformLocation(shader.ID, "maxSamples");
+	glUniform1ui(maxSamplesLoc, static_cast<unsigned int>(imguiWindow.maxSamples));
 
 }
 
@@ -179,14 +198,13 @@ void Scene::link(Shader& shader) {
 	// COLOR NOISE
 	colorNoise = new Texture(COLOR_NOISE);
 	glActiveTexture(GL_TEXTURE1);
-	colorNoise->texUnit(shader, "colorNoise", 1);
 	colorNoise->Bind();
 
 	// UNIFORMS
-	GLuint texturePoolUniformLoc = glGetUniformLocation(shader.ID, "texturePool");
-	glUniform1i(texturePoolUniformLoc, 0);
-
 	int backgroundColorLoc = glGetUniformLocation(shader.ID, "backgroundColor");
 	glUniform3f(backgroundColorLoc, backgroundColor.x, backgroundColor.y, backgroundColor.z);
 
+	// FRAME BUFFER
+	frameBuffer = new FBO{ camera.width, camera.height, GL_TEXTURE2 };
+	glBindImageTexture(2, frameBuffer->texture->ID, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F);
 }
