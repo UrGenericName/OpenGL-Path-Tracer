@@ -111,9 +111,4 @@ void Camera::Inputs(GLFWwindow* window, ImguiWindow& imguiWindow) {
 
 	}
 
-	// DEBUG WINDOW
-	if (glfwGetKey(window, GLFW_KEY_F) == GLFW_PRESS) {
-		imguiWindow.drawWindow = !imguiWindow.drawWindow;	// move position foward from orientation
-	}
-
 }

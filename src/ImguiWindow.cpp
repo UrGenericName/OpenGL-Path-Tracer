@@ -20,11 +20,14 @@ void ImguiWindow::initImgui(GLFWwindow* window) {
 
 void ImguiWindow::drawImgui() {
 
-	if (!drawWindow) return;
-
+    // DEBUG WINDOW
     ImGui_ImplOpenGL3_NewFrame();
     ImGui_ImplGlfw_NewFrame();
     NewFrame();
+
+    if (IsKeyPressed(ImGuiKey_F)) { drawWindow = !drawWindow; }
+
+    if (!drawWindow) { EndFrame();  return; }
 
     Begin("Debug");
     Separator();

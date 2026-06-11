@@ -39,6 +39,7 @@ private:
 
 	bool speedUp = false;	// used in the speed up section of Inputs(...)
 	bool firstClick = true;	// just to avoid camera snapping when initially selecting window
+	bool lastWindowInput = false;
 
 	const glm::vec3 Up = glm::vec3(0.0f, 0.0f, 1.0f);	// a const vector used to define the up vector
 };
