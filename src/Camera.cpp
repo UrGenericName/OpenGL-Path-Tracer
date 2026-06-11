@@ -25,18 +25,22 @@ void Camera::Inputs(GLFWwindow* window, ImguiWindow& imguiWindow) {
 	// MOVEMENT (w, a, s, d)
 	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
 		Position += speed * Orientation;	// move position foward from orientation
+		imguiWindow.currentSample = 0;
 	}
 
 	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
 		Position += speed * -glm::normalize(glm::cross(Orientation, Up)); // find the left vector from orientation and add to position
+		imguiWindow.currentSample = 0;
 	}
 
 	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
 		Position += speed * -Orientation;	// move position backward from orientation
+		imguiWindow.currentSample = 0;
 	}
 
 	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
 		Position += speed * glm::normalize(glm::cross(Orientation, Up));	// find the right vector from orientation and add to position
+		imguiWindow.currentSample = 0;
 	}
 
 
@@ -44,9 +48,11 @@ void Camera::Inputs(GLFWwindow* window, ImguiWindow& imguiWindow) {
 	// UP & DOWN (space, ctrl)
 	if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
 		Position += speed * Up;
+		imguiWindow.currentSample = 0;
 	}
 	if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) {
 		Position += speed * -Up;
+		imguiWindow.currentSample = 0;
 	}
 
 
@@ -65,7 +71,7 @@ void Camera::Inputs(GLFWwindow* window, ImguiWindow& imguiWindow) {
 		glfwGetCursorPos(window, &mouseX, &mouseY);
 
 		float rotX = sensitivity * (float)(mouseY - (height / 2)) / height;
-		float rotY = sensitivity * (float)(mouseX - (height / 2)) / height;
+		float rotY = sensitivity * (float)(mouseX - (width / 2)) / width;
 
 		glm::vec3 newOrientation = glm::rotate(Orientation, glm::radians(-rotX), glm::normalize(glm::cross(Orientation, Up)));
 
@@ -78,6 +84,7 @@ void Camera::Inputs(GLFWwindow* window, ImguiWindow& imguiWindow) {
 		Orientation = glm::rotate(Orientation, glm::radians(-rotY), Up);
 
 		glfwSetCursorPos(window, (width / 2), (height / 2));
+		imguiWindow.currentSample = 0;
 
 	} else if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_RELEASE) {
 		glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);

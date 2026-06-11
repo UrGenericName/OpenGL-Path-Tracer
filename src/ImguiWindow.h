@@ -4,8 +4,8 @@
 #include <backends/imgui_impl_opengl3.h>
 #include <backends/imgui_impl_glfw.h>
 
-#define MAX_BOUNCES 64
-#define MAX_SAMPLES 64
+#define MAX_BOUNCES 256
+#define MAX_SAMPLES 5096
 
 class ImguiWindow {
 public:
@@ -26,15 +26,21 @@ public:
 	};
 
 	int debugMode = static_cast<int>(DebugTypes::DISABLED);
-	bool debugLambertian = false;
+	bool debugLambertian = true;
 
 	bool debugForceRoughness = false;
 	float debugForceRoughnessAmount = 1.0f;
 
-	int maxBounces = 1;
-	int maxSamples = 1;
+	int maxBounces = 8;
+	int maxSamples = 32;
 
-	unsigned int frame = 0;
+	unsigned int currentSample = 0;
 
 	bool drawWindow = true;
+
+private:
+
+	ImVec2 windowSize;
+	ImVec2 windowPosition;
+
 };

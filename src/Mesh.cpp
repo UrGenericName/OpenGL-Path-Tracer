@@ -86,28 +86,28 @@ void Mesh::Draw(Shader& shader, Camera& camera, GLuint currentMesh, std::vector<
 	VAO.Bind();
 
 	// Uniforms for the index location of each texture
-	GLuint albedoUniformLoc = glGetUniformLocation(shader.ID, "albedo");
+	GLuint albedoUniformLoc = glGetUniformLocation(shader.ID, "u_albedo");
 	glUniform1ui(albedoUniformLoc, meshTextures[currentMesh].x);
 
-	GLuint normalUniformLoc = glGetUniformLocation(shader.ID, "normal");
+	GLuint normalUniformLoc = glGetUniformLocation(shader.ID, "u_normal");
 	glUniform1ui(normalUniformLoc, meshTextures[currentMesh].y);
 
-	GLuint roughnessUniformLoc = glGetUniformLocation(shader.ID, "roughness");
+	GLuint roughnessUniformLoc = glGetUniformLocation(shader.ID, "u_roughness");
 	glUniform1ui(roughnessUniformLoc, meshTextures[currentMesh].z);
 
-	GLuint metallicUniformLoc = glGetUniformLocation(shader.ID, "metallic");
+	GLuint metallicUniformLoc = glGetUniformLocation(shader.ID, "u_metallic");
 	glUniform1ui(metallicUniformLoc, meshTextures[currentMesh].w);
 
 
 	// Other unfiorms
-	GLuint emissiveUniformLoc = glGetUniformLocation(shader.ID, "emissive");
+	GLuint emissiveUniformLoc = glGetUniformLocation(shader.ID, "u_emissive");
 	glUniform1f(emissiveUniformLoc, static_cast<GLfloat>(emissive) );
 
-	GLuint currentMeshLoc = glGetUniformLocation(shader.ID, "currentMesh");
+	GLuint currentMeshLoc = glGetUniformLocation(shader.ID, "u_currentMesh");
 	glUniform1ui(currentMeshLoc, currentMesh);
 
 
-	camera.Matrix(shader, "camMatrix");
+	camera.Matrix(shader, "u_camMatrix");
 	glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
 
 }

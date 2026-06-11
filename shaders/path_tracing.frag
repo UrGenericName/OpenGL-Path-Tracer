@@ -35,31 +35,41 @@ in vec3 geometricFaceNormal;
 in vec3 intersectionPoint;
 in vec3 rayOrientation;
 
-// UNIFORMS
 layout(binding = 0) uniform sampler2DArray texturePool;
 layout(binding = 1) uniform sampler2D colorNoise;
 layout(rgba32f, binding = 2) uniform image2D frameBuffer;
 
-uniform uint debugMode;
-uniform bool debugLambertian;
-uniform bool debugForceRoughness;
-uniform float debugForceRoughnessAmount;
+// UNIFORMS
+uniform uint u_debugMode;
+uniform bool u_debugLambertian;
+uniform bool u_debugForceRoughness;
+uniform float u_debugForceRoughnessAmount;
 
-uniform uint maxSamples;
-uniform uint maxBounces;
+uniform uint u_maxSamples;
+uniform uint u_maxBounces;  
+uniform uint u_currentSample;
 
-uniform uint albedo;
-uniform uint normal;
-uniform uint roughness;
-uniform uint metallic;
+uniform uint u_albedo;
+uniform uint u_normal;
+uniform uint u_roughness;
+uniform uint u_metallic;
+uniform float u_emissive;
+uniform uint u_currentMesh;
 
-uniform uint frame;
-uniform uint seed;
-uniform vec3 backgroundColor;
-uniform vec3 camPos;
-uniform vec3 camOrientation;
-uniform float emissive;
-uniform uint currentMesh;
+uniform uint u_seed;
+uniform vec3 u_backgroundColor;
+
+uniform vec3 u_camPos;
+uniform vec3 u_camOrientation;     
+
+#define MAX_BRIGHTNESS 1.0f
+#define MIN_BRIGHTNESS 0.0f
+
+#define MAX_ROUGHNESS 1.0f
+#define MIN_ROUGHNESS 0.0f
+
+#define EPSILON 0.000001
+#define FAR_PLANE 999999
 
 // DECLERATIONS
 bool drawDebug(uint debugMode);
@@ -70,49 +80,33 @@ void normalSpaceToWorldSpace(vec3 point, vec3 faceNormal, vec2 texCoord, vec3 in
 void calculateWorldSpaceTangentBitagent(vec3 point, vec3 faceNormal, vec2 texCoord, out vec3 tangent, out vec3 bitangent);
 bool intersect_triangle(vec3 orig, vec3 dir, vec3 vert0, vec3 vert1, vec3 vert2, out vec3 result);
 
-const uint pixelSeed = (uint(gl_FragCoord.x) * 1664525u + uint(gl_FragCoord.y) * 1013904223u) ^ floatBitsToUint(intersectionPoint.x) ^ floatBitsToUint(texCoord.y) ^ (seed * 2246822519u);
-
-#define MAX_BRIGHTNESS 1.0f
-#define MIN_BRIGHTNESS 0.0f
-
-#define MAX_ROUGHNESS 1.0f
-#define MIN_ROUGHNESS 0.0f
-
-#define DOUBLE_SIDED_REFLECTION false
-
-#define EPSILON 0.000001
-#define FAR_PLANE 999999
-
-#define DEBUG_DISABLED 0
-#define DEBUG_ALBEDO 1
-#define DEBUG_NORMAL 2
-#define DEBUG_ROUGHNESS 3
-#define DEBUG_METALLIC 4
+// GLOBAL VARIABLES
+const uint pixelSeed = (uint(gl_FragCoord.x) * 1664525u + uint(gl_FragCoord.y) * 1013904223u) ^ floatBitsToUint(intersectionPoint.x) ^ floatBitsToUint(texCoord.y) ^ (u_seed * 2246822519u);
 
 void main() {
     
     ivec2 pixelCoords = ivec2(gl_FragCoord.xy);
 
-    if (drawDebug(debugMode)) return;
+    if (drawDebug(u_debugMode)) return;
 
     // Early exit for emissive geometry
-    if (emissive != 0.0f) {
+    if (u_emissive != 0.0f) {
         FragColor = vec4(color, 1.0f);
         return;
     }
 
     vec3 outputColor = vec3(0);
 
-    calculateSample(outputColor, frame);
+    calculateSample(outputColor, u_currentSample);
 
-    if (frame == 0) {
+    if (u_currentSample == 0) {
         FragColor = vec4(outputColor, 1.0f);
         imageStore(frameBuffer, pixelCoords, vec4(outputColor, 1.0f));
         return;
     }
 
     vec3 accumulated = imageLoad(frameBuffer, pixelCoords).xyz;
-    float weight = 1.0f / float(frame);
+    float weight = 1.0f / float(u_currentSample);
 
     outputColor = mix(accumulated, outputColor, weight);
 
@@ -125,13 +119,19 @@ void main() {
 
 bool drawDebug(uint debugMode) {
 
+    const uint DEBUG_DISABLED = 0;
+    const uint DEBUG_ALBEDO = 1;
+    const uint DEBUG_NORMAL = 2;
+    const uint DEBUG_ROUGHNESS = 3;
+    const uint DEBUG_METALLIC = 4;
+
     float brightness = 1.0f;
-    if (debugLambertian) {
+    if (u_debugLambertian) {
 
         const float lambertianMin = 0.5f;
         const float lambertianMax = 1.0f;
 
-        brightness = abs( dot(normalize(camOrientation), normalize(geometricFaceNormal)) );
+        brightness = abs( dot(normalize(u_camOrientation), normalize(geometricFaceNormal)) );
         brightness = brightness * (lambertianMax - lambertianMin) + lambertianMin;
 
     }
@@ -139,19 +139,19 @@ bool drawDebug(uint debugMode) {
     switch ( debugMode ) {
 
         case DEBUG_ALBEDO:
-            FragColor = vec4( texture(texturePool, vec3(texCoord, albedo)).rgb * brightness, 1.0f );
+            FragColor = vec4( texture(texturePool, vec3(texCoord, u_albedo)).rgb * brightness, 1.0f );
             return true;
 
         case DEBUG_NORMAL:
-            FragColor = vec4( texture(texturePool, vec3(texCoord, normal)).rgb * brightness, 1.0f );
+            FragColor = vec4( texture(texturePool, vec3(texCoord, u_normal)).rgb * brightness, 1.0f );
             return true;
 
         case DEBUG_ROUGHNESS:
-            FragColor = vec4( texture(texturePool, vec3(texCoord, roughness)).rgb * brightness, 1.0f );
+            FragColor = vec4( texture(texturePool, vec3(texCoord, u_roughness)).rgb * brightness, 1.0f );
             return true;
 
         case DEBUG_METALLIC:
-            FragColor = vec4( texture(texturePool, vec3(texCoord, metallic)).rgb * brightness, 1.0f );
+            FragColor = vec4( texture(texturePool, vec3(texCoord, u_metallic)).rgb * brightness, 1.0f );
             return true;
 
     }
@@ -165,7 +165,7 @@ void calculateSample(out vec3 outputColor, uint sampleCount) {
     // Normal Map Local Vector
     vec3 normalMapVector;
     {
-        vec3 temp = texture(texturePool, vec3(texCoord, normal)).xyz;
+        vec3 temp = texture(texturePool, vec3(texCoord, u_normal)).xyz;
         normalMapVector = 2.0f * temp - 1.0f;
         normalMapVector = normalize(normalMapVector);
     }
@@ -173,7 +173,7 @@ void calculateSample(out vec3 outputColor, uint sampleCount) {
     // Calculates face normal from normal map
     vec3 faceNormal;
     {
-        float roughnessValue = texture(texturePool, vec3(texCoord, roughness)).r;
+        float roughnessValue = texture(texturePool, vec3(texCoord, u_roughness)).r;
         uint localSeed = pixelSeed + sampleCount + uint(rayOrientation.x * rayOrientation.y * rayOrientation.z * 10000);    // generally random for each calculateSample call
 
         randomizeNormal(localSeed, roughnessValue, normalMapVector);
@@ -188,13 +188,13 @@ void calculateSample(out vec3 outputColor, uint sampleCount) {
     float brightness;
     vec3 accumulatedAlbedo;
     {
-        calculatePath(intersectionPoint, camPos, faceNormal, brightness, accumulatedAlbedo, bounceCount);
+        calculatePath(intersectionPoint, u_camPos, faceNormal, brightness, accumulatedAlbedo, bounceCount);
     }
     
     // Combine all texture maps to single color
-    vec3 albedoColor = texture(texturePool, vec3(texCoord, albedo)).rgb * color;
-    vec3 tint = vertices[ indices[ uint(meshHeader[currentMesh].x) ] ].color.xyz;
-    float roughnessValue = texture(texturePool, vec3(texCoord, roughness)).r;
+    vec3 albedoColor = texture(texturePool, vec3(texCoord, u_albedo)).rgb * color;
+    vec3 tint = vertices[ indices[ uint(meshHeader[u_currentMesh].x) ] ].color.xyz;
+    float roughnessValue = texture(texturePool, vec3(texCoord, u_roughness)).r;
     
     vec3 finalColor = (accumulatedAlbedo * albedoColor * tint * brightness);
     //float finalBrightness = (totalBrightness * (MAX_BRIGHTNESS - MIN_BRIGHTNESS)) + MIN_BRIGHTNESS;
@@ -204,7 +204,7 @@ void calculateSample(out vec3 outputColor, uint sampleCount) {
 
 void randomizeNormal(uint seed, float roughness, inout vec3 normal) {
     
-    if (debugForceRoughness) roughness = debugForceRoughnessAmount;
+    if (u_debugForceRoughness) roughness = u_debugForceRoughnessAmount;
 
     // clamp min and max
     roughness = (roughness * (MAX_ROUGHNESS - MIN_ROUGHNESS)) + MIN_ROUGHNESS;
@@ -236,7 +236,7 @@ void calculatePath(vec3 init_Intersection, vec3 init_Origin, vec3 init_FaceNorma
 
     brightness = 0;
     bounceCount = 0;
-    while (bounceCount < maxBounces) 
+    while (bounceCount < u_maxBounces) 
     {
 
         // Calculates reflection
@@ -306,7 +306,7 @@ void calculatePath(vec3 init_Intersection, vec3 init_Origin, vec3 init_FaceNorma
 
             vec3 albedoColor = (texture(texturePool, vec3(ref_uv, meshTextures[ref_Mesh].x)) ).rgb;
             vec3 tint = vertices[ indices[ uint(meshHeader[ref_Mesh].x) ] ].color.xyz;
-            float roughnessValue = texture(texturePool, vec3(ref_uv, roughness)).r;
+            float roughnessValue = texture(texturePool, vec3(ref_uv, u_roughness)).r;
 
             accumulatedAlbedo *= albedoColor * tint;
 
@@ -348,7 +348,7 @@ void calculatePath(vec3 init_Intersection, vec3 init_Origin, vec3 init_FaceNorma
         }
     }
 
-    if (bounceCount == 0) accumulatedAlbedo = backgroundColor;
+    if (bounceCount == 0) accumulatedAlbedo = u_backgroundColor;
 
 }
 
@@ -389,6 +389,8 @@ void calculateWorldSpaceTangentBitagent(vec3 point, vec3 faceNormal, vec2 texCoo
 
 // Implementation of the Möller-Trumbore ray-triangle intersection algorithm
 bool intersect_triangle(vec3 orig, vec3 dir, vec3 vert0, vec3 vert1, vec3 vert2, out vec3 result) {
+
+    const bool DOUBLE_SIDED_REFLECTION = false;
 
     vec3 edge1 = vert1 - vert0;
     vec3 edge2 = vert2 - vert0;

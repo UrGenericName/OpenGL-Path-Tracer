@@ -11,65 +11,68 @@ Scene::~Scene() {
 }
 
 void Scene::Draw(Shader& shader, GLFWwindow* window) {
+
 	shader.Activate();
 
 	// update camera and uniforms
 	camera.Inputs(window, imguiWindow);
 	camera.updateMatrix(45.0f, 0.1f, 100.0f);
 
-	generateUniforms(shader, camera);
+	if (imguiWindow.currentSample != imguiWindow.maxSamples) {
 
-	glViewport(0, 0, camera.width, camera.height);
-	glClearColor(backgroundColor.x, backgroundColor.y, backgroundColor.z, 1.0f);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		generateUniforms(shader, camera);
+
+		glViewport(0, 0, camera.width, camera.height);
+		glClearColor(backgroundColor.x, backgroundColor.y, backgroundColor.z, 1.0f);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+		// FRAME BUFFER
+		frameBuffer->Bind();
+		glActiveTexture(GL_TEXTURE2);
+		glBindTexture(GL_TEXTURE_2D, frameBuffer->texture->ID);
+		frameBuffer->Unbind();
 
 
-	// FRAME BUFFER
-	frameBuffer->Bind();
-	glActiveTexture(GL_TEXTURE2);
-	glBindTexture(GL_TEXTURE_2D, frameBuffer->texture->ID);
-	frameBuffer->Unbind();
+		for (size_t i = 0; i < meshCollection.size(); ++i) {
+			meshCollection[i]->Draw(shader, camera, i, meshTexturesOutput);
+		}
 
-
-	for (size_t i = 0; i < meshCollection.size(); ++i) {
-		meshCollection[i]->Draw(shader, camera, i, meshTexturesOutput);
+		++imguiWindow.currentSample;
 	}
 
 	imguiWindow.drawImgui();
-
-	++imguiWindow.frame;
 }
 
 void Scene::generateUniforms(Shader& shader, Camera& camera) {
 
-	int camPosUniformLocation = glGetUniformLocation(shader.ID, "camPos");
+	int camPosUniformLocation = glGetUniformLocation(shader.ID, "u_camPos");
 	glUniform3f(camPosUniformLocation, camera.Position.x, camera.Position.y, camera.Position.z);
 
-	int camOrientationUniformLocation = glGetUniformLocation(shader.ID, "camOrientation");
+	int camOrientationUniformLocation = glGetUniformLocation(shader.ID, "u_camOrientation");
 	glUniform3f(camOrientationUniformLocation, camera.Orientation.x, camera.Orientation.y, camera.Orientation.z);
 
-	int seedColorLoc = glGetUniformLocation(shader.ID, "seed");
+	int seedColorLoc = glGetUniformLocation(shader.ID, "u_seed");
 	glUniform1ui(seedColorLoc, m_distrib(m_gen));
 
-	int debugModeLoc = glGetUniformLocation(shader.ID, "debugMode");
+	int debugModeLoc = glGetUniformLocation(shader.ID, "u_debugMode");
 	glUniform1ui(debugModeLoc, static_cast<unsigned int> (imguiWindow.debugMode));
 
-	int debugLambertianLoc = glGetUniformLocation(shader.ID, "debugLambertian");
+	int debugLambertianLoc = glGetUniformLocation(shader.ID, "u_debugLambertian");
 	glUniform1i(debugLambertianLoc, imguiWindow.debugLambertian);
 
-	int debugForceRoughnessLoc = glGetUniformLocation(shader.ID, "debugForceRoughness");
+	int debugForceRoughnessLoc = glGetUniformLocation(shader.ID, "u_debugForceRoughness");
 	glUniform1i(debugForceRoughnessLoc, imguiWindow.debugForceRoughness);
 
-	int debugForceRoughnessAmountLoc = glGetUniformLocation(shader.ID, "debugForceRoughnessAmount");
+	int debugForceRoughnessAmountLoc = glGetUniformLocation(shader.ID, "u_debugForceRoughnessAmount");
 	glUniform1f(debugForceRoughnessAmountLoc, imguiWindow.debugForceRoughnessAmount);
 
-	int frameLoc = glGetUniformLocation(shader.ID, "frame");
-	glUniform1ui(frameLoc, imguiWindow.frame);
+	int frameLoc = glGetUniformLocation(shader.ID, "u_currentSample");
+	glUniform1ui(frameLoc, imguiWindow.currentSample);
 
-	int maxBouncesLoc = glGetUniformLocation(shader.ID, "maxBounces");
+	int maxBouncesLoc = glGetUniformLocation(shader.ID, "u_maxBounces");
 	glUniform1ui(maxBouncesLoc, static_cast<unsigned int>(imguiWindow.maxBounces));
 
-	int maxSamplesLoc = glGetUniformLocation(shader.ID, "maxSamples");
+	int maxSamplesLoc = glGetUniformLocation(shader.ID, "u_maxSamples");
 	glUniform1ui(maxSamplesLoc, static_cast<unsigned int>(imguiWindow.maxSamples));
 
 }
@@ -201,7 +204,7 @@ void Scene::link(Shader& shader) {
 	colorNoise->Bind();
 
 	// UNIFORMS
-	int backgroundColorLoc = glGetUniformLocation(shader.ID, "backgroundColor");
+	int backgroundColorLoc = glGetUniformLocation(shader.ID, "u_backgroundColor");
 	glUniform3f(backgroundColorLoc, backgroundColor.x, backgroundColor.y, backgroundColor.z);
 
 	// FRAME BUFFER

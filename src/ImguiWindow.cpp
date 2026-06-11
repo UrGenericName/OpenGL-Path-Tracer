@@ -29,7 +29,7 @@ void ImguiWindow::drawImgui() {
     Begin("Debug");
     Separator();
 
-    Text("Frame: %d", frame);
+    Text("Samples: %d/%d", currentSample, maxSamples);
 
     if (BeginTable("ShaderLayoutTable", 2)) {
 
@@ -50,8 +50,8 @@ void ImguiWindow::drawImgui() {
         // SETTINGS
         TableNextColumn();
         Checkbox("Lambertian Shading", &debugLambertian);
-        SliderInt("Bounces", &maxBounces, 1, MAX_BOUNCES);
-        SliderInt("Samples", &maxSamples, 1, MAX_SAMPLES);
+        if (SliderInt("Bounces", &maxBounces, 1, MAX_BOUNCES)) currentSample = 0;
+        if (SliderInt("Samples", &maxSamples, 1, MAX_SAMPLES)) currentSample = 0;
 
         EndTable();
     }
@@ -66,7 +66,7 @@ void ImguiWindow::drawImgui() {
 
         TableNextColumn();
         BeginDisabled(!debugForceRoughness);
-        SliderFloat("Roughness", &debugForceRoughnessAmount, 0, 1);
+        if (SliderFloat("Roughness", &debugForceRoughnessAmount, 0, 1)) currentSample = 0;
         EndDisabled();
 
         TableNextColumn();
@@ -75,10 +75,20 @@ void ImguiWindow::drawImgui() {
 
     }
 
-    if (Button("Clear Frames")) frame = 0;
+    if (Button("Clear Samples")) currentSample = 0;
+
+    // clear samples if window is moved or resized
+    if (windowSize.x != GetWindowSize().x || windowSize.y != GetWindowSize().y) currentSample = 0;
+    if (windowPosition.x != GetWindowPos().x || windowPosition.y != GetWindowPos().y) currentSample = 0;
+
+    windowSize = GetWindowSize();
+    windowPosition = GetWindowPos();
+
+
 
     End();
 
     Render();
     ImGui_ImplOpenGL3_RenderDrawData( GetDrawData() );
+
 }

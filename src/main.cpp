@@ -21,11 +21,11 @@ int main() {
 	Scene scene(camera, 256, 256);
 	scene.meshCollection.push_back(new Mesh("models/room/cubeA.obj", new Material(DEFAULT_ALBEDO, DEFAULT_NORMAL, "textures/roughness_c.png")));
 	scene.meshCollection.push_back(new Mesh("models/room/cubeB.obj", new Material(DEFAULT_ALBEDO, DEFAULT_NORMAL, "textures/roughness_c.png")));
-	scene.meshCollection.push_back(new Mesh("models/room/sphere.obj", new Material(DEFAULT_ALBEDO, DEFAULT_NORMAL, "textures/roughness_c.png")));
+	//scene.meshCollection.push_back(new Mesh("models/room/sphere.obj", new Material(DEFAULT_ALBEDO, DEFAULT_NORMAL, "textures/roughness_c.png")));
 	scene.meshCollection.push_back(new Mesh("models/room/white_walls.obj", new Material(DEFAULT_ALBEDO, DEFAULT_NORMAL, "textures/roughness_a.png")));
-	scene.meshCollection.push_back(new Mesh("models/room/light.obj", new Material(DEFAULT_ALBEDO, DEFAULT_NORMAL, "textures/roughness_a.png"), glm::vec4(1.0f, 1.0f, 0.9f, 0.0f), 50.0f));
-	scene.meshCollection.push_back(new Mesh("models/room/red_wall.obj", new Material(DEFAULT_ALBEDO, DEFAULT_NORMAL, "textures/roughness_a.png"), glm::vec4(1.0f, 0.0f, 0.0f, 0.0f)));
-	scene.meshCollection.push_back(new Mesh("models/room/green_wall.obj", new Material(DEFAULT_ALBEDO, DEFAULT_NORMAL, "textures/roughness_a.png"), glm::vec4(0.0f, 1.0f, 0.0f, 0.0f)));
+	scene.meshCollection.push_back(new Mesh("models/room/light.obj", new Material(DEFAULT_ALBEDO, DEFAULT_NORMAL, "textures/roughness_a.png"), glm::vec4(1.0f, 1.0f, 0.9f, 0.0f), 20.0f));
+	scene.meshCollection.push_back(new Mesh("models/room/red_wall.obj", new Material(DEFAULT_ALBEDO, DEFAULT_NORMAL, "textures/roughness_a.png")));
+	scene.meshCollection.push_back(new Mesh("models/room/green_wall.obj", new Material(DEFAULT_ALBEDO, DEFAULT_NORMAL, "textures/roughness_a.png")));
 
 	scene.link(shaderProgram);
 
@@ -60,6 +60,8 @@ GLFWwindow* initGLFW() {
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+
+	glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
 
 	// Creates the actual glfw window
 	GLFWwindow* window = glfwCreateWindow(WIDTH, HEIGHT, "Graphcis", NULL, NULL);
