@@ -1,5 +1,7 @@
 #version 430 core
 
+layout(early_fragment_tests) in;
+
 struct Vertex {
     vec4 position;
     vec4 color;
@@ -26,7 +28,7 @@ layout(std430, binding = 3) readonly buffer MeshHeaderBuffer {
 };
 
 // OUTPUT
-layout(location = 0) out vec4 FragColor;
+out vec4 FragColor;
 
 // INPUTS
 in vec3 color;
@@ -37,6 +39,7 @@ in vec3 rayOrientation;
 
 layout(binding = 0) uniform sampler2DArray texturePool;
 layout(binding = 1) uniform sampler2D colorNoise;
+layout(rgba32f, binding = 2) uniform image2D frameBuffer;
 
 // UNIFORMS
 uniform uint u_debugMode;
@@ -72,7 +75,7 @@ uniform vec3 u_camOrientation;
 
 // DECLERATIONS
 bool drawDebug(uint debugMode);
-void calculateSample(out vec3 outputColor, uint sampleCount);
+void calculateSample(out vec4 outputColor);
 void randomizeNormal(uint seed, float roughness, inout vec3 normal);
 void calculatePath(vec3 init_Intersection, vec3 init_Origin, vec3 init_FaceNormal, out float totalBrightness, out vec3 totalReflectionColor, out uint bounceCount);
 void normalSpaceToWorldSpace(vec3 point, vec3 faceNormal, vec2 texCoord, vec3 inVector, out vec3 outVector);
@@ -80,7 +83,8 @@ void calculateWorldSpaceTangentBitagent(vec3 point, vec3 faceNormal, vec2 texCoo
 bool intersect_triangle(vec3 orig, vec3 dir, vec3 vert0, vec3 vert1, vec3 vert2, out vec3 result);
 
 // GLOBAL VARIABLES
-uint pixelSeed = (uint(gl_FragCoord.x) * 1664525u + uint(gl_FragCoord.y) * 1013904223u) ^ floatBitsToUint(intersectionPoint.x) ^ floatBitsToUint(texCoord.y) ^ (u_seed * 2246822519u);
+ivec2 pixelCoords = ivec2(gl_FragCoord.xy);
+uint pixelSeed = (pixelCoords.x * 1664525u + pixelCoords.y * 1013904223u) ^ floatBitsToUint(intersectionPoint.x) ^ floatBitsToUint(texCoord.y) ^ (u_seed * 2246822519u);
 
 void main() {
     
@@ -94,16 +98,11 @@ void main() {
         return;
     }
 
-    vec3 outputColor = vec3(0);
-    
-    for (int i = 0; i < u_maxSamples; ++i) {
-        vec3 sampleColor = vec3(0.0f);
-        calculateSample(sampleColor, u_currentSample);
-        outputColor += sampleColor;
-        pixelSeed++;
-    }
+    vec4 sampleColor = vec4(0.0f);
+    calculateSample(sampleColor);
+    FragColor = sampleColor;
 
-    FragColor = vec4(outputColor / u_maxSamples, 1.0f);
+    imageStore(frameBuffer, pixelCoords, sampleColor); 
 
 }
 
@@ -150,7 +149,7 @@ bool drawDebug(uint debugMode) {
 
 }
 
-void calculateSample(out vec3 outputColor, uint sampleCount) {
+void calculateSample(out vec4 outputColor) {
 
     // Normal Map Local Vector
     vec3 normalMapVector;
@@ -164,7 +163,7 @@ void calculateSample(out vec3 outputColor, uint sampleCount) {
     vec3 faceNormal;
     {
         float roughnessValue = texture(texturePool, vec3(texCoord, u_roughness)).r;
-        uint localSeed = pixelSeed + sampleCount + uint(rayOrientation.x * rayOrientation.y * rayOrientation.z * 10000);    // generally random for each calculateSample call
+        uint localSeed = pixelSeed + uint(rayOrientation.x * rayOrientation.y * rayOrientation.z * 10000);    // generally random for each calculateSample call
 
         randomizeNormal(localSeed, roughnessValue, normalMapVector);
 
@@ -188,7 +187,7 @@ void calculateSample(out vec3 outputColor, uint sampleCount) {
     
     vec3 finalColor = (accumulatedAlbedo * albedoColor * tint * brightness);
     //float finalBrightness = (totalBrightness * (MAX_BRIGHTNESS - MIN_BRIGHTNESS)) + MIN_BRIGHTNESS;
-    outputColor = vec3(finalColor);
+    outputColor = vec4(finalColor, 1.0f);
 
 }
 

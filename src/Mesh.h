@@ -26,6 +26,7 @@ public:
 	~Mesh();
 
 	void Draw(Shader& shader, Camera& camera, GLuint currentMesh, std::vector<glm::vec4> meshHeader);
+	void Draw(Shader& shader, Camera& camera);
 	bool importObj(const char* fileName, glm::vec4 importColor);	// imports an obj mesh (MUST BE TRIANGLATED BEFORE IMPORT)
 	void updateBuffers();
 

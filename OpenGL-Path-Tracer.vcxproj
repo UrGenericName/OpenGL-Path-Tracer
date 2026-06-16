@@ -177,6 +177,8 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="extract_path_tracing.frag.sh" />
+    <None Include="shaders\accumulation.frag" />
+    <None Include="shaders\accumulation.vert" />
     <None Include="shaders\path_tracing.frag" />
     <None Include="shaders\path_tracing.vert" />
     <None Include="shaders\default.frag" />
