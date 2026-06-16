@@ -80,7 +80,7 @@ void calculateWorldSpaceTangentBitagent(vec3 point, vec3 faceNormal, vec2 texCoo
 bool intersect_triangle(vec3 orig, vec3 dir, vec3 vert0, vec3 vert1, vec3 vert2, out vec3 result);
 
 // GLOBAL VARIABLES
-const uint pixelSeed = (uint(gl_FragCoord.x) * 1664525u + uint(gl_FragCoord.y) * 1013904223u) ^ floatBitsToUint(intersectionPoint.x) ^ floatBitsToUint(texCoord.y) ^ (u_seed * 2246822519u);
+uint pixelSeed = (uint(gl_FragCoord.x) * 1664525u + uint(gl_FragCoord.y) * 1013904223u) ^ floatBitsToUint(intersectionPoint.x) ^ floatBitsToUint(texCoord.y) ^ (u_seed * 2246822519u);
 
 void main() {
     
@@ -95,8 +95,15 @@ void main() {
     }
 
     vec3 outputColor = vec3(0);
-    calculateSample(outputColor, u_currentSample);
-    FragColor = vec4(outputColor, 1.0f);
+    
+    for (int i = 0; i < u_maxSamples; ++i) {
+        vec3 sampleColor = vec3(0.0f);
+        calculateSample(sampleColor, u_currentSample);
+        outputColor += sampleColor;
+        pixelSeed++;
+    }
+
+    FragColor = vec4(outputColor / u_maxSamples, 1.0f);
 
 }
 
