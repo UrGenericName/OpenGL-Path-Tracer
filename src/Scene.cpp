@@ -248,4 +248,8 @@ void Scene::link() {
 	// FRAME BUFFER
 	frameBuffer = new FBO{ camera.width, camera.height, GL_TEXTURE2 };
 	glBindImageTexture(2, frameBuffer->texture->ID, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F);
+
+	// ACCUMULATION BUFFER
+	accumulationBuffer = new FBO{ camera.width, camera.height, GL_TEXTURE3 };
+	glBindImageTexture(3, accumulationBuffer->texture->ID, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F);
 }

@@ -31,7 +31,11 @@ private:
 	Shader* depthPrepassShader;
 	Shader* pathTracingShader;
 
+	Shader* pathTracer;
+	Shader* accumulationPass;
+
 	FBO* frameBuffer;
+	FBO* accumulationBuffer;
 
 	Texture* colorNoise;
 	ImguiWindow imguiWindow;

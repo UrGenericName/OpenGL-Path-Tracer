@@ -110,6 +110,16 @@ void Mesh::Draw(Shader& shader, Camera& camera, GLuint currentMesh, std::vector<
 
 }
 
+void Mesh::Draw(Shader& shader, Camera& camera) {
+
+	shader.Activate();
+	VAO.Bind();
+
+	camera.Matrix(shader, "u_camMatrix");
+	glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
+
+}
+
 bool Mesh::importObj(const char* fileName, glm::vec4 importColor) {
 
 	ifstream file(fileName);

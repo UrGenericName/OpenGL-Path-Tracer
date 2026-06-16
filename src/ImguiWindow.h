@@ -4,8 +4,8 @@
 #include <backends/imgui_impl_opengl3.h>
 #include <backends/imgui_impl_glfw.h>
 
-#define MAX_BOUNCES 256
-#define MAX_SAMPLES 5096
+#define MAX_BOUNCES 64
+#define MAX_SAMPLES 1024
 
 class ImguiWindow {
 public:
@@ -35,6 +35,8 @@ public:
 	int maxSamples = 32;
 
 	unsigned int currentSample = 0;
+
+	bool pause = false;
 
 	bool drawWindow = true;
 
