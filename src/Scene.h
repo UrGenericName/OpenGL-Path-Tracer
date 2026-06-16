@@ -23,13 +23,20 @@ public:
 	Scene(Camera& i_camera, unsigned int width = 256, unsigned int height = 256);
 	~Scene();
 
-	void Draw(Shader& shader, GLFWwindow* window);
-	void link(Shader& shader);
+	void Draw(GLFWwindow* window);
+	void link();
 
 private:
 
 	void generateSSBOs(unsigned int width, unsigned int height, GLuint& vertexSSBO, GLuint& indicesSSBO, GLuint& meshTextureSSBO, GLuint& meshHeaderSSBO, GLuint& textureArray, std::vector<glm::vec4>& meshTexturesOutput);
-	void generateUniforms(Shader& shader, Camera& camera);
+	void generateDepthUniforms(Shader& shader, Camera& camera);
+	void generatePathTracingUniforms(Shader& shader, Camera& camera);
+
+	void Draw_DepthPrepass(Shader& depth_shader);
+	void Draw_PathTracingPass(Shader& PathTracing_shader);
+
+	Shader* depthPrepassShader;
+	Shader* pathTracingShader;
 
 	FBO* frameBuffer;
 

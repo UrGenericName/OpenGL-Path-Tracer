@@ -1,5 +1,7 @@
 #version 430 core
 
+layout(early_fragment_tests) in;
+
 struct Vertex {
     vec4 position;
     vec4 color;

@@ -106,8 +106,6 @@ void Mesh::Draw(Shader& shader, Camera& camera, GLuint currentMesh, std::vector<
 	GLuint currentMeshLoc = glGetUniformLocation(shader.ID, "u_currentMesh");
 	glUniform1ui(currentMeshLoc, currentMesh);
 
-
-	camera.Matrix(shader, "u_camMatrix");
 	glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
 
 }

@@ -1,6 +1,10 @@
 #include "Scene.h"
 
-Scene::Scene(Camera& i_camera, unsigned int i_textureWidth, unsigned int i_textureHeight) : camera(i_camera), textureWidth(i_textureWidth), textureHeight(i_textureHeight) {}
+Scene::Scene(Camera& i_camera, unsigned int i_textureWidth, unsigned int i_textureHeight) : camera(i_camera), textureWidth(i_textureWidth), textureHeight(i_textureHeight) {
+
+	
+
+}
 
 Scene::~Scene() {
 
@@ -10,37 +14,69 @@ Scene::~Scene() {
 
 }
 
-void Scene::Draw(Shader& shader, GLFWwindow* window) {
-
-	shader.Activate();
+void Scene::Draw(GLFWwindow* window) {
 
 	// update camera and uniforms
 	camera.Inputs(window, imguiWindow);
 	camera.updateMatrix(45.0f, 0.1f, 100.0f);
 
-	generateUniforms(shader, camera);
-
 	glViewport(0, 0, camera.width, camera.height);
 	glClearColor(backgroundColor.x, backgroundColor.y, backgroundColor.z, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	// FRAME BUFFER
-	frameBuffer->Bind();
-	glActiveTexture(GL_TEXTURE2);
-	glBindTexture(GL_TEXTURE_2D, frameBuffer->texture->ID);
-	frameBuffer->Unbind();
-
-
-	for (size_t i = 0; i < meshCollection.size(); ++i) {
-		meshCollection[i]->Draw(shader, camera, i, meshTexturesOutput);
-	}
+	Draw_DepthPrepass(*depthPrepassShader);
+	Draw_PathTracingPass(*pathTracingShader);
 
 	if (imguiWindow.currentSample != imguiWindow.maxSamples) ++imguiWindow.currentSample;
 
 	imguiWindow.drawImgui();
 }
 
-void Scene::generateUniforms(Shader& shader, Camera& camera) {
+void Scene::Draw_DepthPrepass(Shader& depth_shader) {
+
+	depth_shader.Activate();
+	generateDepthUniforms(depth_shader, camera);
+
+	glEnable(GL_DEPTH_TEST);
+	glDepthFunc(GL_LESS);
+	glDepthMask(GL_TRUE);
+
+	glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+
+	glClear(GL_DEPTH_BUFFER_BIT);
+
+	for (size_t i = 0; i < meshCollection.size(); ++i) {
+		meshCollection[i]->Draw(depth_shader, camera, i, meshTexturesOutput);
+	}
+}
+
+void Scene::Draw_PathTracingPass(Shader& PathTracing_shader) {
+
+	PathTracing_shader.Activate();
+	generatePathTracingUniforms(PathTracing_shader, camera);
+
+	glEnable(GL_DEPTH_TEST);
+	glDepthFunc(GL_EQUAL);
+	glDepthMask(GL_FALSE);
+
+	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+
+	frameBuffer->Bind();
+
+	frameBuffer->Bind();
+
+	for (size_t i = 0; i < meshCollection.size(); ++i) {
+		meshCollection[i]->Draw(PathTracing_shader, camera, i, meshTexturesOutput);
+	}
+
+}
+
+void Scene::generateDepthUniforms(Shader& shader, Camera& camera) {
+
+	camera.Matrix(shader, "u_camMatrix");
+}
+
+void Scene::generatePathTracingUniforms(Shader& shader, Camera& camera) {
 
 	int camPosUniformLocation = glGetUniformLocation(shader.ID, "u_camPos");
 	glUniform3f(camPosUniformLocation, camera.Position.x, camera.Position.y, camera.Position.z);
@@ -72,6 +108,7 @@ void Scene::generateUniforms(Shader& shader, Camera& camera) {
 	int maxSamplesLoc = glGetUniformLocation(shader.ID, "u_maxSamples");
 	glUniform1ui(maxSamplesLoc, static_cast<unsigned int>(imguiWindow.maxSamples));
 
+	camera.Matrix(shader, "u_camMatrix");
 }
 
 void Scene::generateSSBOs(unsigned int width, unsigned int height, GLuint& vertexSSBO, GLuint& indicesSSBO, GLuint& meshTextureSSBO, GLuint& meshHeaderSSBO, GLuint& textureArray, std::vector<glm::vec4>& meshTexturesOutput) {
@@ -186,9 +223,10 @@ void Scene::generateSSBOs(unsigned int width, unsigned int height, GLuint& verte
 
 }
 
-void Scene::link(Shader& shader) {
+void Scene::link() {
 
-	shader.Activate();
+	depthPrepassShader = new Shader("shaders/z_prepass.vert", "shaders/z_prepass.frag");
+	pathTracingShader = new Shader("shaders/path_tracing.vert", "shaders/path_tracing.frag");
 
 	// TEXTURE ARRAY
 	generateSSBOs(textureWidth, textureHeight, vertexSSBO, indicesSSBO, textureMeshSSBO, meshHeaderSSBO, textureArray, meshTexturesOutput);
@@ -201,7 +239,7 @@ void Scene::link(Shader& shader) {
 	colorNoise->Bind();
 
 	// UNIFORMS
-	int backgroundColorLoc = glGetUniformLocation(shader.ID, "u_backgroundColor");
+	int backgroundColorLoc = glGetUniformLocation(pathTracingShader->ID, "u_backgroundColor");
 	glUniform3f(backgroundColorLoc, backgroundColor.x, backgroundColor.y, backgroundColor.z);
 
 	// FRAME BUFFER
