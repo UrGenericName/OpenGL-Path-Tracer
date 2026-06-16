@@ -32,6 +32,7 @@ private:
 	void generateUniforms(Shader& shader, Camera& camera);
 
 	FBO* frameBuffer;
+	FBO* accumulationBuffer;
 
 	Texture* colorNoise;
 	ImguiWindow imguiWindow;
