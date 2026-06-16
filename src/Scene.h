@@ -28,8 +28,8 @@ public:
 
 private:
 
-	void generateSSBOs(unsigned int width, unsigned int height, GLuint& vertexSSBO, GLuint& indicesSSBO, GLuint& meshTextureSSBO, GLuint& meshHeaderSSBO, GLuint& textureArray, std::vector<glm::vec4>& meshTexturesOutput);
-	void generateUniforms(Shader& shader, Camera& camera);
+	Shader* depthPrepassShader;
+	Shader* pathTracingShader;
 
 	Shader* pathTracer;
 	Shader* accumulationPass;
@@ -40,9 +40,15 @@ private:
 	Texture* colorNoise;
 	ImguiWindow imguiWindow;
 
-	// Cached data
 	std::vector<glm::vec4> meshTexturesOutput;
 	GLuint vertexSSBO, indicesSSBO, textureMeshSSBO, meshHeaderSSBO, textureArray;
+
+	void generateSSBOs(unsigned int width, unsigned int height, GLuint& vertexSSBO, GLuint& indicesSSBO, GLuint& meshTextureSSBO, GLuint& meshHeaderSSBO, GLuint& textureArray, std::vector<glm::vec4>& meshTexturesOutput);
+	void generateDepthUniforms(Shader& shader, Camera& camera);
+	void generatePathTracingUniforms(Shader& shader, Camera& camera);
+
+	void Draw_DepthPrepass(Shader& depth_shader);
+	void Draw_PathTracingPass(Shader& PathTracing_shader);
 
 	// Random generators
 	inline static std::random_device m_rd;

@@ -68,13 +68,12 @@ void ImguiWindow::drawImgui() {
         TableNextRow();
 
         TableNextColumn();
-        BeginDisabled(!debugForceRoughness);
-        if (SliderFloat("Roughness", &debugForceRoughnessAmount, 0, 1)) currentSample = 0;
+        BeginDisabled(!debugUniversalRoughness);
+        if (SliderFloat("Roughness", &debugUniversalRoughnessAmount, 0, 1)) currentSample = 0;
         EndDisabled();
 
         TableNextColumn();
-        Checkbox("Force Roughness", &debugForceRoughness);
-
+        Checkbox("Force Roughness", &debugUniversalRoughness);
         EndTable();
 
     }

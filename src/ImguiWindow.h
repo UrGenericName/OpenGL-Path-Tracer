@@ -28,8 +28,8 @@ public:
 	int debugMode = static_cast<int>(DebugTypes::DISABLED);
 	bool debugLambertian = true;
 
-	bool debugForceRoughness = false;
-	float debugForceRoughnessAmount = 1.0f;
+	bool debugUniversalRoughness = false;
+	float debugUniversalRoughnessAmount = 1.0f;
 
 	int maxBounces = 8;
 	int maxSamples = 32;

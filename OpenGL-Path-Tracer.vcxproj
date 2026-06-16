@@ -183,6 +183,8 @@
     <None Include="shaders\path_tracing.vert" />
     <None Include="shaders\default.frag" />
     <None Include="shaders\default.vert" />
+    <None Include="shaders\z_prepass.frag" />
+    <None Include="shaders\z_prepass.vert" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\ImguiWindow.cpp">
