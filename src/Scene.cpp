@@ -96,11 +96,11 @@ void Scene::generatePathTracingUniforms(Shader& shader, Camera& camera) {
 	int debugLambertianLoc = glGetUniformLocation(shader.ID, "u_debugLambertian");
 	glUniform1i(debugLambertianLoc, imguiWindow.debugLambertian);
 
-	int debugForceRoughnessLoc = glGetUniformLocation(shader.ID, "u_debugForceRoughness");
-	glUniform1i(debugForceRoughnessLoc, imguiWindow.debugForceRoughness);
+	int debugUniversalRoughnessLoc = glGetUniformLocation(shader.ID, "u_debugUniversalRoughness");
+	glUniform1i(debugUniversalRoughnessLoc, imguiWindow.debugUniversalRoughness);
 
-	int debugForceRoughnessAmountLoc = glGetUniformLocation(shader.ID, "u_debugForceRoughnessAmount");
-	glUniform1f(debugForceRoughnessAmountLoc, imguiWindow.debugForceRoughnessAmount);
+	int debugUniversalRoughnessAmountLoc = glGetUniformLocation(shader.ID, "u_debugUniversalRoughnessAmount");
+	glUniform1f(debugUniversalRoughnessAmountLoc, imguiWindow.debugUniversalRoughnessAmount);
 
 	int frameLoc = glGetUniformLocation(shader.ID, "u_currentSample");
 	glUniform1ui(frameLoc, imguiWindow.currentSample);

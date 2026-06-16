@@ -44,8 +44,8 @@ layout(rgba32f, binding = 2) uniform image2D frameBuffer;
 // UNIFORMS
 uniform uint u_debugMode;
 uniform bool u_debugLambertian;
-uniform bool u_debugForceRoughness;
-uniform float u_debugForceRoughnessAmount;
+uniform bool u_debugUniversalRoughness;
+uniform float u_debugUniversalRoughnessAmount;
 
 uniform uint u_maxSamples;
 uniform uint u_maxBounces;  
@@ -206,7 +206,7 @@ void calculateSample(out vec3 outputColor, uint sampleCount) {
 
 void randomizeNormal(uint seed, float roughness, inout vec3 normal) {
     
-    if (u_debugForceRoughness) roughness = u_debugForceRoughnessAmount;
+    if (u_debugUniversalRoughness) roughness = u_debugUniversalRoughnessAmount;
 
     // clamp min and max
     roughness = (roughness * (MAX_ROUGHNESS - MIN_ROUGHNESS)) + MIN_ROUGHNESS;
