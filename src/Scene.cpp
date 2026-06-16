@@ -29,6 +29,8 @@ void Scene::Draw(GLFWwindow* window) {
 	pathTracer->Activate();
 	generateUniforms(*pathTracer, camera);
 
+	glClearTexImage(frameBuffer->texture->ID, 0, GL_RGBA, GL_FLOAT, glm::value_ptr(glm::vec4(backgroundColor, 1.0f)) );
+
 	// FRAME BUFFER
 	frameBuffer->Bind();
 	glActiveTexture(GL_TEXTURE2);
