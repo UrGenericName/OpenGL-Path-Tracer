@@ -16,10 +16,10 @@ Scene::~Scene() {
 
 void Scene::Draw(GLFWwindow* window) {
 
-	// update camera and uniforms
 	camera.Inputs(window, imguiWindow);
 	camera.updateMatrix(45.0f, 0.1f, 100.0f);
 
+	// CLEAR BACKGROUND
 	glViewport(0, 0, camera.width, camera.height);
 	glClearColor(backgroundColor.x, backgroundColor.y, backgroundColor.z, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -37,14 +37,14 @@ void Scene::Draw_DepthPrepass(Shader& depth_shader) {
 	depth_shader.Activate();
 	generateDepthUniforms(depth_shader, camera);
 
+	// SET-UP SHADER PROGRAM TO WRITE ONLY DEPTH
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LESS);
 	glDepthMask(GL_TRUE);
-
 	glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
-
 	glClear(GL_DEPTH_BUFFER_BIT);
 
+	// DRAW MESHES
 	for (size_t i = 0; i < meshCollection.size(); ++i) {
 		meshCollection[i]->Draw(depth_shader, camera, i, meshTexturesOutput);
 	}
@@ -55,16 +55,19 @@ void Scene::Draw_PathTracingPass(Shader& PathTracing_shader) {
 	PathTracing_shader.Activate();
 	generatePathTracingUniforms(PathTracing_shader, camera);
 
+	// RE-ALLOW COLOR WRITING BUT DISABLE DEPTH WRITING
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_EQUAL);
 	glDepthMask(GL_FALSE);
-
 	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 
+	// FRAME BUFFER
 	frameBuffer->Bind();
+	glActiveTexture(GL_TEXTURE2);
+	glBindTexture(GL_TEXTURE_2D, frameBuffer->texture->ID);
+	frameBuffer->Unbind();
 
-	frameBuffer->Bind();
-
+	// DRAW MESHES
 	for (size_t i = 0; i < meshCollection.size(); ++i) {
 		meshCollection[i]->Draw(PathTracing_shader, camera, i, meshTexturesOutput);
 	}
@@ -238,7 +241,7 @@ void Scene::link() {
 	glActiveTexture(GL_TEXTURE1);
 	colorNoise->Bind();
 
-	// UNIFORMS
+	// UNIFORMS (only those that need to be initalized once)
 	int backgroundColorLoc = glGetUniformLocation(pathTracingShader->ID, "u_backgroundColor");
 	glUniform3f(backgroundColorLoc, backgroundColor.x, backgroundColor.y, backgroundColor.z);
 

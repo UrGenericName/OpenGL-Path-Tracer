@@ -16,13 +16,13 @@ int main() {
 	Camera camera(WIDTH, HEIGHT, glm::vec3(0.0f, -12.0f, 4.5f));
 
 	Scene scene(camera, 256, 256);
-	scene.meshCollection.push_back(new Mesh("models/room/cubeB.obj", new Material(DEFAULT_ALBEDO, DEFAULT_NORMAL, "textures/roughness_c.png")));
-	//scene.meshCollection.push_back(new Mesh("models/room/sphere.obj", new Material(DEFAULT_ALBEDO, DEFAULT_NORMAL, "textures/roughness_c.png")));
+	//scene.meshCollection.push_back(new Mesh("models/room/cubeA.obj", new Material(DEFAULT_ALBEDO, DEFAULT_NORMAL, "textures/roughness_c.png"), glm::vec4(1.0f, 0.5f, 0.5f, 1.0f)));
+	//scene.meshCollection.push_back(new Mesh("models/room/cubeB.obj", new Material(DEFAULT_ALBEDO, DEFAULT_NORMAL, "textures/roughness_c.png"), glm::vec4(0.5f, 1.0f, 0.5f, 1.0f)));
+	scene.meshCollection.push_back(new Mesh("models/room/sphere.obj", new Material(DEFAULT_ALBEDO, DEFAULT_NORMAL, "textures/roughness_c.png")));
 	scene.meshCollection.push_back(new Mesh("models/room/white_walls.obj", new Material(DEFAULT_ALBEDO, DEFAULT_NORMAL, "textures/roughness_a.png")));
 	scene.meshCollection.push_back(new Mesh("models/room/light.obj", new Material(DEFAULT_ALBEDO, DEFAULT_NORMAL, "textures/roughness_a.png"), glm::vec4(1.0f, 1.0f, 0.9f, 0.0f), 20.0f));
 	scene.meshCollection.push_back(new Mesh("models/room/red_wall.obj", new Material(DEFAULT_ALBEDO, DEFAULT_NORMAL, "textures/roughness_a.png"), glm::vec4(1.0f, 0.2f, 0.2f, 1.0f)));
 	scene.meshCollection.push_back(new Mesh("models/room/green_wall.obj", new Material(DEFAULT_ALBEDO, DEFAULT_NORMAL, "textures/roughness_a.png"), glm::vec4(0.2f, 1.02f, 0.2f, 1.0f)));
-	scene.meshCollection.push_back(new Mesh("models/room/cubeA.obj", new Material(DEFAULT_ALBEDO, DEFAULT_NORMAL, "textures/roughness_c.png"), glm::vec4(1.0f, 0.2f, 0.2f, 1.0f)));
 
 	scene.link();
 
