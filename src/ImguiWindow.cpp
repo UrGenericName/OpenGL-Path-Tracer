@@ -74,11 +74,13 @@ void ImguiWindow::drawImgui() {
 
         TableNextColumn();
         Checkbox("Force Roughness", &debugForceRoughness);
+
         EndTable();
 
     }
 
     if (Button("Clear Samples")) currentSample = 0;
+    if (Button("Pause")) pause = !pause;
 
     // clear samples if window is moved or resized
     if (windowSize.x != GetWindowSize().x || windowSize.y != GetWindowSize().y) currentSample = 0;

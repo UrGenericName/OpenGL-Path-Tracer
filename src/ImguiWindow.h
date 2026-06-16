@@ -36,6 +36,8 @@ public:
 
 	unsigned int currentSample = 0;
 
+	bool pause = false;
+
 	bool drawWindow = true;
 
 private:

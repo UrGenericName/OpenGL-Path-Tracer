@@ -37,7 +37,6 @@ in vec3 rayOrientation;
 
 layout(binding = 0) uniform sampler2DArray texturePool;
 layout(binding = 1) uniform sampler2D colorNoise;
-layout(rgba32f, binding = 2) uniform image2D frameBuffer;
 
 // UNIFORMS
 uniform uint u_debugMode;
@@ -96,24 +95,8 @@ void main() {
     }
 
     vec3 outputColor = vec3(0);
-
     calculateSample(outputColor, u_currentSample);
-
-    if (u_currentSample == 0) {
-        FragColor = vec4(outputColor, 1.0f);
-        imageStore(frameBuffer, pixelCoords, vec4(outputColor, 1.0f));
-        return;
-    }
-
-    vec3 accumulated = imageLoad(frameBuffer, pixelCoords).xyz;
-    float weight = 1.0f / float(u_currentSample);
-
-    outputColor = mix(accumulated, outputColor, weight);
-
     FragColor = vec4(outputColor, 1.0f);
-
-    // Writes updated average back to the frame buffer
-    imageStore(frameBuffer, pixelCoords, vec4(outputColor, 1.0f));
 
 }
 
