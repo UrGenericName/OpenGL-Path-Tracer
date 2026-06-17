@@ -9,6 +9,10 @@
 class Mesh {
 public:
 
+	glm::vec3 position { 0.0f, 0.0f, 0.0f };
+	glm::vec3 rotation { 0.0f, 0.0f, 0.0f };
+	glm::vec3 scale { 1.0f, 1.0f, 1.0f };
+
 	float emissive = false;
 	Material* material;
 
@@ -29,7 +33,11 @@ public:
 	void Draw(Shader& shader, Camera& camera);
 	bool importObj(const char* fileName, glm::vec4 importColor);	// imports an obj mesh (MUST BE TRIANGLATED BEFORE IMPORT)
 	void updateBuffers();
+	void updateModelMatrix();
 
 private:
+
+	glm::mat4 modelMatrix;
+
 	void MeshSetup();
 };

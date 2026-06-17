@@ -85,6 +85,10 @@ void Mesh::Draw(Shader& shader, Camera& camera, GLuint currentMesh, std::vector<
 	shader.Activate();
 	VAO.Bind();
 
+	updateModelMatrix();
+	GLuint modelMatrixLoc = glGetUniformLocation(shader.ID, "u_modelMatrix");
+	glUniformMatrix4fv(modelMatrixLoc, 1, GL_FALSE, glm::value_ptr(modelMatrix));
+
 	// Uniforms for the index location of each texture
 	GLuint albedoUniformLoc = glGetUniformLocation(shader.ID, "u_albedo");
 	glUniform1ui(albedoUniformLoc, meshTextures[currentMesh].x);
@@ -289,5 +293,59 @@ void Mesh::updateBuffers() {
 
 	VBOptr->Update(vertices); // updates the vertices stored in the VBO
 	EBOptr->Update(indices); // updates the indices stored in the EBO
+
+}
+
+void Mesh::updateModelMatrix() {
+
+	// TRANSLATION
+	glm::mat4 translationMatrix{
+		1.0f,		0.0f,		0.0f,		0.0f,
+		0.0f,		1.0f,		0.0f,		0.0f,
+		0.0f,		0.0f,		1.0f,		0.0f,
+		position.x,	position.y,	position.z,	1.0f
+	};
+
+	// ROTATION
+	float cosTheta, sinTheta;
+
+	cosTheta = cos(rotation.x);
+	sinTheta = sin(rotation.x);
+	glm::mat4 rotationX {
+		1.0f,	0.0f,		0.0f,		0.0f,
+		0.0f,	cosTheta,	sinTheta,	0.0f,
+		0.0f,	-sinTheta,	cosTheta,	0.0f,
+		0.0f,	0.0f,		0.0f,		1.0f
+	};
+
+	cosTheta = cos(rotation.y);
+	sinTheta = sin(rotation.y);
+	glm::mat4 rotationY{
+		cosTheta,	0.0f,	-sinTheta,	0.0f,
+		0.0f,		1.0f,	0.0f,		0.0f,
+		sinTheta,	0.0f,	cosTheta,	0.0f,
+		0.0f,		0.0f,	0.0f,		1.0f,
+	};
+
+	cosTheta = cos(rotation.z);
+	sinTheta = sin(rotation.z);
+	glm::mat4 rotationZ{
+		cosTheta,	sinTheta,	0.0f,	0.0f,
+		-sinTheta,	cosTheta,	0.0f,	0.0f,
+		0.0f,		0.0f,		1.0f,	0.0f,
+		0.0f,		0.0f,		0.0f,	1.0f
+	};
+
+	glm::mat4 rotationMatrix{ rotationZ * rotationY * rotationX };
+
+	// SCALE
+	glm::mat4 scaleMatrix{
+		scale.x,	0.0f,		0.0f,		0.0f,
+		0.0f,		scale.y,	0.0f,		0.0f,
+		0.0f,		0.0f,		scale.z,	0.0f,
+		0.0f,		0.0f,		0.0f,		1.0f
+	};
+
+	modelMatrix = translationMatrix * rotationMatrix * scaleMatrix;
 
 }

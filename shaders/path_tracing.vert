@@ -11,11 +11,12 @@ out vec3 intersectionPoint;
 out vec3 rayOrientation;
 
 uniform mat4 u_camMatrix;
+uniform mat4 u_modelMatrix;
 uniform vec3 u_camPos;
 
 void main()
 {
-	gl_Position = u_camMatrix * aPos;
+	gl_Position = u_camMatrix * u_modelMatrix * aPos;
 
 	color = aColor.xyz;
 	texCoord = aTexCoord;

@@ -1,7 +1,7 @@
 #include "Scene.h"
 
-#define WIDTH 800
-#define HEIGHT 800
+#define WIDTH 1080
+#define HEIGHT 1080
 
 GLFWwindow* initGLFW();
 void configOpenGL(GLFWwindow* window);
