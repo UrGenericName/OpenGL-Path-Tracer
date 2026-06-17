@@ -1,6 +1,7 @@
 #pragma once
 
 #include "imgui.h"
+#include "Mesh.h"
 #include <glm/glm.hpp>
 #include <backends/imgui_impl_opengl3.h>
 #include <backends/imgui_impl_glfw.h>
@@ -14,7 +15,7 @@ public:
 	ImguiWindow();
 
 	static void initImgui(GLFWwindow* window);
-	void drawImgui(double frameTime);
+	void drawImgui(double frameTime, Mesh* highlightedMesh);
 
 	enum class DebugTypes {
 
@@ -40,6 +41,14 @@ public:
 	unsigned int currentSample = 0;
 
 	bool pause = false;
+
+	int highlightedMesh = -1;
+	bool mouseLeftClick = false;
+	double mouseX;
+	double mouseY;
+
+	float uniformScaleAmount = 1.0f;
+	bool uniformScale = true;
 
 	bool drawWindow = true;
 

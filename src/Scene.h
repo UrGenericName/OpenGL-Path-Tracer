@@ -7,6 +7,7 @@
 #include "ImguiWindow.h"
 #include "Mesh.h"
 #include "FBO.h"
+#include "Camera.h"
 
 #define COLOR_NOISE "textures/core/color_noise.png"
 
@@ -15,11 +16,11 @@ public:
 
 	Camera& camera;
 
-	std::vector<Mesh*> meshCollection;
-	glm::vec3 backgroundColor = { 0.07f, 0.13f, 0.17f };
-
 	unsigned int textureWidth;
 	unsigned int textureHeight;
+
+	std::vector<Mesh*> meshCollection;
+	glm::vec3 backgroundColor = { 0.07f, 0.13f, 0.17f };
 
 	Scene(Camera& i_camera, unsigned int width = 256, unsigned int height = 256);
 	~Scene();
@@ -42,6 +43,9 @@ private:
 	std::vector<glm::vec4> meshTexturesOutput;
 	GLuint vertexSSBO, indicesSSBO, textureMeshSSBO, meshHeaderSSBO, textureArray;
 
+	GLuint highlightedMeshBuffer;
+
+	void updateVertexSSBO(GLuint vertexSSBO);
 	void generateSSBOs(unsigned int width, unsigned int height, GLuint& vertexSSBO, GLuint& indicesSSBO, GLuint& meshTextureSSBO, GLuint& meshHeaderSSBO, GLuint& textureArray, std::vector<glm::vec4>& meshTexturesOutput);
 	void generateDepthUniforms(Shader& shader, Camera& camera);
 	void generatePathTracingUniforms(Shader& shader, Camera& camera);

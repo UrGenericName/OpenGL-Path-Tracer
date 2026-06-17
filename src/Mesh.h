@@ -1,9 +1,10 @@
+#pragma once
+
 #include <string>
 #include <fstream>
-
+#include <glm/gtc/type_ptr.hpp>
 #include "VAO.h"
 #include "EBO.h"
-#include "Camera.h"
 #include "Material.h"
 
 class Mesh {
@@ -13,7 +14,7 @@ public:
 	glm::vec3 rotation { 0.0f, 0.0f, 0.0f };
 	glm::vec3 scale { 1.0f, 1.0f, 1.0f };
 
-	float emissive = false;
+	float emissive = 0.0f;
 	Material* material;
 
 	std::vector<Vertex> vertices;
@@ -29,11 +30,10 @@ public:
 	Mesh(const char* fileName, glm::vec4 importColor = { 1.0f, 1.0f, 1.0f, 0.0f }, float i_emissive = 0.0f);
 	~Mesh();
 
-	void Draw(Shader& shader, Camera& camera, GLuint currentMesh, std::vector<glm::vec4> meshHeader);
-	void Draw(Shader& shader, Camera& camera);
+	void Draw(Shader& shader, GLuint currentMesh, std::vector<glm::vec4> meshHeader);
 	bool importObj(const char* fileName, glm::vec4 importColor);	// imports an obj mesh (MUST BE TRIANGLATED BEFORE IMPORT)
 	void updateBuffers();
-	void updateModelMatrix();
+	glm::mat4 getModelMatrix();
 
 private:
 

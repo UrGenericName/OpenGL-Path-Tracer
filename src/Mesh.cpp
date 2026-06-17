@@ -80,14 +80,13 @@ void Mesh::MeshSetup() {
 
 }
 
-void Mesh::Draw(Shader& shader, Camera& camera, GLuint currentMesh, std::vector<glm::vec4> meshTextures) {
+void Mesh::Draw(Shader& shader, GLuint currentMesh, std::vector<glm::vec4> meshTextures) {
 
 	shader.Activate();
 	VAO.Bind();
 
-	updateModelMatrix();
 	GLuint modelMatrixLoc = glGetUniformLocation(shader.ID, "u_modelMatrix");
-	glUniformMatrix4fv(modelMatrixLoc, 1, GL_FALSE, glm::value_ptr(modelMatrix));
+	glUniformMatrix4fv(modelMatrixLoc, 1, GL_FALSE, glm::value_ptr(getModelMatrix()));
 
 	// Uniforms for the index location of each texture
 	GLuint albedoUniformLoc = glGetUniformLocation(shader.ID, "u_albedo");
@@ -110,16 +109,6 @@ void Mesh::Draw(Shader& shader, Camera& camera, GLuint currentMesh, std::vector<
 	GLuint currentMeshLoc = glGetUniformLocation(shader.ID, "u_currentMesh");
 	glUniform1ui(currentMeshLoc, currentMesh);
 
-	glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
-
-}
-
-void Mesh::Draw(Shader& shader, Camera& camera) {
-
-	shader.Activate();
-	VAO.Bind();
-
-	camera.Matrix(shader, "u_camMatrix");
 	glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
 
 }
@@ -172,7 +161,7 @@ bool Mesh::importObj(const char* fileName, glm::vec4 importColor) {
 				}
 
 				// for some reason we have to invert the y
-				parsedVertices.push_back(glm::vec4(stof(x), -stof(y), stof(z), 0.0f));
+				parsedVertices.push_back(glm::vec4(stof(x), -stof(y), stof(z), 1.0f));
 				continue;
 			}
 
@@ -205,7 +194,7 @@ bool Mesh::importObj(const char* fileName, glm::vec4 importColor) {
 
 				}
 
-				parsedNormals.push_back(glm::vec4(stof(x), -stof(y), stof(z), 0.0f));
+				parsedNormals.push_back(glm::vec4(stof(x), -stof(y), stof(z), 1.0f));
 				continue;
 			}
 
@@ -296,7 +285,7 @@ void Mesh::updateBuffers() {
 
 }
 
-void Mesh::updateModelMatrix() {
+glm::mat4 Mesh::getModelMatrix() {
 
 	// TRANSLATION
 	glm::mat4 translationMatrix{
@@ -347,5 +336,5 @@ void Mesh::updateModelMatrix() {
 	};
 
 	modelMatrix = translationMatrix * rotationMatrix * scaleMatrix;
-
+	return modelMatrix;
 }

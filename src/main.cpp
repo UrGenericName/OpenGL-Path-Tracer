@@ -1,7 +1,7 @@
 #include "Scene.h"
 
-#define WIDTH 1080
-#define HEIGHT 1080
+#define WIDTH 800
+#define HEIGHT 800
 
 GLFWwindow* initGLFW();
 void configOpenGL(GLFWwindow* window);
@@ -16,10 +16,10 @@ int main() {
 	Camera camera(WIDTH, HEIGHT, glm::vec3(0.0f, -12.0f, 4.5f));
 
 	Scene scene(camera, 256, 256);
-	scene.meshCollection.push_back(new Mesh("models/room/monkey.obj", new Material(DEFAULT_ALBEDO, DEFAULT_NORMAL, "textures/roughness_c.png")));
+	//scene.meshCollection.push_back(new Mesh("models/room/monkey.obj", new Material(DEFAULT_ALBEDO, DEFAULT_NORMAL, "textures/roughness_c.png")));
 	//scene.meshCollection.push_back(new Mesh("models/room/cubeA.obj", new Material(DEFAULT_ALBEDO, DEFAULT_NORMAL, "textures/roughness_c.png"), glm::vec4(1.0f, 0.5f, 0.5f, 1.0f)));
 	//scene.meshCollection.push_back(new Mesh("models/room/cubeB.obj", new Material(DEFAULT_ALBEDO, DEFAULT_NORMAL, "textures/roughness_c.png"), glm::vec4(0.5f, 1.0f, 0.5f, 1.0f)));
-	//scene.meshCollection.push_back(new Mesh("models/room/sphere.obj", new Material(DEFAULT_ALBEDO, DEFAULT_NORMAL, "textures/roughness_c.png")));
+	scene.meshCollection.push_back(new Mesh("models/room/sphere.obj", new Material(DEFAULT_ALBEDO, DEFAULT_NORMAL, "textures/roughness_c.png")));
 	scene.meshCollection.push_back(new Mesh("models/room/white_walls.obj", new Material(DEFAULT_ALBEDO, "textures/concrete_normal.png", "textures/roughness_a.png")));
 	scene.meshCollection.push_back(new Mesh("models/room/light.obj", new Material(DEFAULT_ALBEDO, DEFAULT_NORMAL, "textures/roughness_a.png"), glm::vec4(1.0f, 1.0f, 0.9f, 0.0f), 20.0f));
 	scene.meshCollection.push_back(new Mesh("models/room/red_wall.obj", new Material(DEFAULT_ALBEDO, "textures/concrete_normal.png", "textures/roughness_a.png"), glm::vec4(1.0f, 0.2f, 0.2f, 1.0f)));
@@ -58,7 +58,7 @@ GLFWwindow* initGLFW() {
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 4);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-	glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
+	//glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
 
 	// Creates the actual glfw window
 	GLFWwindow* window = glfwCreateWindow(WIDTH, HEIGHT, "Graphcis", NULL, NULL);

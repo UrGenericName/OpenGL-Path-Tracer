@@ -18,7 +18,7 @@ void ImguiWindow::initImgui(GLFWwindow* window) {
 
 }
 
-void ImguiWindow::drawImgui(double frameTime) {
+void ImguiWindow::drawImgui(double frameTime, Mesh* highlightedMesh) {
 
     // DEBUG WINDOW
     ImGui_ImplOpenGL3_NewFrame();
@@ -37,6 +37,7 @@ void ImguiWindow::drawImgui(double frameTime) {
 
     Text("Samples: %d/%d\t\tFT(ms): %.3f\t\tFPS: %d", currentSample, maxSamples, frameTime, static_cast<int>(1000 / frameTime));
 
+    // RENDER VISUALIZATION
     if (BeginTable("ShaderLayoutTable", 2)) {
 
         TableSetupColumn("Render Visualization");
@@ -56,12 +57,85 @@ void ImguiWindow::drawImgui(double frameTime) {
         // SETTINGS
         TableNextColumn();
         Checkbox("Lambertian Shading", &debugLambertian);
-        if (SliderInt("Bounces", &maxBounces, 1, MAX_BOUNCES)) currentSample = 0;
-        if (SliderInt("Samples", &maxSamples, 1, MAX_SAMPLES)) currentSample = 0;
         SliderFloat("Min Brightness", &minBrightness, 0.0f, maxBrightness - 0.001f);
         SliderFloat("Max Brightness", &maxBrightness, minBrightness + 0.001f, 1.0f);
+        if (SliderInt("Bounces", &maxBounces, 1, MAX_BOUNCES)) currentSample = 0;
+        if (SliderInt("Samples", &maxSamples, 1, MAX_SAMPLES)) currentSample = 0;
 
         EndTable();
+    }
+
+    // MESH SETTINGS
+    if (highlightedMesh != nullptr) {
+;
+        if (BeginTable("ShaderLayoutTable", 4)) {
+
+            TableSetupColumn("Edit Mesh");
+            TableSetupColumn("   X");
+            TableSetupColumn("   Y");
+            TableSetupColumn("   Z");
+            TableHeadersRow();
+
+            TableNextRow();
+            TableNextColumn();
+            Text("Position");
+            TableNextColumn();
+            {
+                PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.3f, 0.1f, 0.1f, 1.0f));
+                if (DragFloat("##posX", &(highlightedMesh->position.x), 0.5f)) currentSample = 0;
+                PopStyleColor(1);
+                TableNextColumn();
+                PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.1f, 0.3f, 0.1f, 1.0f));
+                if (DragFloat("##posY", &(highlightedMesh->position.y), 0.5f)) currentSample = 0;
+                PopStyleColor(1);
+                TableNextColumn();
+                PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.15f, 0.15f, 0.3f, 1.0f));
+                if (DragFloat("##posZ", &(highlightedMesh->position.z), 0.5f)) currentSample = 0;
+                PopStyleColor(1);
+            }
+            
+            TableNextRow();
+            TableNextColumn();
+            Text("Rotation");
+            TableNextColumn();
+            {
+                PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.3f, 0.1f, 0.1f, 1.0f));
+                if (DragFloat("##pitch", &(highlightedMesh->rotation.x), 0.1f)) currentSample = 0;
+                PopStyleColor(1);
+                TableNextColumn();
+                PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.1f, 0.3f, 0.1f, 1.0f));
+                if (DragFloat("##yaw", &(highlightedMesh->rotation.y), 0.1f)) currentSample = 0;
+                PopStyleColor(1);
+                TableNextColumn();
+                PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.15f, 0.15f, 0.3f, 1.0f));
+                if (DragFloat("##roll", &(highlightedMesh->rotation.z), 0.1f)) currentSample = 0;
+                PopStyleColor(1);
+            }
+
+            TableNextRow();
+            TableNextColumn();
+            Text("Scale");
+            TableNextColumn();
+            {
+                PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.3f, 0.1f, 0.1f, 1.0f));
+                if (DragFloat("##scaleX", &(highlightedMesh->scale.x), 0.1f)) currentSample = 0;
+                PopStyleColor(1);
+                TableNextColumn();
+                PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.1f, 0.3f, 0.1f, 1.0f));
+                if (DragFloat("##scaleY", &(highlightedMesh->scale.y), 0.1f)) currentSample = 0;
+                PopStyleColor(1);
+                TableNextColumn();
+                PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.15f, 0.15f, 0.3f, 1.0f));
+                if (DragFloat("##scaleZ", &(highlightedMesh->scale.z), 0.1f)) currentSample = 0;
+                PopStyleColor(1);
+            }
+
+            if (SliderFloat("Emissive", &(highlightedMesh->emissive), 0.0f, 500.0f)) currentSample = 0;
+
+            EndTable();
+
+        }
+
     }
 
     if (BeginTable("ShaderLayoutTable", 2)) {
@@ -78,13 +152,18 @@ void ImguiWindow::drawImgui(double frameTime) {
         EndDisabled();
 
         TableNextColumn();
+        if (Button("Clear Samples")) currentSample = 0;
+
+        TableNextRow();
+
+        TableNextColumn();
         if (Checkbox("Universal Roughness", &debugUniversalRoughness)) currentSample = 0;
+
+        TableNextColumn();
+        if (Button("Pause")) pause = !pause;
+
         EndTable();
-
     }
-
-    if (Button("Clear Samples")) currentSample = 0;
-    if (Button("Pause")) pause = !pause;
 
     // clear samples if window is moved or resized
     if (windowSize.x != GetWindowSize().x || windowSize.y != GetWindowSize().y) currentSample = 0;

@@ -22,6 +22,17 @@ void Camera::Matrix(Shader& shader, const char* uniform) {
 
 void Camera::Inputs(GLFWwindow* window, ImguiWindow& imguiWindow) {
 
+	// HIGHLIGHT MESH
+	if (!imguiWindow.drawWindow && glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
+
+		imguiWindow.mouseLeftClick = true;
+		imguiWindow.highlightedMesh = -1;
+		glfwGetCursorPos(window, &imguiWindow.mouseX, &imguiWindow.mouseY);
+
+	} else if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_RELEASE) {
+		imguiWindow.mouseLeftClick = false;
+	}
+
 	// MOVEMENT (w, a, s, d)
 	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
 		Position += speed * Orientation;	// move position foward from orientation

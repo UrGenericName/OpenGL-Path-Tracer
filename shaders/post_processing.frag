@@ -13,7 +13,7 @@ in vec3 rayOrientation;
 
 uniform float u_debugMinBrightness;
 uniform float u_debugMaxBrightness;
-uniform bool u_debugHighlightObject;
+uniform int u_debugHighlightedMesh;
 
 uniform uint u_albedo;
 uniform uint u_normal;
@@ -28,11 +28,6 @@ bool debugHighlightObject(inout vec4 inputColor);
 void adjustBrightness(inout vec4 inputColor);
 
 void main() {
-
-	if (u_debugHighlightObject) {
-		FragColor = vec4(1.0f);
-		return;
-	}
 
 	if (u_emissive != 0.0f) {
 		FragColor = vec4(color, 1.0f);
@@ -50,7 +45,7 @@ void main() {
 
 bool debugHighlightObject(inout vec4 inputColor) {
 
-	if (u_currentMesh == -1) {
+	if (u_debugHighlightedMesh != -1 && u_currentMesh == u_debugHighlightedMesh) {
 		const vec4 highlightColor = vec4(1.0f, 0.6f, 0.0f, 1.0f);
 
 		inputColor = mix(inputColor, highlightColor, 0.5f);

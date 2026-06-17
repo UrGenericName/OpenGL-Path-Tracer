@@ -27,6 +27,10 @@ layout(std430, binding = 3) readonly buffer MeshHeaderBuffer {
     vec4 meshHeader[];
 };
 
+layout(std430, binding = 4) coherent buffer highlightedMeshBuffer {
+    uint highlightedMesh;
+};
+
 // OUTPUT
 layout(location = 0) out vec4 FragColor;
 
@@ -46,8 +50,9 @@ uniform uint u_debugMode;
 uniform bool u_debugLambertian;
 uniform bool u_debugUniversalRoughness;
 uniform float u_debugUniversalRoughnessAmount;
+uniform ivec2 u_debugMousePos;
+uniform bool u_debugMouseLeftClick;
 
-uniform uint u_maxSamples;
 uniform uint u_maxBounces;  
 uniform uint u_currentSample;
 
@@ -87,10 +92,11 @@ const ivec2 pixelCoords = ivec2(gl_FragCoord.xy);
 const uint pixelSeed = (pixelCoords.x * 1664525u + pixelCoords.y * 1013904223u) ^ floatBitsToUint(intersectionPoint.x) ^ floatBitsToUint(texCoord.y) ^ (u_seed * 2246822519u);
 
 void main() {
+    
+    if (u_debugMouseLeftClick && u_debugMousePos == pixelCoords) highlightedMesh = u_currentMesh;
 
     if (drawDebug(u_debugMode)) return;
 
-    // Early exit for emissive geometry
     if (u_emissive != 0.0f) return;
 
     vec4 sampleColor = vec4(0);

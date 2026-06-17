@@ -14,6 +14,8 @@ void Scene::Draw(GLFWwindow* window) {
 
 	auto start = std::chrono::high_resolution_clock::now();
 
+	updateVertexSSBO(vertexSSBO);
+
 	camera.Inputs(window, imguiWindow);
 	camera.updateMatrix(45.0f, 0.1f, 100.0f);
 
@@ -36,7 +38,9 @@ void Scene::Draw(GLFWwindow* window) {
 	auto raw_duration = end - start;
 	std::chrono::duration<double, std::milli> ms_double = raw_duration;
 
-	imguiWindow.drawImgui(ms_double.count());
+	Mesh* highlightedMesh = (imguiWindow.highlightedMesh == -1) ? nullptr : meshCollection[imguiWindow.highlightedMesh];
+	imguiWindow.drawImgui(ms_double.count(), highlightedMesh);
+
 }
 
 void Scene::Draw_DepthPrepass(Shader& Depth_shader) {
@@ -53,11 +57,17 @@ void Scene::Draw_DepthPrepass(Shader& Depth_shader) {
 
 	// DRAW MESHES
 	for (size_t i = 0; i < meshCollection.size(); ++i) {
-		meshCollection[i]->Draw(Depth_shader, camera, i, meshTexturesOutput);
+		meshCollection[i]->Draw(Depth_shader, i, meshTexturesOutput);
 	}
+
 }
 
 void Scene::Draw_PathTracingPass(Shader& PathTracing_shader) {
+
+	// UPDATE HIGHLIGHT BUFFER WITH IMGUI WINDOW (basically sets it to -1 incase the shader doesn't pass anything)
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, highlightedMeshBuffer);
+	glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, sizeof(GLuint), &imguiWindow.highlightedMesh);
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 
 	PathTracing_shader.Activate();
 	generatePathTracingUniforms(PathTracing_shader, camera);
@@ -76,8 +86,13 @@ void Scene::Draw_PathTracingPass(Shader& PathTracing_shader) {
 
 	// DRAW MESHES
 	for (size_t i = 0; i < meshCollection.size(); ++i) {
-		meshCollection[i]->Draw(PathTracing_shader, camera, i, meshTexturesOutput);
+		meshCollection[i]->Draw(PathTracing_shader, i, meshTexturesOutput);
 	}
+
+	// SEND HIGHLIGHT BUFFER INFORMATION TO IMGUI WINDOW
+	glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, highlightedMeshBuffer);
+	glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, sizeof(GLuint), &imguiWindow.highlightedMesh);
 
 }
 
@@ -100,12 +115,15 @@ void Scene::Draw_PostProcessingPass(Shader& PostProcessing_shader) {
 
 	// DRAW MESHES
 	for (size_t i = 0; i < meshCollection.size(); ++i) {
-		meshCollection[i]->Draw(PostProcessing_shader, camera, i, meshTexturesOutput);
+		meshCollection[i]->Draw(PostProcessing_shader, i, meshTexturesOutput);
 	}
 
 }
 
 void Scene::generatePostProcessingUniforms(Shader& shader, Camera& camera) {
+
+	int debugHighlightedMesh = glGetUniformLocation(shader.ID, "u_debugHighlightedMesh");
+	glUniform1i(debugHighlightedMesh, static_cast<int>(imguiWindow.highlightedMesh));
 
 	int debugMinBrightness = glGetUniformLocation(shader.ID, "u_debugMinBrightness");
 	glUniform1f(debugMinBrightness, imguiWindow.minBrightness);
@@ -125,6 +143,13 @@ void Scene::generateDepthUniforms(Shader& shader, Camera& camera) {
 }
 
 void Scene::generatePathTracingUniforms(Shader& shader, Camera& camera) {
+
+	GLint mousePos[2] = { imguiWindow.mouseX, camera.height - imguiWindow.mouseY };
+	int debugMousePosLoc = glGetUniformLocation(shader.ID, "u_debugMousePos");
+	glUniform2iv(debugMousePosLoc, 1, mousePos);
+
+	int debugMouseLeftClick = glGetUniformLocation(shader.ID, "u_debugMouseLeftClick");
+	glUniform1i(debugMouseLeftClick, imguiWindow.mouseLeftClick);
 
 	int camPosUniformLocation = glGetUniformLocation(shader.ID, "u_camPos");
 	glUniform3f(camPosUniformLocation, camera.Position.x, camera.Position.y, camera.Position.z);
@@ -150,13 +175,36 @@ void Scene::generatePathTracingUniforms(Shader& shader, Camera& camera) {
 	int maxBouncesLoc = glGetUniformLocation(shader.ID, "u_maxBounces");
 	glUniform1ui(maxBouncesLoc, static_cast<unsigned int>(imguiWindow.maxBounces));
 
-	int maxSamplesLoc = glGetUniformLocation(shader.ID, "u_maxSamples");
-	glUniform1ui(maxSamplesLoc, static_cast<unsigned int>(imguiWindow.maxSamples));
-
 	int seedColorLoc = glGetUniformLocation(shader.ID, "u_seed");
 	glUniform1ui(seedColorLoc, m_distrib(m_gen));
 
 	camera.Matrix(shader, "u_camMatrix");
+}
+
+void Scene::updateVertexSSBO(GLuint vertexSSBO) {
+
+	std::vector<Vertex> globalVertices;
+
+	for (Mesh* mesh : meshCollection) {
+
+		for (auto vertex : mesh->vertices) {
+
+			vertex.position = mesh->getModelMatrix() * vertex.position;
+			globalVertices.push_back(vertex);
+
+		}
+	}
+
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, vertexSSBO);
+	glBufferSubData(
+		GL_SHADER_STORAGE_BUFFER,
+		0,
+		globalVertices.size() * sizeof(globalVertices[0]),
+		globalVertices.data()
+	);
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+
+
 }
 
 void Scene::generateSSBOs(unsigned int width, unsigned int height, GLuint& vertexSSBO, GLuint& indicesSSBO, GLuint& meshTextureSSBO, GLuint& meshHeaderSSBO, GLuint& textureArray, std::vector<glm::vec4>& meshTexturesOutput) {
@@ -172,7 +220,12 @@ void Scene::generateSSBOs(unsigned int width, unsigned int height, GLuint& verte
 	for (Mesh* mesh : meshCollection) {
 
 		// VERTICES
-		globalVertices.insert(globalVertices.end(), mesh->vertices.begin(), mesh->vertices.end());
+		for (auto vertex : mesh->vertices) {
+
+			vertex.position = mesh->getModelMatrix() * vertex.position;
+			globalVertices.push_back(vertex);
+
+		}
 
 		// INDICES
 		std::vector<GLuint> tempIndices = mesh->indices;
@@ -218,6 +271,7 @@ void Scene::generateSSBOs(unsigned int width, unsigned int height, GLuint& verte
 	);
 
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, vertexSSBO);
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 
 	// GENERATE INDICES SSBO
 	glGenBuffers(1, &indicesSSBO);
@@ -231,6 +285,7 @@ void Scene::generateSSBOs(unsigned int width, unsigned int height, GLuint& verte
 	);
 
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, indicesSSBO);
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 
 	// MESH-TEXTURES SSBO
 	glGenBuffers(1, &meshTextureSSBO);
@@ -244,6 +299,7 @@ void Scene::generateSSBOs(unsigned int width, unsigned int height, GLuint& verte
 	);
 
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, meshTextureSSBO);
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 
 	// MESH-HEADER SSBO
 	glGenBuffers(1, &meshHeaderSSBO);
@@ -257,6 +313,7 @@ void Scene::generateSSBOs(unsigned int width, unsigned int height, GLuint& verte
 	);
 
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, meshHeaderSSBO);
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 
 	// 2D-TEXTURE ARRAY
 	glGenTextures(1, &textureArray);
@@ -298,4 +355,12 @@ void Scene::link() {
 	// ACCUMULATION BUFFER
 	accumulationBuffer = new FBO{ camera.width, camera.height, GL_TEXTURE3 };
 	glBindImageTexture(3, accumulationBuffer->texture->ID, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F);
+
+	// HIGHLIGHTED MESH BUFFER
+	glGenBuffers(1, &highlightedMeshBuffer);
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, highlightedMeshBuffer);
+	glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(GLuint), &imguiWindow.highlightedMesh, GL_DYNAMIC_COPY);
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 4, highlightedMeshBuffer);
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+
 }
