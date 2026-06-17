@@ -75,7 +75,7 @@ uniform vec3 u_camOrientation;
 
 // DECLERATIONS
 bool drawDebug(uint debugMode);
-void calculateSample(out vec3 outputColor, uint sampleCount);
+void calculateSample(out vec4 outputColor);
 void randomizeNormal(uint seed, float roughness, inout vec3 normal);
 void calculatePath(vec3 init_Intersection, vec3 init_Origin, vec3 init_FaceNormal, out float totalBrightness, out vec3 totalReflectionColor, out uint bounceCount);
 void normalSpaceToWorldSpace(vec3 point, vec3 faceNormal, vec2 texCoord, vec3 inVector, out vec3 outVector);
@@ -83,39 +83,32 @@ void calculateWorldSpaceTangentBitagent(vec3 point, vec3 faceNormal, vec2 texCoo
 bool intersect_triangle(vec3 orig, vec3 dir, vec3 vert0, vec3 vert1, vec3 vert2, out vec3 result);
 
 // GLOBAL VARIABLES
-const uint pixelSeed = (uint(gl_FragCoord.x) * 1664525u + uint(gl_FragCoord.y) * 1013904223u) ^ floatBitsToUint(intersectionPoint.x) ^ floatBitsToUint(texCoord.y) ^ (u_seed * 2246822519u);
+const ivec2 pixelCoords = ivec2(gl_FragCoord.xy);
+const uint pixelSeed = (pixelCoords.x * 1664525u + pixelCoords.y * 1013904223u) ^ floatBitsToUint(intersectionPoint.x) ^ floatBitsToUint(texCoord.y) ^ (u_seed * 2246822519u);
 
 void main() {
-    
-    ivec2 pixelCoords = ivec2(gl_FragCoord.xy);
 
     if (drawDebug(u_debugMode)) return;
 
     // Early exit for emissive geometry
-    if (u_emissive != 0.0f) {
-        FragColor = vec4(color, 1.0f);
-        return;
-    }
+    if (u_emissive != 0.0f) return;
 
-    vec3 outputColor = vec3(0);
-
-    calculateSample(outputColor, u_currentSample);
+    vec4 sampleColor = vec4(0);
+    calculateSample(sampleColor);
 
     if (u_currentSample == 0) {
-        FragColor = vec4(outputColor, 1.0f);
-        imageStore(frameBuffer, pixelCoords, vec4(outputColor, 1.0f));
+        FragColor = sampleColor;
+        imageStore(frameBuffer, pixelCoords, sampleColor);
         return;
     }
 
-    vec3 accumulated = imageLoad(frameBuffer, pixelCoords).xyz;
+    vec4 accumulated = imageLoad(frameBuffer, pixelCoords);
     float weight = 1.0f / float(u_currentSample);
 
-    outputColor = mix(accumulated, outputColor, weight);
+    vec4 outputColor = mix(accumulated, sampleColor, weight);
+    FragColor = outputColor;
 
-    FragColor = vec4(outputColor, 1.0f);
-
-    // Writes updated average back to the frame buffer
-    imageStore(frameBuffer, pixelCoords, vec4(outputColor, 1.0f));
+    imageStore(frameBuffer, pixelCoords, outputColor);
 
 }
 
@@ -162,7 +155,7 @@ bool drawDebug(uint debugMode) {
 
 }
 
-void calculateSample(out vec3 outputColor, uint sampleCount) {
+void calculateSample(out vec4 outputColor) {
 
     // Normal Map Local Vector
     vec3 normalMapVector;
@@ -176,7 +169,7 @@ void calculateSample(out vec3 outputColor, uint sampleCount) {
     vec3 faceNormal;
     {
         float roughnessValue = texture(texturePool, vec3(texCoord, u_roughness)).r;
-        uint localSeed = pixelSeed + sampleCount + uint(rayOrientation.x * rayOrientation.y * rayOrientation.z * 10000);    // generally random for each calculateSample call
+        uint localSeed = pixelSeed + uint(rayOrientation.x * rayOrientation.y * rayOrientation.z * 10000);    // generally random for each calculateSample call
 
         randomizeNormal(localSeed, roughnessValue, normalMapVector);
 
@@ -200,7 +193,7 @@ void calculateSample(out vec3 outputColor, uint sampleCount) {
     
     vec3 finalColor = (accumulatedAlbedo * albedoColor * tint * brightness);
     //float finalBrightness = (totalBrightness * (MAX_BRIGHTNESS - MIN_BRIGHTNESS)) + MIN_BRIGHTNESS;
-    outputColor = vec3(finalColor);
+    outputColor = vec4(finalColor, 1.0f);
 
 }
 

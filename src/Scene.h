@@ -1,5 +1,6 @@
 #pragma once
 
+#include <chrono>
 #include <vector>
 #include <set>
 #include <random>
@@ -30,9 +31,7 @@ private:
 
 	Shader* depthPrepassShader;
 	Shader* pathTracingShader;
-
-	Shader* pathTracer;
-	Shader* accumulationPass;
+	Shader* postProcessingShader;
 
 	FBO* frameBuffer;
 	FBO* accumulationBuffer;
@@ -46,9 +45,11 @@ private:
 	void generateSSBOs(unsigned int width, unsigned int height, GLuint& vertexSSBO, GLuint& indicesSSBO, GLuint& meshTextureSSBO, GLuint& meshHeaderSSBO, GLuint& textureArray, std::vector<glm::vec4>& meshTexturesOutput);
 	void generateDepthUniforms(Shader& shader, Camera& camera);
 	void generatePathTracingUniforms(Shader& shader, Camera& camera);
+	void generatePostProcessingUniforms(Shader& shader, Camera& camera);
 
-	void Draw_DepthPrepass(Shader& depth_shader);
+	void Draw_DepthPrepass(Shader& Depth_shader);
 	void Draw_PathTracingPass(Shader& PathTracing_shader);
+	void Draw_PostProcessingPass(Shader& PostProcessing_shader);
 
 	// Random generators
 	inline static std::random_device m_rd;

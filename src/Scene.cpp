@@ -1,10 +1,6 @@
 #include "Scene.h"
 
-Scene::Scene(Camera& i_camera, unsigned int i_textureWidth, unsigned int i_textureHeight) : camera(i_camera), textureWidth(i_textureWidth), textureHeight(i_textureHeight) {
-
-	
-
-}
+Scene::Scene(Camera& i_camera, unsigned int i_textureWidth, unsigned int i_textureHeight) : camera(i_camera), textureWidth(i_textureWidth), textureHeight(i_textureHeight) {}
 
 Scene::~Scene() {
 
@@ -16,26 +12,37 @@ Scene::~Scene() {
 
 void Scene::Draw(GLFWwindow* window) {
 
+	auto start = std::chrono::high_resolution_clock::now();
+
 	camera.Inputs(window, imguiWindow);
 	camera.updateMatrix(45.0f, 0.1f, 100.0f);
 
-	// CLEAR BACKGROUND
-	glViewport(0, 0, camera.width, camera.height);
-	glClearColor(backgroundColor.x, backgroundColor.y, backgroundColor.z, 1.0f);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	if (!imguiWindow.pause) {
 
-	Draw_DepthPrepass(*depthPrepassShader);
-	Draw_PathTracingPass(*pathTracingShader);
+		// CLEAR BACKGROUND
+		glViewport(0, 0, camera.width, camera.height);
+		glClearColor(backgroundColor.x, backgroundColor.y, backgroundColor.z, 1.0f);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+		Draw_DepthPrepass(*depthPrepassShader);
+		Draw_PathTracingPass(*pathTracingShader);
+		if (imguiWindow.debugMode == 0) Draw_PostProcessingPass(*postProcessingShader);
+
+	}
 
 	if (imguiWindow.currentSample != imguiWindow.maxSamples) ++imguiWindow.currentSample;
 
-	imguiWindow.drawImgui();
+	auto end = std::chrono::high_resolution_clock::now();
+	auto raw_duration = end - start;
+	std::chrono::duration<double, std::milli> ms_double = raw_duration;
+
+	imguiWindow.drawImgui(ms_double.count());
 }
 
-void Scene::Draw_DepthPrepass(Shader& depth_shader) {
+void Scene::Draw_DepthPrepass(Shader& Depth_shader) {
 
-	depth_shader.Activate();
-	generateDepthUniforms(depth_shader, camera);
+	Depth_shader.Activate();
+	generateDepthUniforms(Depth_shader, camera);
 
 	// SET-UP SHADER PROGRAM TO WRITE ONLY DEPTH
 	glEnable(GL_DEPTH_TEST);
@@ -46,7 +53,7 @@ void Scene::Draw_DepthPrepass(Shader& depth_shader) {
 
 	// DRAW MESHES
 	for (size_t i = 0; i < meshCollection.size(); ++i) {
-		meshCollection[i]->Draw(depth_shader, camera, i, meshTexturesOutput);
+		meshCollection[i]->Draw(Depth_shader, camera, i, meshTexturesOutput);
 	}
 }
 
@@ -74,7 +81,45 @@ void Scene::Draw_PathTracingPass(Shader& PathTracing_shader) {
 
 }
 
+void Scene::Draw_PostProcessingPass(Shader& PostProcessing_shader) {
+
+	PostProcessing_shader.Activate();
+	generatePostProcessingUniforms(PostProcessing_shader, camera);
+	
+	// RE-USE SAME DEPTH
+	glEnable(GL_DEPTH_TEST);
+	glDepthFunc(GL_EQUAL);
+	glDepthMask(GL_FALSE);
+	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+
+	// FRAME BUFFER
+	frameBuffer->Bind();
+	glActiveTexture(GL_TEXTURE2);
+	glBindTexture(GL_TEXTURE_2D, frameBuffer->texture->ID);
+	frameBuffer->Unbind();
+
+	// DRAW MESHES
+	for (size_t i = 0; i < meshCollection.size(); ++i) {
+		meshCollection[i]->Draw(PostProcessing_shader, camera, i, meshTexturesOutput);
+	}
+
+}
+
+void Scene::generatePostProcessingUniforms(Shader& shader, Camera& camera) {
+
+	int debugMinBrightness = glGetUniformLocation(shader.ID, "u_debugMinBrightness");
+	glUniform1f(debugMinBrightness, imguiWindow.minBrightness);
+
+	int debugMaxBrightness = glGetUniformLocation(shader.ID, "u_debugMaxBrightness");
+	glUniform1f(debugMaxBrightness, imguiWindow.maxBrightness);
+
+	camera.Matrix(shader, "u_camMatrix");
+}
+
 void Scene::generateDepthUniforms(Shader& shader, Camera& camera) {
+
+	int camPosUniformLocation = glGetUniformLocation(shader.ID, "u_camPos");
+	glUniform3f(camPosUniformLocation, camera.Position.x, camera.Position.y, camera.Position.z);
 
 	camera.Matrix(shader, "u_camMatrix");
 }
@@ -86,9 +131,6 @@ void Scene::generatePathTracingUniforms(Shader& shader, Camera& camera) {
 
 	int camOrientationUniformLocation = glGetUniformLocation(shader.ID, "u_camOrientation");
 	glUniform3f(camOrientationUniformLocation, camera.Orientation.x, camera.Orientation.y, camera.Orientation.z);
-
-	int seedColorLoc = glGetUniformLocation(shader.ID, "u_seed");
-	glUniform1ui(seedColorLoc, m_distrib(m_gen));
 
 	int debugModeLoc = glGetUniformLocation(shader.ID, "u_debugMode");
 	glUniform1ui(debugModeLoc, static_cast<unsigned int> (imguiWindow.debugMode));
@@ -110,6 +152,9 @@ void Scene::generatePathTracingUniforms(Shader& shader, Camera& camera) {
 
 	int maxSamplesLoc = glGetUniformLocation(shader.ID, "u_maxSamples");
 	glUniform1ui(maxSamplesLoc, static_cast<unsigned int>(imguiWindow.maxSamples));
+
+	int seedColorLoc = glGetUniformLocation(shader.ID, "u_seed");
+	glUniform1ui(seedColorLoc, m_distrib(m_gen));
 
 	camera.Matrix(shader, "u_camMatrix");
 }
@@ -230,6 +275,7 @@ void Scene::link() {
 
 	depthPrepassShader = new Shader("shaders/z_prepass.vert", "shaders/z_prepass.frag");
 	pathTracingShader = new Shader("shaders/path_tracing.vert", "shaders/path_tracing.frag");
+	postProcessingShader = new Shader("shaders/post_processing.vert", "shaders/post_processing.frag");
 
 	// TEXTURE ARRAY
 	generateSSBOs(textureWidth, textureHeight, vertexSSBO, indicesSSBO, textureMeshSSBO, meshHeaderSSBO, textureArray, meshTexturesOutput);

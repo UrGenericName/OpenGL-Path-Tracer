@@ -55,8 +55,6 @@ void Camera::Inputs(GLFWwindow* window, ImguiWindow& imguiWindow) {
 		imguiWindow.currentSample = 0;
 	}
 
-
-
 	// MOUSE MOVEMENT
 	if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS) {
 		glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);

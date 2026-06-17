@@ -147,12 +147,10 @@
       <Filter>Resource Files\Models</Filter>
     </None>
     <None Include="extract_path_tracing.frag.sh" />
-    <None Include="shaders\accumulation.frag">
-      <Filter>Resource Files\Shaders</Filter>
-    </None>
-    <None Include="shaders\accumulation.vert">
-      <Filter>Resource Files\Shaders</Filter>
-    </None>
+    <None Include="shaders\z_prepass.frag" />
+    <None Include="shaders\z_prepass.vert" />
+    <None Include="shaders\post_processing.frag" />
+    <None Include="shaders\post_processing.vert" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\shaderClass.h">

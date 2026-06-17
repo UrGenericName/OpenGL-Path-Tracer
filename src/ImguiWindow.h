@@ -1,11 +1,12 @@
 #pragma once
 
 #include "imgui.h"
+#include <glm/glm.hpp>
 #include <backends/imgui_impl_opengl3.h>
 #include <backends/imgui_impl_glfw.h>
 
-#define MAX_BOUNCES 64
-#define MAX_SAMPLES 1024
+#define MAX_BOUNCES 256
+#define MAX_SAMPLES 5096
 
 class ImguiWindow {
 public:
@@ -13,7 +14,7 @@ public:
 	ImguiWindow();
 
 	static void initImgui(GLFWwindow* window);
-	void drawImgui();
+	void drawImgui(double frameTime);
 
 	enum class DebugTypes {
 
@@ -33,6 +34,8 @@ public:
 
 	int maxBounces = 8;
 	int maxSamples = 32;
+	float minBrightness = 0.0f;
+	float maxBrightness = 0.5f;
 
 	unsigned int currentSample = 0;
 

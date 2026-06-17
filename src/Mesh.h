@@ -9,15 +9,15 @@
 class Mesh {
 public:
 
+	float emissive = false;
+	Material* material;
+
 	std::vector<Vertex> vertices;
 	std::vector<GLuint> indices;
-	Material* material;
 
 	VAO VAO;
 	VBO* VBOptr;
 	EBO* EBOptr;
-
-	float emissive = false;
 
 	Mesh(std::vector<Vertex>& vertices, std::vector<GLuint>& indices, Material* i_material, float i_emissive = 0.0f);
 	Mesh(std::vector<Vertex>& vertices, std::vector<GLuint>& indices, float i_emissive = 0.0f);
