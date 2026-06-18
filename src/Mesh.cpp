@@ -267,7 +267,7 @@ bool Mesh::importObj(string fileName, glm::vec3 importColor) {
 					int UVIndex = stoi(faceIndicesParse[1]) - 1;
 					int normalIndex = stoi(faceIndicesParse[2]) - 1;
 
-					Vertex constructedOpenGLVertex(parsedVertices[vertexIndex], glm::vec4(importColor, 1.0f), parsedNormals[normalIndex], parsedUVs[UVIndex]);
+					Vertex constructedOpenGLVertex(parsedVertices[vertexIndex], glm::vec4(tint, 1.0f), parsedNormals[normalIndex], parsedUVs[UVIndex]);
 					//printf("{ [%f, %f, %f], [%f, %f, %f], [%f, %f] }\n", constructedOpenGLVertex.position.x, constructedOpenGLVertex.position.y, constructedOpenGLVertex.position.z, constructedOpenGLVertex.normal.x, constructedOpenGLVertex.normal.y, constructedOpenGLVertex.normal.z, constructedOpenGLVertex.texUV.x, constructedOpenGLVertex.texUV.y);
 					vertices.push_back(constructedOpenGLVertex);
 
@@ -290,6 +290,11 @@ bool Mesh::importObj(string fileName, glm::vec3 importColor) {
 }
 
 void Mesh::updateBuffers() {
+
+
+	for (int i = 0; i < vertices.size(); ++i) {
+		vertices[i].color = glm::vec4(tint, 1.0f);
+	}
 
 	VBOptr->Update(vertices); // updates the vertices stored in the VBO
 	EBOptr->Update(indices); // updates the indices stored in the EBO

@@ -16,7 +16,7 @@ Scene::~Scene() {
 
 void Scene::importScene(string fileName) {
 
-	ifstream file("scenes/" + fileName + SCENE_FILE_EXTENSION);
+	ifstream file("scenes/" + fileName);
 
 	string line;
 	while (getline(file, line)) {
@@ -119,11 +119,11 @@ void Scene::exportScene(string fileName) {
 	auto local_time = chrono::current_zone()->to_local(now);
 	string timeStamp = format("{:%Y-%m-%d_%H-%M-%S}", local_time);
 
-	filesystem::path destination = string("scenes/backups/" + fileName + "_backup_" + timeStamp + SCENE_FILE_EXTENSION);
-	filesystem::path source = string("scenes/" + fileName + SCENE_FILE_EXTENSION);
+	filesystem::path destination = string("scenes/backups/" + timeStamp + "_backup_" + fileName);
+	filesystem::path source = string("scenes/" + fileName);
 	filesystem::copy_file(source, destination, filesystem::copy_options::overwrite_existing);
 
-	ofstream file("scenes/" + fileName + SCENE_FILE_EXTENSION);
+	ofstream file("scenes/" + fileName);
 
 	file << "// FORMAT:\n";
 	file << "// \t fileName\n";
@@ -184,7 +184,7 @@ void Scene::Draw(GLFWwindow* window) {
 	updateVertexSSBO(vertexSSBO);
 
 	camera.Inputs(window, imguiWindow);
-	camera.updateMatrix(45.0f, 0.1f, 100.0f);
+	camera.updateMatrix();
 
 	if (!imguiWindow.pause) {
 
@@ -206,24 +206,7 @@ void Scene::Draw(GLFWwindow* window) {
 	chrono::duration<double, milli> ms_double = raw_duration;
 
 	Mesh* highlightedMesh = (imguiWindow.highlightedMesh == -1) ? nullptr : meshCollection[imguiWindow.highlightedMesh];
-	imguiWindow.drawImgui(ms_double.count(), highlightedMesh);
-
-	if (imguiWindow.importScene) {
-		imguiWindow.importScene = false;
-		importScene(imguiWindow.importName);
-		link();
-	}
-
-	if (imguiWindow.exportScene) {
-		imguiWindow.exportScene = false;
-		exportScene(imguiWindow.exportName);
-	}
-
-	if (imguiWindow.deleteSelectedMesh) {
-		imguiWindow.deleteSelectedMesh = false;
-		erase(meshCollection, highlightedMesh);
-		link();
-	}
+	imguiWindow.drawImgui(ms_double.count(), this, highlightedMesh);
 
 }
 
@@ -374,6 +357,7 @@ void Scene::updateVertexSSBO(GLuint vertexSSBO) {
 		for (auto vertex : mesh->vertices) {
 
 			vertex.position = mesh->getModelMatrix() * vertex.position;
+			vertex.color = glm::vec4(mesh->tint, 1.0f);
 			globalVertices.push_back(vertex);
 
 		}
@@ -407,6 +391,7 @@ void Scene::generateSSBOs(unsigned int width, unsigned int height, GLuint& verte
 		for (auto vertex : mesh->vertices) {
 
 			vertex.position = mesh->getModelMatrix() * vertex.position;
+			vertex.color = glm::vec4(mesh->tint, 1.0f);
 			globalVertices.push_back(vertex);
 
 		}
@@ -546,5 +531,333 @@ void Scene::link() {
 	glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(GLuint), &imguiWindow.highlightedMesh, GL_DYNAMIC_COPY);
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 4, highlightedMeshBuffer);
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+
+}
+
+void ImguiWindow::drawImgui(double frameTime, Scene* scene, Mesh* highlightedMesh) {
+
+	using namespace ImGui;
+
+	// DEBUG WINDOW
+	ImGui_ImplOpenGL3_NewFrame();
+	ImGui_ImplGlfw_NewFrame();
+	NewFrame();
+
+	if (IsKeyPressed(ImGuiKey_F)) {
+		drawWindow = !drawWindow;
+		currentSample = 0;
+	}
+
+	if (!drawWindow) { EndFrame();  return; }
+
+	Begin("Debug");
+	Separator();
+
+	Text("Samples: %d/%d\t\tFT(ms): %.3f\t\tFPS: %d", currentSample, maxSamples, frameTime, static_cast<int>(1000 / frameTime));
+
+	// RENDER VISUALIZATION
+	if (BeginTable("ShaderLayoutTable", 2)) {
+
+		TableSetupColumn("Render Visualization");
+		TableSetupColumn("Settings");
+		TableHeadersRow();
+
+		TableNextRow();
+
+		// RENDER VISUALIZATION
+		TableNextColumn();
+		if (RadioButton("Disabled", &debugMode, static_cast<int>(DebugTypes::DISABLED))) currentSample = 0;
+		if (RadioButton("Albedo", &debugMode, static_cast<int>(DebugTypes::ALBEDO))) currentSample = 0;
+		if (RadioButton("Normal", &debugMode, static_cast<int>(DebugTypes::NORMAL))) currentSample = 0;
+		if (RadioButton("Roughness", &debugMode, static_cast<int>(DebugTypes::ROUGHNESS))) currentSample = 0;
+		if (RadioButton("Metallic", &debugMode, static_cast<int>(DebugTypes::METALLIC))) currentSample = 0;
+
+		// SETTINGS
+		TableNextColumn();
+		Checkbox("Lambertian Shading", &debugLambertian);
+		SliderFloat("Min Brightness", &minBrightness, 0.0f, maxBrightness - 0.001f);
+		SliderFloat("Max Brightness", &maxBrightness, minBrightness + 0.001f, 1.0f);
+		if (SliderInt("Bounces", &maxBounces, 1, MAX_BOUNCES)) currentSample = 0;
+		if (SliderInt("Samples", &maxSamples, 1, MAX_SAMPLES)) currentSample = 0;
+
+		EndTable();
+	}
+
+	// SCENE SETTINGS
+	if (BeginTable("ShaderLayoutTable", 3)) {
+
+		TableSetupColumn("Scene");
+		TableHeadersRow();
+
+		TableNextRow();
+
+		const ImVec4 validPathColor(0.1f, 0.3f, 0.1f, 1.0f);
+		const ImVec4 invalidPathColor(0.15f, 0.15f, 0.15f, 1.0f);
+
+		std::filesystem::path filePath;
+
+		TableNextColumn();
+
+		filePath = "scenes/" + string(importName);
+		bool isImportValid = (std::filesystem::exists(filePath) && filePath.extension().string() == SCENE_FILE_EXTENSION);
+		PushStyleColor(ImGuiCol_FrameBg, (isImportValid ? validPathColor : invalidPathColor));
+		InputTextWithHint("##importFileName", "scene.txt", importName, IM_ARRAYSIZE(importName));
+		PopStyleColor(1);
+		TableNextColumn();
+
+		filePath = "scenes/" + string(exportName);
+		bool isExportValid = (filePath.extension().string() == SCENE_FILE_EXTENSION);
+		PushStyleColor(ImGuiCol_FrameBg, (isExportValid ? validPathColor : invalidPathColor));
+		InputTextWithHint("##exportFileName", "scene.txt", exportName, IM_ARRAYSIZE(exportName));
+		PopStyleColor(1);
+		TableNextColumn();
+
+		filePath = importOBJname;
+		bool isOBJValid = (std::filesystem::exists(filePath) && filePath.extension().string() == ".obj");
+		PushStyleColor(ImGuiCol_FrameBg, (isOBJValid ? validPathColor : invalidPathColor));
+		InputTextWithHint("##importOBJName", "models/cube.obj", importOBJname, IM_ARRAYSIZE(importOBJname));
+		PopStyleColor(1);
+
+		TableNextRow();
+		TableNextColumn();
+		BeginDisabled(!isImportValid);
+		if (Button("Import Scene")) {
+			scene->importScene(importName);
+			scene->link();
+			strcpy(exportName, importName);
+			importName[0] = 0x00;
+		}
+		EndDisabled();
+
+		TableNextColumn();
+		BeginDisabled(!isExportValid);
+		if (Button("Export Scene")) {
+			scene->exportScene(exportName);
+			exportName[0] = 0x00;
+		}
+		EndDisabled();
+
+		TableNextColumn();
+		BeginDisabled(!isOBJValid);
+		if (Button("Import OBJ")) {
+
+			Mesh* mesh = new Mesh(importOBJname);
+			scene->meshCollection.push_back(mesh);
+			scene->link();
+			importOBJname[0] = 0x00;
+		}
+		EndDisabled();
+
+		EndTable();
+	}
+
+	// CAMERA SETTINGS
+	if (BeginTable("ShaderLayoutTable", 5)) {
+
+		TableSetupColumn("Camera");
+		TableSetupColumn("   X");
+		TableSetupColumn("   Y");
+		TableSetupColumn("   Z");
+		TableHeadersRow();
+
+		TableNextRow();
+		TableNextColumn();
+		Text("Position");
+		TableNextColumn();
+		{
+			PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.3f, 0.1f, 0.1f, 1.0f));
+			if (DragFloat("##posX", &(scene->camera.Position.x), 0.5f)) currentSample = 0;
+			PopStyleColor(1);
+			TableNextColumn();
+			PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.1f, 0.3f, 0.1f, 1.0f));
+			if (DragFloat("##posY", &(scene->camera.Position.y), 0.5f)) currentSample = 0;
+			PopStyleColor(1);
+			TableNextColumn();
+			PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.15f, 0.15f, 0.3f, 1.0f));
+			if (DragFloat("##posZ", &(scene->camera.Position.z), 0.5f)) currentSample = 0;
+			PopStyleColor(1);
+			TableNextColumn();
+			if (Button("Reset##positon")) scene->camera.Position = glm::vec3(0.0f);
+		}
+
+		TableNextRow();
+		TableNextColumn();
+		if (SliderFloat("FOV", &(scene->camera.FOVdeg), 0.0f, 90.0f)) currentSample = 0;
+		TableNextColumn();
+		if (SliderFloat("Near Plane", &(scene->camera.nearPlane), 0.0f, scene->camera.farPlane)) currentSample = 0;
+		TableNextColumn();
+		if (SliderFloat("Far Plane", &(scene->camera.farPlane), scene->camera.nearPlane, 10000.0f)) currentSample = 0;
+
+
+		EndTable();
+	}
+
+	// MESH SETTINGS
+	if (highlightedMesh != nullptr) {
+		;
+		if (BeginTable("ShaderLayoutTable", 5)) {
+
+			TableSetupColumn("Edit Mesh");
+			TableSetupColumn("   X");
+			TableSetupColumn("   Y");
+			TableSetupColumn("   Z");
+			TableHeadersRow();
+
+			TableNextRow();
+			TableNextColumn();
+			Text("Position");
+			TableNextColumn();
+			{
+				PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.3f, 0.1f, 0.1f, 1.0f));
+				if (DragFloat("##posX", &(highlightedMesh->position.x), 0.5f)) currentSample = 0;
+				PopStyleColor(1);
+				TableNextColumn();
+				PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.1f, 0.3f, 0.1f, 1.0f));
+				if (DragFloat("##posY", &(highlightedMesh->position.y), 0.5f)) currentSample = 0;
+				PopStyleColor(1);
+				TableNextColumn();
+				PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.15f, 0.15f, 0.3f, 1.0f));
+				if (DragFloat("##posZ", &(highlightedMesh->position.z), 0.5f)) currentSample = 0;
+				PopStyleColor(1);
+				TableNextColumn();
+				if (Button("Reset##positon")) highlightedMesh->position = glm::vec3(0.0f); currentSample = 0;
+			}
+
+			TableNextRow();
+			TableNextColumn();
+			Text("Rotation");
+			TableNextColumn();
+			{
+				PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.3f, 0.1f, 0.1f, 1.0f));
+				if (DragFloat("##pitch", &(highlightedMesh->rotation.x), 0.1f)) currentSample = 0;
+				PopStyleColor(1);
+				TableNextColumn();
+				PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.1f, 0.3f, 0.1f, 1.0f));
+				if (DragFloat("##yaw", &(highlightedMesh->rotation.y), 0.1f)) currentSample = 0;
+				PopStyleColor(1);
+				TableNextColumn();
+				PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.15f, 0.15f, 0.3f, 1.0f));
+				if (DragFloat("##roll", &(highlightedMesh->rotation.z), 0.1f)) currentSample = 0;
+				PopStyleColor(1);
+				TableNextColumn();
+				if (Button("Reset##rotation")) highlightedMesh->rotation = glm::vec3(0.0f); currentSample = 0;
+			}
+
+			TableNextRow();
+			TableNextColumn();
+			Text("Scale");
+			TableNextColumn();
+			{
+				PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.3f, 0.1f, 0.1f, 1.0f));
+				if (DragFloat("##scaleX", &(highlightedMesh->scale.x), 0.1f)) currentSample = 0;
+				PopStyleColor(1);
+				TableNextColumn();
+				PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.1f, 0.3f, 0.1f, 1.0f));
+				if (DragFloat("##scaleY", &(highlightedMesh->scale.y), 0.1f)) currentSample = 0;
+				PopStyleColor(1);
+				TableNextColumn();
+				PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.15f, 0.15f, 0.3f, 1.0f));
+				if (DragFloat("##scaleZ", &(highlightedMesh->scale.z), 0.1f)) currentSample = 0;
+				PopStyleColor(1);
+				TableNextColumn();
+				if (Button("Reset##scale")) highlightedMesh->scale = glm::vec3(1.0f); currentSample = 0;
+			}
+
+			TableNextRow();
+			TableNextColumn();
+			Text("Tint");
+			TableNextColumn();
+			{
+				PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.3f, 0.1f, 0.1f, 1.0f));
+				if (SliderFloat("##tintR", &(highlightedMesh->tint.x), 0.0f, 1.0f)) {
+					currentSample = 0;
+					scene->updateVertexSSBO(scene->vertexSSBO);
+					for (Mesh* mesh : scene->meshCollection) {
+						mesh->updateBuffers();
+					}
+				}
+				PopStyleColor(1);
+				TableNextColumn();
+				PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.1f, 0.3f, 0.1f, 1.0f));
+				if (SliderFloat("##tintG", &(highlightedMesh->tint.y), 0.0f, 1.0f)) {
+					currentSample = 0;
+					scene->updateVertexSSBO(scene->vertexSSBO);
+					for (Mesh* mesh : scene->meshCollection) {
+						mesh->updateBuffers();
+					}
+				}
+				PopStyleColor(1);
+				TableNextColumn();
+				PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.15f, 0.15f, 0.3f, 1.0f));
+				if (SliderFloat("##tintB", &(highlightedMesh->tint.z), 0.0f, 1.0f)) {
+					currentSample = 0; 
+					scene->updateVertexSSBO(scene->vertexSSBO);
+					for (Mesh* mesh : scene->meshCollection) {
+						mesh->updateBuffers();
+					}
+				}
+				PopStyleColor(1);
+				TableNextColumn();
+				if (Button("Reset##tint")) highlightedMesh->tint = glm::vec3(1.0f); currentSample = 0;
+			}
+
+			TableNextRow();
+			TableNextColumn();
+			Text("Emission");
+			TableNextColumn();
+			if (SliderFloat("##emission", &(highlightedMesh->emissive), 0.0f, 500.0f)) currentSample = 0;
+
+			TableNextRow();
+			TableNextColumn();
+			if (Button("Delete##scale")) {
+				erase(scene->meshCollection, highlightedMesh);
+				scene->link();
+			}
+
+			EndTable();
+
+		}
+
+	}
+
+	if (BeginTable("ShaderLayoutTable", 2)) {
+
+		TableSetupColumn("Misc");
+		TableSetupColumn("");
+		TableHeadersRow();
+
+		TableNextRow();
+
+		TableNextColumn();
+		BeginDisabled(!debugUniversalRoughness);
+		if (SliderFloat("Roughness", &debugUniversalRoughnessAmount, 0, 1)) currentSample = 0;
+		EndDisabled();
+
+		TableNextColumn();
+		if (Button("Clear Samples")) currentSample = 0;
+
+		TableNextRow();
+
+		TableNextColumn();
+		if (Checkbox("Universal Roughness", &debugUniversalRoughness)) currentSample = 0;
+		TableNextColumn();
+		if (Button("Pause")) pause = !pause;
+
+		EndTable();
+	}
+
+	// clear samples if window is moved or resized
+	if (windowSize.x != GetWindowSize().x || windowSize.y != GetWindowSize().y) currentSample = 0;
+	if (windowPosition.x != GetWindowPos().x || windowPosition.y != GetWindowPos().y) currentSample = 0;
+
+	windowSize = GetWindowSize();
+	windowPosition = GetWindowPos();
+
+
+
+	End();
+
+	Render();
+	ImGui_ImplOpenGL3_RenderDrawData(GetDrawData());
 
 }

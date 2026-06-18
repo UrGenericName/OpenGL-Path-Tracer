@@ -19,7 +19,7 @@
 	textures/core/default/normal_default.png,
 	textures/roughness_c.png,
 	textures/core/default/metallic_default.png,
-	1.000000, 1.000000, 1.000000,
+	0.805000, 0.805000, 0.000000,
 	0.000000
 },
 

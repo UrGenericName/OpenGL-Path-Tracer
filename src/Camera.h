@@ -24,12 +24,16 @@ public:
 	unsigned int width;
 	unsigned int height;
 
+	float FOVdeg = 45.0f;
+	float nearPlane = 0.1f;
+	float farPlane = 100.0f;
+
 	float speed = SPEED_DEFAULT;
 	float sensitivity = SENSITIVITY_DEFAULT;
 
 	Camera(unsigned int width, unsigned int height, glm::vec3 position);
 
-	void updateMatrix(float FOVdeg, float nearPlane, float farPlane);
+	void updateMatrix();
 	void Matrix(Shader& shader, const char* uniform);
 	void Inputs(GLFWwindow* window, ImguiWindow& imguiWindow);
 

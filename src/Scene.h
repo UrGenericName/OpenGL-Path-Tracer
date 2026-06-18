@@ -20,6 +20,8 @@
 class Scene {
 public:
 
+	friend ImguiWindow;
+
 	Camera& camera;
 
 	unsigned int textureWidth;

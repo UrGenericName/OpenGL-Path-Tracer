@@ -2,7 +2,7 @@
 
 Camera::Camera(unsigned int i_width, unsigned int i_height, glm::vec3 i_position) : width(i_width), height(i_height), Position(i_position) {};
 
-void Camera::updateMatrix(float FOVdeg, float nearPlane, float farPlane) {
+void Camera::updateMatrix() {
 
 	glm::mat4 view = glm::mat4(1.0f);
 	glm::mat4 projection = glm::mat4(1.0f);
@@ -23,7 +23,7 @@ void Camera::Matrix(Shader& shader, const char* uniform) {
 void Camera::Inputs(GLFWwindow* window, ImguiWindow& imguiWindow) {
 
 	// HIGHLIGHT MESH
-	if (!imguiWindow.drawWindow && glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
+	if (!ImGui::GetIO().WantCaptureMouse && glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
 
 		imguiWindow.mouseLeftClick = true;
 		imguiWindow.highlightedMesh = -1;
@@ -34,22 +34,22 @@ void Camera::Inputs(GLFWwindow* window, ImguiWindow& imguiWindow) {
 	}
 
 	// MOVEMENT (w, a, s, d)
-	if (!imguiWindow.drawWindow && glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
+	if (!ImGui::GetIO().WantCaptureMouse && glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
 		Position += speed * Orientation;	// move position foward from orientation
 		imguiWindow.currentSample = 0;
 	}
 
-	if (!imguiWindow.drawWindow && glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
+	if (!ImGui::GetIO().WantCaptureMouse && glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
 		Position += speed * -glm::normalize(glm::cross(Orientation, Up)); // find the left vector from orientation and add to position
 		imguiWindow.currentSample = 0;
 	}
 
-	if (!imguiWindow.drawWindow && glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
+	if (!ImGui::GetIO().WantCaptureMouse && glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
 		Position += speed * -Orientation;	// move position backward from orientation
 		imguiWindow.currentSample = 0;
 	}
 
-	if (!imguiWindow.drawWindow && glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
+	if (!ImGui::GetIO().WantCaptureMouse && glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
 		Position += speed * glm::normalize(glm::cross(Orientation, Up));	// find the right vector from orientation and add to position
 		imguiWindow.currentSample = 0;
 	}
@@ -57,11 +57,11 @@ void Camera::Inputs(GLFWwindow* window, ImguiWindow& imguiWindow) {
 
 
 	// UP & DOWN (space, ctrl)
-	if (!imguiWindow.drawWindow && glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
+	if (!ImGui::GetIO().WantCaptureMouse && glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
 		Position += speed * Up;
 		imguiWindow.currentSample = 0;
 	}
-	if (!imguiWindow.drawWindow && glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) {
+	if (!ImGui::GetIO().WantCaptureMouse && glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) {
 		Position += speed * -Up;
 		imguiWindow.currentSample = 0;
 	}
