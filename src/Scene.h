@@ -4,6 +4,9 @@
 #include <vector>
 #include <set>
 #include <random>
+#include <string>
+#include <fstream>
+#include <iostream>
 #include "ImguiWindow.h"
 #include "Mesh.h"
 #include "FBO.h"
@@ -23,8 +26,11 @@ public:
 	glm::vec3 backgroundColor = { 0.07f, 0.13f, 0.17f };
 
 	Scene(Camera& i_camera, unsigned int width = 256, unsigned int height = 256);
+	Scene(Camera& i_camera, string fileName, unsigned int width = 256, unsigned int height = 256);
 	~Scene();
 
+	void importScene(string fileName);
+	void exportScene(string fileName);
 	void Draw(GLFWwindow* window);
 	void link();
 

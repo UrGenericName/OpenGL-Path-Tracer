@@ -1,0 +1,12 @@
+// FORMAT:
+// 	 fileName
+// 	 position
+// 	 rotation
+// 	 scale
+// 	 albedo
+// 	 normal
+// 	 roughness
+// 	 metallic
+// 	 tint
+// 	 emissive
+

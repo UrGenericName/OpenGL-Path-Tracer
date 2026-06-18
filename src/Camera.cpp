@@ -34,22 +34,22 @@ void Camera::Inputs(GLFWwindow* window, ImguiWindow& imguiWindow) {
 	}
 
 	// MOVEMENT (w, a, s, d)
-	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
+	if (!imguiWindow.drawWindow && glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
 		Position += speed * Orientation;	// move position foward from orientation
 		imguiWindow.currentSample = 0;
 	}
 
-	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
+	if (!imguiWindow.drawWindow && glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
 		Position += speed * -glm::normalize(glm::cross(Orientation, Up)); // find the left vector from orientation and add to position
 		imguiWindow.currentSample = 0;
 	}
 
-	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
+	if (!imguiWindow.drawWindow && glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
 		Position += speed * -Orientation;	// move position backward from orientation
 		imguiWindow.currentSample = 0;
 	}
 
-	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
+	if (!imguiWindow.drawWindow && glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
 		Position += speed * glm::normalize(glm::cross(Orientation, Up));	// find the right vector from orientation and add to position
 		imguiWindow.currentSample = 0;
 	}
@@ -57,11 +57,11 @@ void Camera::Inputs(GLFWwindow* window, ImguiWindow& imguiWindow) {
 
 
 	// UP & DOWN (space, ctrl)
-	if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
+	if (!imguiWindow.drawWindow && glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
 		Position += speed * Up;
 		imguiWindow.currentSample = 0;
 	}
-	if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) {
+	if (!imguiWindow.drawWindow && glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) {
 		Position += speed * -Up;
 		imguiWindow.currentSample = 0;
 	}

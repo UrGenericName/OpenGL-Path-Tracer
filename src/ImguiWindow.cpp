@@ -68,7 +68,7 @@ void ImguiWindow::drawImgui(double frameTime, Mesh* highlightedMesh) {
     // MESH SETTINGS
     if (highlightedMesh != nullptr) {
 ;
-        if (BeginTable("ShaderLayoutTable", 4)) {
+        if (BeginTable("ShaderLayoutTable", 5)) {
 
             TableSetupColumn("Edit Mesh");
             TableSetupColumn("   X");
@@ -92,6 +92,8 @@ void ImguiWindow::drawImgui(double frameTime, Mesh* highlightedMesh) {
                 PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.15f, 0.15f, 0.3f, 1.0f));
                 if (DragFloat("##posZ", &(highlightedMesh->position.z), 0.5f)) currentSample = 0;
                 PopStyleColor(1);
+                TableNextColumn();
+                if (Button("Reset##positon")) highlightedMesh->position = glm::vec3(0.0f);
             }
             
             TableNextRow();
@@ -110,6 +112,8 @@ void ImguiWindow::drawImgui(double frameTime, Mesh* highlightedMesh) {
                 PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.15f, 0.15f, 0.3f, 1.0f));
                 if (DragFloat("##roll", &(highlightedMesh->rotation.z), 0.1f)) currentSample = 0;
                 PopStyleColor(1);
+                TableNextColumn();
+                if (Button("Reset##rotation")) highlightedMesh->rotation = glm::vec3(0.0f);
             }
 
             TableNextRow();
@@ -128,9 +132,15 @@ void ImguiWindow::drawImgui(double frameTime, Mesh* highlightedMesh) {
                 PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.15f, 0.15f, 0.3f, 1.0f));
                 if (DragFloat("##scaleZ", &(highlightedMesh->scale.z), 0.1f)) currentSample = 0;
                 PopStyleColor(1);
+                TableNextColumn();
+                if (Button("Reset##scale")) highlightedMesh->scale = glm::vec3(1.0f);
             }
 
-            if (SliderFloat("Emissive", &(highlightedMesh->emissive), 0.0f, 500.0f)) currentSample = 0;
+            TableNextRow();
+            TableNextColumn();
+            Text("Emission");
+            TableNextColumn();
+            if (SliderFloat("##emission", &(highlightedMesh->emissive), 0.0f, 500.0f)) currentSample = 0;
 
             EndTable();
 
@@ -158,9 +168,22 @@ void ImguiWindow::drawImgui(double frameTime, Mesh* highlightedMesh) {
 
         TableNextColumn();
         if (Checkbox("Universal Roughness", &debugUniversalRoughness)) currentSample = 0;
-
         TableNextColumn();
         if (Button("Pause")) pause = !pause;
+
+        TableNextRow();
+
+        TableNextColumn();
+        InputText("##importFileName", importName, IM_ARRAYSIZE(importName));
+        TableNextColumn();
+        if (Button("Import Scene")) importScene = true;
+
+        TableNextColumn();
+        InputText("##exportFileName", exportName, IM_ARRAYSIZE(exportName));
+        TableNextColumn();
+        if (Button("Export Scene")) exportScene = true;
+
+        TableNextRow();
 
         EndTable();
     }

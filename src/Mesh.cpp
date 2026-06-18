@@ -2,7 +2,11 @@
 
 using namespace std;
 
-Mesh::Mesh(std::vector<Vertex>& i_vertices, std::vector<GLuint>& i_indices, Material* i_material, float i_emissive) {
+Mesh::Mesh(std::vector<Vertex>& i_vertices, std::vector<GLuint>& i_indices, Material* i_material, float i_emissive, glm::vec3 i_position, glm::vec3 i_rotation, glm::vec3 i_scale) {
+
+	position = i_position;
+	rotation = i_position;
+	i_scale = i_position;
 
 	vertices = i_vertices;
 	indices = i_indices;
@@ -26,7 +30,11 @@ Mesh::Mesh(std::vector<Vertex>& i_vertices, std::vector<GLuint>& i_indices, floa
 
 }
 
-Mesh::Mesh(const char* fileName, Material* i_material, glm::vec4 importColor, float i_emissive) {
+Mesh::Mesh(string fileName, Material* i_material, glm::vec3 importColor, float i_emissive, glm::vec3 i_position, glm::vec3 i_rotation, glm::vec3 i_scale) {
+
+	position = i_position;
+	rotation = i_position;
+	i_scale = i_position;
 
 	importObj(fileName, importColor);
 	MeshSetup();
@@ -36,7 +44,7 @@ Mesh::Mesh(const char* fileName, Material* i_material, glm::vec4 importColor, fl
 
 }
 
-Mesh::Mesh(const char* fileName, glm::vec4 importColor, float i_emissive) {
+Mesh::Mesh(string fileName, glm::vec3 importColor, float i_emissive) {
 
 	importObj(fileName, importColor);
 	MeshSetup();
@@ -113,7 +121,10 @@ void Mesh::Draw(Shader& shader, GLuint currentMesh, std::vector<glm::vec4> meshT
 
 }
 
-bool Mesh::importObj(const char* fileName, glm::vec4 importColor) {
+bool Mesh::importObj(string fileName, glm::vec3 importColor) {
+
+	this->fileName = fileName;
+	this->tint = importColor;
 
 	ifstream file(fileName);
 
@@ -256,7 +267,7 @@ bool Mesh::importObj(const char* fileName, glm::vec4 importColor) {
 					int UVIndex = stoi(faceIndicesParse[1]) - 1;
 					int normalIndex = stoi(faceIndicesParse[2]) - 1;
 
-					Vertex constructedOpenGLVertex(parsedVertices[vertexIndex], importColor, parsedNormals[normalIndex], parsedUVs[UVIndex]);
+					Vertex constructedOpenGLVertex(parsedVertices[vertexIndex], glm::vec4(importColor, 1.0f), parsedNormals[normalIndex], parsedUVs[UVIndex]);
 					//printf("{ [%f, %f, %f], [%f, %f, %f], [%f, %f] }\n", constructedOpenGLVertex.position.x, constructedOpenGLVertex.position.y, constructedOpenGLVertex.position.z, constructedOpenGLVertex.normal.x, constructedOpenGLVertex.normal.y, constructedOpenGLVertex.normal.z, constructedOpenGLVertex.texUV.x, constructedOpenGLVertex.texUV.y);
 					vertices.push_back(constructedOpenGLVertex);
 

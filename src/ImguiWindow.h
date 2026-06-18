@@ -50,6 +50,11 @@ public:
 	float uniformScaleAmount = 1.0f;
 	bool uniformScale = true;
 
+	inline static char importName[128] = "scene";
+	inline static char exportName[128] = "scene";
+	bool importScene = false;
+	bool exportScene = false;
+
 	bool drawWindow = true;
 
 private:

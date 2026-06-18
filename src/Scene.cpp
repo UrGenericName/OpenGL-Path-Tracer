@@ -2,11 +2,170 @@
 
 Scene::Scene(Camera& i_camera, unsigned int i_textureWidth, unsigned int i_textureHeight) : camera(i_camera), textureWidth(i_textureWidth), textureHeight(i_textureHeight) {}
 
+Scene::Scene(Camera& i_camera, string fileName, unsigned int i_textureWidth, unsigned int i_textureHeight) : camera(i_camera), textureWidth(i_textureWidth), textureHeight(i_textureHeight) {
+	importScene(fileName);
+}
+
 Scene::~Scene() {
 
 	for (Mesh* mesh : meshCollection) {
 		delete mesh;
 	}
+
+}
+
+void Scene::importScene(string fileName) {
+
+	ifstream file("scenes/" + fileName + ".txt");
+
+	string line;
+	while (getline(file, line)) {
+
+		if (line[0] == '{') {
+
+			getline(file, line); string s_fileName = line.substr(1, line.length() - 2);
+			getline(file, line); string s_position = line.substr(1, line.length() - 2);
+			getline(file, line); string s_rotation = line.substr(1, line.length() - 2);
+			getline(file, line); string s_scale = line.substr(1, line.length() - 2);
+			getline(file, line); string s_albedo = line.substr(1, line.length() - 2);
+			getline(file, line); string s_normal = line.substr(1, line.length() - 2);
+			getline(file, line); string s_roughness = line.substr(1, line.length() - 2);
+			getline(file, line); string s_metallic = line.substr(1, line.length() - 2);
+			getline(file, line); string s_tint = line.substr(1, line.length() - 2);
+			getline(file, line); string s_emissive = line.substr(1, line.length() - 2);
+
+			string temp[3]("");
+			int commaCount;
+
+			// POSITION PARSE
+			commaCount = 0;
+			temp[0] = ""; temp[1] = ""; temp[2] = "";
+			for (char c : s_position) {
+
+				if (c == ',') {
+					++commaCount;
+					continue;
+				}
+
+				temp[commaCount].push_back(c);
+			}
+			glm::vec3 position(stof(temp[0]), stof(temp[1]), stof(temp[2]));
+
+			// ROTATION PARSE
+			commaCount = 0;
+			temp[0] = ""; temp[1] = ""; temp[2] = "";
+			for (char c : s_rotation) {
+
+				if (c == ',') {
+					++commaCount;
+					continue;
+				}
+
+				temp[commaCount].push_back(c);
+			}
+			glm::vec3 rotation(stof(temp[0]), stof(temp[1]), stof(temp[2]));
+
+			// SCALE PARSE
+			commaCount = 0;
+			temp[0] = ""; temp[1] = ""; temp[2] = "";
+			for (char c : s_scale) {
+
+				if (c == ',') {
+					++commaCount;
+					continue;
+				}
+
+				temp[commaCount].push_back(c);
+			}
+			glm::vec3 scale(stof(temp[0]), stof(temp[1]), stof(temp[2]));
+
+			// TINT PARSE
+			commaCount = 0;
+			temp[0] = ""; temp[1] = ""; temp[2] = "";
+			for (char c : s_tint) {
+
+				if (c == ',') {
+					++commaCount;
+					continue;
+				}
+
+				temp[commaCount].push_back(c);
+			}
+			glm::vec3 tint(stof(temp[0]), stof(temp[1]), stof(temp[2]));
+
+			// EMISSION PARSE
+			float emissive = stof(s_emissive);
+
+			Mesh* mesh = new Mesh(s_fileName, tint);
+			mesh->position = position;
+			mesh->rotation = rotation;
+			mesh->scale = scale;
+			mesh->material->albedo = s_albedo;
+			mesh->material->normal = s_normal;
+			mesh->material->roughness = s_roughness;
+			mesh->material->metallic = s_metallic;
+			mesh->emissive = emissive;
+
+			meshCollection.push_back(mesh);
+			std::cout << "test";
+		}
+
+	}
+}
+
+void Scene::exportScene(string fileName) {
+
+	ofstream file("scenes/" + fileName + ".txt");
+
+	file << "// FORMAT:\n";
+	file << "// \t fileName\n";
+	file << "// \t position\n";
+	file << "// \t rotation\n";
+	file << "// \t scale\n";
+	file << "// \t albedo\n";
+	file << "// \t normal\n";
+	file << "// \t roughness\n";
+	file << "// \t metallic\n";
+	file << "// \t tint\n";
+	file << "// \t emissive\n\n";
+
+	for (int i = 0; i < meshCollection.size(); ++i) {
+
+		Mesh* mesh = meshCollection[i];
+
+		string position = std::to_string(mesh->position.x) + ", " + std::to_string(mesh->position.y) + ", " + std::to_string(mesh->position.z);
+		string rotation = std::to_string(mesh->rotation.x) + ", " + std::to_string(mesh->rotation.y) + ", " + std::to_string(mesh->rotation.z);
+		string scale = std::to_string(mesh->scale.x) + ", " + std::to_string(mesh->scale.y) + ", " + std::to_string(mesh->scale.z);
+
+		string albedo = mesh->material->albedo;
+		string normal = mesh->material->normal;
+		string roughness = mesh->material->roughness;
+		string metallic = mesh->material->metallic;
+
+		string tint = std::to_string(mesh->tint.r) + ", " + std::to_string(mesh->tint.g) + ", " + std::to_string(mesh->tint.b);
+		string emissive = std::to_string(mesh->emissive);
+
+		file << "{\n";
+		file << "\t" << mesh->fileName << ",\n";
+		file << "\t" << position << ",\n";
+		file << "\t" << rotation << ",\n";
+		file << "\t" << scale << ",\n";
+		file << "\t" << albedo << ",\n";
+		file << "\t" << normal << ",\n";
+		file << "\t" << roughness << ",\n";
+		file << "\t" << metallic << ",\n";
+		file << "\t" << tint << ",\n";
+		file << "\t" << emissive << "\n";
+		file << "}";
+
+		// writes last line
+		if (i != meshCollection.size() - 1) {
+			file << ",\n\n";
+		}
+	}
+
+
+	file.close();
 
 }
 
@@ -40,6 +199,17 @@ void Scene::Draw(GLFWwindow* window) {
 
 	Mesh* highlightedMesh = (imguiWindow.highlightedMesh == -1) ? nullptr : meshCollection[imguiWindow.highlightedMesh];
 	imguiWindow.drawImgui(ms_double.count(), highlightedMesh);
+
+	if (imguiWindow.importScene) {
+		imguiWindow.importScene = false;
+		importScene(imguiWindow.importName);
+		link();
+	}
+
+	if (imguiWindow.exportScene) {
+		imguiWindow.exportScene = false;
+		exportScene(imguiWindow.exportName);
+	}
 
 }
 
