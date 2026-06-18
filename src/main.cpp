@@ -1,6 +1,6 @@
 #include "Scene.h"
 
-#define WIDTH 800
+#define WIDTH 1200
 #define HEIGHT 800
 
 GLFWwindow* initGLFW();

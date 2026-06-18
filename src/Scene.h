@@ -7,12 +7,15 @@
 #include <string>
 #include <fstream>
 #include <iostream>
+#include <filesystem>
+#include <format>
 #include "ImguiWindow.h"
 #include "Mesh.h"
 #include "FBO.h"
 #include "Camera.h"
 
 #define COLOR_NOISE "textures/core/color_noise.png"
+#define SCENE_FILE_EXTENSION ".txt"
 
 class Scene {
 public:

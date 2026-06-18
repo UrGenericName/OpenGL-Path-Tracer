@@ -10,3 +10,67 @@
 // 	 tint
 // 	 emissive
 
+{
+	models/room/monkey.obj,
+	0.000000, 0.000000, 0.000000,
+	0.000000, 0.000000, 0.000000,
+	1.000000, 1.000000, 1.000000,
+	textures/core/default/albedo_default.png,
+	textures/core/default/normal_default.png,
+	textures/roughness_c.png,
+	textures/core/default/metallic_default.png,
+	1.000000, 1.000000, 1.000000,
+	0.000000
+},
+
+{
+	models/room/white_walls.obj,
+	0.000000, 0.000000, 0.000000,
+	0.000000, 0.000000, 0.000000,
+	1.000000, 1.000000, 1.000000,
+	textures/core/default/albedo_default.png,
+	textures/concrete_normal.png,
+	textures/roughness_a.png,
+	textures/core/default/metallic_default.png,
+	1.000000, 1.000000, 1.000000,
+	0.000000
+},
+
+{
+	models/room/light.obj,
+	0.000000, 0.000000, 0.000000,
+	0.000000, 0.000000, 0.000000,
+	1.000000, 1.000000, 1.000000,
+	textures/core/default/albedo_default.png,
+	textures/core/default/normal_default.png,
+	textures/roughness_a.png,
+	textures/core/default/metallic_default.png,
+	1.000000, 1.000000, 0.900000,
+	20.000000
+},
+
+{
+	models/room/red_wall.obj,
+	0.000000, 0.000000, 0.000000,
+	0.000000, 0.000000, 0.000000,
+	1.000000, 1.000000, 1.000000,
+	textures/core/default/albedo_default.png,
+	textures/concrete_normal.png,
+	textures/roughness_a.png,
+	textures/core/default/metallic_default.png,
+	1.000000, 0.200000, 0.200000,
+	0.000000
+},
+
+{
+	models/room/green_wall.obj,
+	0.000000, 0.000000, 0.000000,
+	0.000000, 0.000000, 0.000000,
+	1.000000, 1.000000, 1.000000,
+	textures/core/default/albedo_default.png,
+	textures/concrete_normal.png,
+	textures/roughness_a.png,
+	textures/core/default/metallic_default.png,
+	0.200000, 1.020000, 0.200000,
+	0.000000
+}

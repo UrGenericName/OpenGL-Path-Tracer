@@ -55,6 +55,8 @@ public:
 	bool importScene = false;
 	bool exportScene = false;
 
+	bool deleteSelectedMesh = false;
+
 	bool drawWindow = true;
 
 private:

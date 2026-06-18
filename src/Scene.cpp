@@ -16,7 +16,7 @@ Scene::~Scene() {
 
 void Scene::importScene(string fileName) {
 
-	ifstream file("scenes/" + fileName + ".txt");
+	ifstream file("scenes/" + fileName + SCENE_FILE_EXTENSION);
 
 	string line;
 	while (getline(file, line)) {
@@ -107,7 +107,6 @@ void Scene::importScene(string fileName) {
 			mesh->emissive = emissive;
 
 			meshCollection.push_back(mesh);
-			std::cout << "test";
 		}
 
 	}
@@ -115,7 +114,16 @@ void Scene::importScene(string fileName) {
 
 void Scene::exportScene(string fileName) {
 
-	ofstream file("scenes/" + fileName + ".txt");
+	// Back up file
+	auto now = chrono::system_clock::now();
+	auto local_time = chrono::current_zone()->to_local(now);
+	string timeStamp = format("{:%Y-%m-%d_%H-%M-%S}", local_time);
+
+	filesystem::path destination = string("scenes/backups/" + fileName + "_backup_" + timeStamp + SCENE_FILE_EXTENSION);
+	filesystem::path source = string("scenes/" + fileName + SCENE_FILE_EXTENSION);
+	filesystem::copy_file(source, destination, filesystem::copy_options::overwrite_existing);
+
+	ofstream file("scenes/" + fileName + SCENE_FILE_EXTENSION);
 
 	file << "// FORMAT:\n";
 	file << "// \t fileName\n";
@@ -133,17 +141,17 @@ void Scene::exportScene(string fileName) {
 
 		Mesh* mesh = meshCollection[i];
 
-		string position = std::to_string(mesh->position.x) + ", " + std::to_string(mesh->position.y) + ", " + std::to_string(mesh->position.z);
-		string rotation = std::to_string(mesh->rotation.x) + ", " + std::to_string(mesh->rotation.y) + ", " + std::to_string(mesh->rotation.z);
-		string scale = std::to_string(mesh->scale.x) + ", " + std::to_string(mesh->scale.y) + ", " + std::to_string(mesh->scale.z);
+		string position = to_string(mesh->position.x) + ", " + to_string(mesh->position.y) + ", " + to_string(mesh->position.z);
+		string rotation = to_string(mesh->rotation.x) + ", " + to_string(mesh->rotation.y) + ", " + to_string(mesh->rotation.z);
+		string scale = to_string(mesh->scale.x) + ", " + to_string(mesh->scale.y) + ", " + to_string(mesh->scale.z);
 
 		string albedo = mesh->material->albedo;
 		string normal = mesh->material->normal;
 		string roughness = mesh->material->roughness;
 		string metallic = mesh->material->metallic;
 
-		string tint = std::to_string(mesh->tint.r) + ", " + std::to_string(mesh->tint.g) + ", " + std::to_string(mesh->tint.b);
-		string emissive = std::to_string(mesh->emissive);
+		string tint = to_string(mesh->tint.r) + ", " + to_string(mesh->tint.g) + ", " + to_string(mesh->tint.b);
+		string emissive = to_string(mesh->emissive);
 
 		file << "{\n";
 		file << "\t" << mesh->fileName << ",\n";
@@ -171,7 +179,7 @@ void Scene::exportScene(string fileName) {
 
 void Scene::Draw(GLFWwindow* window) {
 
-	auto start = std::chrono::high_resolution_clock::now();
+	auto start = chrono::high_resolution_clock::now();
 
 	updateVertexSSBO(vertexSSBO);
 
@@ -193,9 +201,9 @@ void Scene::Draw(GLFWwindow* window) {
 
 	if (imguiWindow.currentSample != imguiWindow.maxSamples) ++imguiWindow.currentSample;
 
-	auto end = std::chrono::high_resolution_clock::now();
+	auto end = chrono::high_resolution_clock::now();
 	auto raw_duration = end - start;
-	std::chrono::duration<double, std::milli> ms_double = raw_duration;
+	chrono::duration<double, milli> ms_double = raw_duration;
 
 	Mesh* highlightedMesh = (imguiWindow.highlightedMesh == -1) ? nullptr : meshCollection[imguiWindow.highlightedMesh];
 	imguiWindow.drawImgui(ms_double.count(), highlightedMesh);
@@ -209,6 +217,12 @@ void Scene::Draw(GLFWwindow* window) {
 	if (imguiWindow.exportScene) {
 		imguiWindow.exportScene = false;
 		exportScene(imguiWindow.exportName);
+	}
+
+	if (imguiWindow.deleteSelectedMesh) {
+		imguiWindow.deleteSelectedMesh = false;
+		erase(meshCollection, highlightedMesh);
+		link();
 	}
 
 }
@@ -353,7 +367,7 @@ void Scene::generatePathTracingUniforms(Shader& shader, Camera& camera) {
 
 void Scene::updateVertexSSBO(GLuint vertexSSBO) {
 
-	std::vector<Vertex> globalVertices;
+	vector<Vertex> globalVertices;
 
 	for (Mesh* mesh : meshCollection) {
 
@@ -377,14 +391,14 @@ void Scene::updateVertexSSBO(GLuint vertexSSBO) {
 
 }
 
-void Scene::generateSSBOs(unsigned int width, unsigned int height, GLuint& vertexSSBO, GLuint& indicesSSBO, GLuint& meshTextureSSBO, GLuint& meshHeaderSSBO, GLuint& textureArray, std::vector<glm::vec4>& meshTexturesOutput) {
+void Scene::generateSSBOs(unsigned int width, unsigned int height, GLuint& vertexSSBO, GLuint& indicesSSBO, GLuint& meshTextureSSBO, GLuint& meshHeaderSSBO, GLuint& textureArray, vector<glm::vec4>& meshTexturesOutput) {
 
-	std::vector<Vertex> globalVertices;
-	std::vector<GLuint> globalIndices;
-	std::vector<glm::vec4> meshTextures; // <albedoIndex, normalIndex, roughnessIndex, metallicIndex>
-	std::vector<glm::vec4> meshHeader;	// <indicesStartPointer, indicesSize, emissiveValue>
+	vector<Vertex> globalVertices;
+	vector<GLuint> globalIndices;
+	vector<glm::vec4> meshTextures; // <albedoIndex, normalIndex, roughnessIndex, metallicIndex>
+	vector<glm::vec4> meshHeader;	// <indicesStartPointer, indicesSize, emissiveValue>
 
-	std::set<string> texturePool;
+	set<string> texturePool;
 
 	size_t indexPointer = 0;
 	for (Mesh* mesh : meshCollection) {
@@ -398,7 +412,7 @@ void Scene::generateSSBOs(unsigned int width, unsigned int height, GLuint& verte
 		}
 
 		// INDICES
-		std::vector<GLuint> tempIndices = mesh->indices;
+		vector<GLuint> tempIndices = mesh->indices;
 		for (size_t i = 0; i < tempIndices.size(); ++i) tempIndices[i] += indexPointer;
 		globalIndices.insert(globalIndices.end(), tempIndices.begin(), tempIndices.end());
 
@@ -420,10 +434,10 @@ void Scene::generateSSBOs(unsigned int width, unsigned int height, GLuint& verte
 	for (Mesh* mesh : meshCollection) {
 
 		glm::vec4 texturePointers;
-		texturePointers.x = std::distance(texturePool.begin(), texturePool.find(mesh->material->albedo));
-		texturePointers.y = std::distance(texturePool.begin(), texturePool.find(mesh->material->normal));
-		texturePointers.z = std::distance(texturePool.begin(), texturePool.find(mesh->material->roughness));
-		texturePointers.w = std::distance(texturePool.begin(), texturePool.find(mesh->material->metallic));
+		texturePointers.x = distance(texturePool.begin(), texturePool.find(mesh->material->albedo));
+		texturePointers.y = distance(texturePool.begin(), texturePool.find(mesh->material->normal));
+		texturePointers.z = distance(texturePool.begin(), texturePool.find(mesh->material->roughness));
+		texturePointers.w = distance(texturePool.begin(), texturePool.find(mesh->material->metallic));
 
 		meshTextures.push_back(texturePointers);
 
@@ -490,7 +504,7 @@ void Scene::generateSSBOs(unsigned int width, unsigned int height, GLuint& verte
 
 	GLuint maxTextureCount = texturePool.size();
 
-	std::vector<string> texturePoolVector(texturePool.begin(), texturePool.end());
+	vector<string> texturePoolVector(texturePool.begin(), texturePool.end());
 	Texture::loadTextureArray(textureArray, texturePoolVector, width, height);
 
 	// output this (used for drawing)

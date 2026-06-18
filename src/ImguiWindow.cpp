@@ -141,6 +141,10 @@ void ImguiWindow::drawImgui(double frameTime, Mesh* highlightedMesh) {
             Text("Emission");
             TableNextColumn();
             if (SliderFloat("##emission", &(highlightedMesh->emissive), 0.0f, 500.0f)) currentSample = 0;
+            
+            TableNextRow();
+            TableNextColumn();
+            if (Button("Delete##scale")) deleteSelectedMesh = true;
 
             EndTable();
 
