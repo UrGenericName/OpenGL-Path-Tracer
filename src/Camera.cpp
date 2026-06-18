@@ -8,7 +8,7 @@ void Camera::updateMatrix(float FOVdeg, float nearPlane, float farPlane) {
 	glm::mat4 projection = glm::mat4(1.0f);
 
 	view = glm::lookAt(Position, Position + Orientation, Up);
-	projection = glm::perspective(glm::radians(45.0f), (float)(width / height), 0.1f, 100.0f);
+	projection = glm::perspective(glm::radians(FOVdeg), (float)width / (float)height, nearPlane, farPlane);
 
 	cameraMatrix = projection * view;
 
@@ -92,7 +92,7 @@ void Camera::Inputs(GLFWwindow* window, ImguiWindow& imguiWindow) {
 
 		Orientation = glm::rotate(Orientation, glm::radians(-rotY), Up);
 
-		glfwSetCursorPos(window, (width / 2), (height / 2));
+		glfwSetCursorPos(window, (float(width) / 2), (float(height) / 2));
 		imguiWindow.currentSample = 0;
 
 	} else if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_RELEASE) {
