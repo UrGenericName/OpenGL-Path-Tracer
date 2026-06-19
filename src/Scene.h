@@ -48,16 +48,30 @@ private:
 	FBO* frameBuffer;
 	FBO* accumulationBuffer;
 
+	GLuint highlightedMeshBuffer;
+
 	Texture* colorNoise;
 	ImguiWindow imguiWindow;
 
-	std::vector<glm::vec4> meshTexturesOutput;
-	GLuint vertexSSBO, indicesSSBO, textureMeshSSBO, meshHeaderSSBO, textureArray;
+	GLuint vertexSSBO, indicesSSBO, meshTextureSSBO, meshHeaderSSBO, textureArray;
 
-	GLuint highlightedMeshBuffer;
+	vector<Vertex> globalVertices;
+	vector<GLuint> globalIndices;
+	vector<glm::vec4> meshTextures; // <albedoIndex, normalIndex, roughnessIndex, metallicIndex>
+	vector<glm::vec4> meshHeader;	// <indicesStartPointer, indicesSize, emissiveValue>
 
-	void updateVertexSSBO(GLuint vertexSSBO);
-	void generateSSBOs(unsigned int width, unsigned int height, GLuint& vertexSSBO, GLuint& indicesSSBO, GLuint& meshTextureSSBO, GLuint& meshHeaderSSBO, GLuint& textureArray, std::vector<glm::vec4>& meshTexturesOutput);
+	set<string> texturePool;	// all the textures used in the scene
+
+	void generateGlobalVertices();
+	void generateGlobalIndices();
+	void generateMeshTextures();
+	void generateMeshHeader();
+
+	void updateVertexSSBO();
+	void updateIndicesSSBO();
+	void updateMeshTexturesSSBO();
+	void updateMeshHeaderSSBO();
+	void generateSSBOs(unsigned int width, unsigned int height);
 	void generateDepthUniforms(Shader& shader, Camera& camera);
 	void generatePathTracingUniforms(Shader& shader, Camera& camera);
 	void generatePostProcessingUniforms(Shader& shader, Camera& camera);

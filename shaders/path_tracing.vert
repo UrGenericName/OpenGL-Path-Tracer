@@ -21,6 +21,6 @@ void main()
 	color = aColor.xyz;
 	texCoord = aTexCoord;
 	geometricFaceNormal = aNormal.xyz;
-	intersectionPoint = aPos.xyz;
-	rayOrientation = aPos.xyz - u_camPos;
+	intersectionPoint = (u_modelMatrix * aPos).xyz;
+	rayOrientation = (u_modelMatrix * aPos).xyz - u_camPos;
 }

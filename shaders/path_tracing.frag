@@ -141,18 +141,22 @@ bool drawDebug(uint debugMode) {
 
         case DEBUG_ALBEDO:
             FragColor = vec4( texture(texturePool, vec3(texCoord, u_albedo)).rgb * brightness, 1.0f );
+            imageStore(frameBuffer, pixelCoords, FragColor);
             return true;
 
         case DEBUG_NORMAL:
             FragColor = vec4( texture(texturePool, vec3(texCoord, u_normal)).rgb * brightness, 1.0f );
+            imageStore(frameBuffer, pixelCoords, FragColor);
             return true;
 
         case DEBUG_ROUGHNESS:
             FragColor = vec4( texture(texturePool, vec3(texCoord, u_roughness)).rgb * brightness, 1.0f );
+            imageStore(frameBuffer, pixelCoords, FragColor);
             return true;
 
         case DEBUG_METALLIC:
             FragColor = vec4( texture(texturePool, vec3(texCoord, u_metallic)).rgb * brightness, 1.0f );
+            imageStore(frameBuffer, pixelCoords, FragColor);
             return true;
 
     }

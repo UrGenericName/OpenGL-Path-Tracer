@@ -181,8 +181,6 @@ void Scene::Draw(GLFWwindow* window) {
 
 	auto start = chrono::high_resolution_clock::now();
 
-	updateVertexSSBO(vertexSSBO);
-
 	camera.Inputs(window, imguiWindow);
 	camera.updateMatrix();
 
@@ -195,7 +193,7 @@ void Scene::Draw(GLFWwindow* window) {
 
 		Draw_DepthPrepass(*depthPrepassShader);
 		Draw_PathTracingPass(*pathTracingShader);
-		if (imguiWindow.debugMode == 0) Draw_PostProcessingPass(*postProcessingShader);
+		Draw_PostProcessingPass(*postProcessingShader);
 
 	}
 
@@ -224,7 +222,7 @@ void Scene::Draw_DepthPrepass(Shader& Depth_shader) {
 
 	// DRAW MESHES
 	for (size_t i = 0; i < meshCollection.size(); ++i) {
-		meshCollection[i]->Draw(Depth_shader, i, meshTexturesOutput);
+		meshCollection[i]->Draw(Depth_shader, i, meshTextures);
 	}
 
 }
@@ -253,7 +251,7 @@ void Scene::Draw_PathTracingPass(Shader& PathTracing_shader) {
 
 	// DRAW MESHES
 	for (size_t i = 0; i < meshCollection.size(); ++i) {
-		meshCollection[i]->Draw(PathTracing_shader, i, meshTexturesOutput);
+		meshCollection[i]->Draw(PathTracing_shader, i, meshTextures);
 	}
 
 	// SEND HIGHLIGHT BUFFER INFORMATION TO IMGUI WINDOW
@@ -282,7 +280,7 @@ void Scene::Draw_PostProcessingPass(Shader& PostProcessing_shader) {
 
 	// DRAW MESHES
 	for (size_t i = 0; i < meshCollection.size(); ++i) {
-		meshCollection[i]->Draw(PostProcessing_shader, i, meshTexturesOutput);
+		meshCollection[i]->Draw(PostProcessing_shader, i, meshTextures);
 	}
 
 }
@@ -348,20 +346,7 @@ void Scene::generatePathTracingUniforms(Shader& shader, Camera& camera) {
 	camera.Matrix(shader, "u_camMatrix");
 }
 
-void Scene::updateVertexSSBO(GLuint vertexSSBO) {
-
-	vector<Vertex> globalVertices;
-
-	for (Mesh* mesh : meshCollection) {
-
-		for (auto vertex : mesh->vertices) {
-
-			vertex.position = mesh->getModelMatrix() * vertex.position;
-			vertex.color = glm::vec4(mesh->tint, 1.0f);
-			globalVertices.push_back(vertex);
-
-		}
-	}
+void Scene::updateVertexSSBO() {
 
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, vertexSSBO);
 	glBufferSubData(
@@ -372,19 +357,51 @@ void Scene::updateVertexSSBO(GLuint vertexSSBO) {
 	);
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 
+}
+
+void Scene::updateIndicesSSBO() {
+
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, indicesSSBO);
+	glBufferSubData(
+		GL_SHADER_STORAGE_BUFFER,
+		0,
+		globalIndices.size() * sizeof(globalIndices[0]),
+		globalIndices.data()
+	);
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 
 }
 
-void Scene::generateSSBOs(unsigned int width, unsigned int height, GLuint& vertexSSBO, GLuint& indicesSSBO, GLuint& meshTextureSSBO, GLuint& meshHeaderSSBO, GLuint& textureArray, vector<glm::vec4>& meshTexturesOutput) {
+void Scene::updateMeshTexturesSSBO() {
 
-	vector<Vertex> globalVertices;
-	vector<GLuint> globalIndices;
-	vector<glm::vec4> meshTextures; // <albedoIndex, normalIndex, roughnessIndex, metallicIndex>
-	vector<glm::vec4> meshHeader;	// <indicesStartPointer, indicesSize, emissiveValue>
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, meshTextureSSBO);
+	glBufferSubData(
+		GL_SHADER_STORAGE_BUFFER,
+		0,
+		meshTextures.size() * sizeof(meshTextures[0]),
+		meshTextures.data()
+	);
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 
-	set<string> texturePool;
+}
 
-	size_t indexPointer = 0;
+void Scene::updateMeshHeaderSSBO() {
+
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, meshHeaderSSBO);
+	glBufferSubData(
+		GL_SHADER_STORAGE_BUFFER,
+		0,
+		meshHeader.size() * sizeof(meshHeader[0]),
+		meshHeader.data()
+	);
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+
+}
+
+void Scene::generateGlobalVertices() {
+
+	globalVertices.resize(0);
+
 	for (Mesh* mesh : meshCollection) {
 
 		// VERTICES
@@ -396,22 +413,41 @@ void Scene::generateSSBOs(unsigned int width, unsigned int height, GLuint& verte
 
 		}
 
+	}
+
+}
+
+void Scene::generateGlobalIndices() {
+
+	globalIndices.resize(0);
+
+	size_t indexPointer = 0;
+	for (Mesh* mesh : meshCollection) {
+
 		// INDICES
 		vector<GLuint> tempIndices = mesh->indices;
 		for (size_t i = 0; i < tempIndices.size(); ++i) tempIndices[i] += indexPointer;
 		globalIndices.insert(globalIndices.end(), tempIndices.begin(), tempIndices.end());
 
-		// MESH-HEADER
-		meshHeader.push_back(glm::vec4(indexPointer, mesh->indices.size(), mesh->emissive, 0.0f));
+		// Loop increment (used to convert local indices to global indices)
+		indexPointer += mesh->vertices.size();
+
+	}
+
+}
+
+void Scene::generateMeshTextures() {
+
+	meshTextures.resize(0);
+	texturePool.clear();
+
+	for (Mesh* mesh : meshCollection) {
 
 		// TEXTURE POOL
 		texturePool.insert(mesh->material->albedo);
 		texturePool.insert(mesh->material->normal);
 		texturePool.insert(mesh->material->roughness);
 		texturePool.insert(mesh->material->metallic);
-
-		// Loop increment (used to convert local indices to global indices)
-		indexPointer += mesh->vertices.size();
 
 	}
 
@@ -427,6 +463,27 @@ void Scene::generateSSBOs(unsigned int width, unsigned int height, GLuint& verte
 		meshTextures.push_back(texturePointers);
 
 	}
+
+}
+
+void Scene::generateMeshHeader() {
+
+	meshHeader.resize(0);
+
+	size_t indexPointer = 0;
+	for (Mesh* mesh : meshCollection) {
+
+		// MESH-HEADER
+		meshHeader.push_back(glm::vec4(indexPointer, mesh->indices.size(), mesh->emissive, 0.0f));
+
+		// Loop increment (used to convert local indices to global indices)
+		indexPointer += mesh->vertices.size();
+
+	}
+
+}
+
+void Scene::generateSSBOs(unsigned int width, unsigned int height) {
 
 	// GENERATE VERTEX SSBO
 	glGenBuffers(1, &vertexSSBO);
@@ -492,8 +549,9 @@ void Scene::generateSSBOs(unsigned int width, unsigned int height, GLuint& verte
 	vector<string> texturePoolVector(texturePool.begin(), texturePool.end());
 	Texture::loadTextureArray(textureArray, texturePoolVector, width, height);
 
-	// output this (used for drawing)
-	meshTexturesOutput = meshTextures;
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D_ARRAY, textureArray);
+
 
 }
 
@@ -504,9 +562,11 @@ void Scene::link() {
 	postProcessingShader = new Shader("shaders/post_processing.vert", "shaders/post_processing.frag");
 
 	// TEXTURE ARRAY
-	generateSSBOs(textureWidth, textureHeight, vertexSSBO, indicesSSBO, textureMeshSSBO, meshHeaderSSBO, textureArray, meshTexturesOutput);
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D_ARRAY, textureArray);
+	generateGlobalVertices();
+	generateGlobalIndices();
+	generateMeshTextures();
+	generateMeshHeader();
+	generateSSBOs(textureWidth, textureHeight);
 
 	// COLOR NOISE
 	colorNoise = new Texture(COLOR_NOISE);
@@ -709,15 +769,27 @@ void ImguiWindow::drawImgui(double frameTime, Scene* scene, Mesh* highlightedMes
 			TableNextColumn();
 			{
 				PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.3f, 0.1f, 0.1f, 1.0f));
-				if (DragFloat("##posX", &(highlightedMesh->position.x), 0.5f)) currentSample = 0;
+				if (DragFloat("##posX", &(highlightedMesh->position.x), 0.5f)) {
+					currentSample = 0;
+					scene->generateGlobalVertices();
+					scene->updateVertexSSBO();
+				}
 				PopStyleColor(1);
 				TableNextColumn();
 				PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.1f, 0.3f, 0.1f, 1.0f));
-				if (DragFloat("##posY", &(highlightedMesh->position.y), 0.5f)) currentSample = 0;
+				if (DragFloat("##posY", &(highlightedMesh->position.y), 0.5f)) {
+					currentSample = 0;
+					scene->generateGlobalVertices();
+					scene->updateVertexSSBO();
+				}
 				PopStyleColor(1);
 				TableNextColumn();
 				PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.15f, 0.15f, 0.3f, 1.0f));
-				if (DragFloat("##posZ", &(highlightedMesh->position.z), 0.5f)) currentSample = 0;
+				if (DragFloat("##posZ", &(highlightedMesh->position.z), 0.5f)) {
+					currentSample = 0;
+					scene->generateGlobalVertices();
+					scene->updateVertexSSBO();
+				}
 				PopStyleColor(1);
 				TableNextColumn();
 				if (Button("Reset##positon")) highlightedMesh->position = glm::vec3(0.0f); currentSample = 0;
@@ -729,15 +801,27 @@ void ImguiWindow::drawImgui(double frameTime, Scene* scene, Mesh* highlightedMes
 			TableNextColumn();
 			{
 				PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.3f, 0.1f, 0.1f, 1.0f));
-				if (DragFloat("##pitch", &(highlightedMesh->rotation.x), 0.1f)) currentSample = 0;
+				if (DragFloat("##pitch", &(highlightedMesh->rotation.x), 0.1f)) {
+					currentSample = 0;
+					scene->generateGlobalVertices();
+					scene->updateVertexSSBO();
+				}
 				PopStyleColor(1);
 				TableNextColumn();
 				PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.1f, 0.3f, 0.1f, 1.0f));
-				if (DragFloat("##yaw", &(highlightedMesh->rotation.y), 0.1f)) currentSample = 0;
+				if (DragFloat("##yaw", &(highlightedMesh->rotation.y), 0.1f)) {
+					currentSample = 0;
+					scene->generateGlobalVertices();
+					scene->updateVertexSSBO();
+				}
 				PopStyleColor(1);
 				TableNextColumn();
 				PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.15f, 0.15f, 0.3f, 1.0f));
-				if (DragFloat("##roll", &(highlightedMesh->rotation.z), 0.1f)) currentSample = 0;
+				if (DragFloat("##roll", &(highlightedMesh->rotation.z), 0.1f)) {
+					currentSample = 0;
+					scene->generateGlobalVertices();
+					scene->updateVertexSSBO();
+				}
 				PopStyleColor(1);
 				TableNextColumn();
 				if (Button("Reset##rotation")) highlightedMesh->rotation = glm::vec3(0.0f); currentSample = 0;
@@ -749,15 +833,27 @@ void ImguiWindow::drawImgui(double frameTime, Scene* scene, Mesh* highlightedMes
 			TableNextColumn();
 			{
 				PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.3f, 0.1f, 0.1f, 1.0f));
-				if (DragFloat("##scaleX", &(highlightedMesh->scale.x), 0.1f)) currentSample = 0;
+				if (DragFloat("##scaleX", &(highlightedMesh->scale.x), 0.1f)) {
+					currentSample = 0;
+					scene->generateGlobalVertices();
+					scene->updateVertexSSBO();
+				}
 				PopStyleColor(1);
 				TableNextColumn();
 				PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.1f, 0.3f, 0.1f, 1.0f));
-				if (DragFloat("##scaleY", &(highlightedMesh->scale.y), 0.1f)) currentSample = 0;
+				if (DragFloat("##scaleY", &(highlightedMesh->scale.y), 0.1f)) {
+					currentSample = 0;
+					scene->generateGlobalVertices();
+					scene->updateVertexSSBO();
+				}
 				PopStyleColor(1);
 				TableNextColumn();
 				PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.15f, 0.15f, 0.3f, 1.0f));
-				if (DragFloat("##scaleZ", &(highlightedMesh->scale.z), 0.1f)) currentSample = 0;
+				if (DragFloat("##scaleZ", &(highlightedMesh->scale.z), 0.1f)) {
+					currentSample = 0;
+					scene->generateGlobalVertices();
+					scene->updateVertexSSBO();
+				}
 				PopStyleColor(1);
 				TableNextColumn();
 				if (Button("Reset##scale")) highlightedMesh->scale = glm::vec3(1.0f); currentSample = 0;
@@ -771,7 +867,8 @@ void ImguiWindow::drawImgui(double frameTime, Scene* scene, Mesh* highlightedMes
 				PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.3f, 0.1f, 0.1f, 1.0f));
 				if (SliderFloat("##tintR", &(highlightedMesh->tint.x), 0.0f, 1.0f)) {
 					currentSample = 0;
-					scene->updateVertexSSBO(scene->vertexSSBO);
+					scene->generateGlobalVertices();
+					scene->updateVertexSSBO();
 					for (Mesh* mesh : scene->meshCollection) {
 						mesh->updateBuffers();
 					}
@@ -781,7 +878,8 @@ void ImguiWindow::drawImgui(double frameTime, Scene* scene, Mesh* highlightedMes
 				PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.1f, 0.3f, 0.1f, 1.0f));
 				if (SliderFloat("##tintG", &(highlightedMesh->tint.y), 0.0f, 1.0f)) {
 					currentSample = 0;
-					scene->updateVertexSSBO(scene->vertexSSBO);
+					scene->generateGlobalVertices();
+					scene->updateVertexSSBO();
 					for (Mesh* mesh : scene->meshCollection) {
 						mesh->updateBuffers();
 					}
@@ -791,7 +889,8 @@ void ImguiWindow::drawImgui(double frameTime, Scene* scene, Mesh* highlightedMes
 				PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.15f, 0.15f, 0.3f, 1.0f));
 				if (SliderFloat("##tintB", &(highlightedMesh->tint.z), 0.0f, 1.0f)) {
 					currentSample = 0; 
-					scene->updateVertexSSBO(scene->vertexSSBO);
+					scene->generateGlobalVertices();
+					scene->updateVertexSSBO();
 					for (Mesh* mesh : scene->meshCollection) {
 						mesh->updateBuffers();
 					}
