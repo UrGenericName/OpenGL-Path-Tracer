@@ -33,6 +33,7 @@ public:
 	Mesh(string fileName, glm::vec3 importColor = { 1.0f, 1.0f, 1.0f }, float i_emissive = 0.0f);
 	~Mesh();
 
+	void DrawGizmo(Shader& shader);
 	void Draw(Shader& shader, GLuint currentMesh, std::vector<glm::vec4> meshHeader);
 	bool importObj(string fileName, glm::vec3 importColor);	// imports an obj mesh (MUST BE TRIANGLATED BEFORE IMPORT)
 	void updateBuffers();

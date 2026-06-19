@@ -22,6 +22,8 @@ uniform uint u_metallic;
 uniform float u_emissive;
 uniform uint u_currentMesh;
 
+uniform int u_isGizmo;
+
 const ivec2 pixelCoords = ivec2(gl_FragCoord.xy);
 
 bool debugHighlightObject(inout vec4 inputColor);
@@ -29,12 +31,21 @@ void adjustBrightness(inout vec4 inputColor);
 
 void main() {
 
-	if (u_emissive != 0.0f) {
+	if (u_isGizmo == 1) {
 		FragColor = vec4(color, 1.0f);
 		return;
 	}
 
-	vec4 inputColor = imageLoad(frameBuffer, pixelCoords);
+	vec4 inputColor;
+
+	if (u_emissive != 0.0f) {
+		inputColor = vec4(color, 1.0f);
+		debugHighlightObject(inputColor);
+		FragColor = inputColor;
+		return;
+	}
+
+	inputColor = imageLoad(frameBuffer, pixelCoords);
 
 	adjustBrightness(inputColor);
 	debugHighlightObject(inputColor);

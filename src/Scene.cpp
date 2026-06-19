@@ -18,6 +18,8 @@ void Scene::importScene(string fileName) {
 
 	ifstream file("scenes/" + fileName);
 
+	meshCollection.resize(0);
+
 	string line;
 	while (getline(file, line)) {
 
@@ -110,6 +112,10 @@ void Scene::importScene(string fileName) {
 		}
 
 	}
+
+	file.close();
+
+	link();
 }
 
 void Scene::exportScene(string fileName) {
@@ -268,7 +274,7 @@ void Scene::Draw_PostProcessingPass(Shader& PostProcessing_shader) {
 	
 	// RE-USE SAME DEPTH
 	glEnable(GL_DEPTH_TEST);
-	glDepthFunc(GL_EQUAL);
+	glDepthFunc(GL_LEQUAL);
 	glDepthMask(GL_FALSE);
 	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 
@@ -281,6 +287,20 @@ void Scene::Draw_PostProcessingPass(Shader& PostProcessing_shader) {
 	// DRAW MESHES
 	for (size_t i = 0; i < meshCollection.size(); ++i) {
 		meshCollection[i]->Draw(PostProcessing_shader, i, meshTextures);
+	}
+
+	if (imguiWindow.highlightedMesh != -1) {
+
+		Mesh* highlightedMesh = meshCollection[imguiWindow.highlightedMesh];
+
+		gizmoX->position = highlightedMesh->position;
+		gizmoY->position = highlightedMesh->position;
+		gizmoZ->position = highlightedMesh->position;
+
+		glDisable(GL_DEPTH_TEST);
+		gizmoX->DrawGizmo(PostProcessing_shader);
+		gizmoY->DrawGizmo(PostProcessing_shader);
+		gizmoZ->DrawGizmo(PostProcessing_shader);
 	}
 
 }
@@ -561,7 +581,9 @@ void Scene::link() {
 	pathTracingShader = new Shader("shaders/path_tracing.vert", "shaders/path_tracing.frag");
 	postProcessingShader = new Shader("shaders/post_processing.vert", "shaders/post_processing.frag");
 
-	// TEXTURE ARRAY
+	GLuint buffersToDelete[] = { vertexSSBO, indicesSSBO, meshTextureSSBO, meshHeaderSSBO, textureArray };
+	glDeleteBuffers(5, buffersToDelete);
+
 	generateGlobalVertices();
 	generateGlobalIndices();
 	generateMeshTextures();
@@ -754,7 +776,7 @@ void ImguiWindow::drawImgui(double frameTime, Scene* scene, Mesh* highlightedMes
 
 	// MESH SETTINGS
 	if (highlightedMesh != nullptr) {
-		;
+		
 		if (BeginTable("ShaderLayoutTable", 5)) {
 
 			TableSetupColumn("Edit Mesh");
@@ -792,7 +814,12 @@ void ImguiWindow::drawImgui(double frameTime, Scene* scene, Mesh* highlightedMes
 				}
 				PopStyleColor(1);
 				TableNextColumn();
-				if (Button("Reset##positon")) highlightedMesh->position = glm::vec3(0.0f); currentSample = 0;
+				if (Button("Reset##positon")) {
+					currentSample = 0;
+					highlightedMesh->position = glm::vec3(0.0f);
+					scene->generateGlobalVertices();
+					scene->updateVertexSSBO();
+				}
 			}
 
 			TableNextRow();
@@ -824,7 +851,12 @@ void ImguiWindow::drawImgui(double frameTime, Scene* scene, Mesh* highlightedMes
 				}
 				PopStyleColor(1);
 				TableNextColumn();
-				if (Button("Reset##rotation")) highlightedMesh->rotation = glm::vec3(0.0f); currentSample = 0;
+				if (Button("Reset##rotation")) {
+					highlightedMesh->rotation = glm::vec3(0.0f); 
+					currentSample = 0;
+					scene->generateGlobalVertices();
+					scene->updateVertexSSBO();
+				}
 			}
 
 			TableNextRow();
@@ -856,7 +888,12 @@ void ImguiWindow::drawImgui(double frameTime, Scene* scene, Mesh* highlightedMes
 				}
 				PopStyleColor(1);
 				TableNextColumn();
-				if (Button("Reset##scale")) highlightedMesh->scale = glm::vec3(1.0f); currentSample = 0;
+				if (Button("Reset##scale")) {
+					highlightedMesh->scale = glm::vec3(1.0f); 
+					currentSample = 0;
+					scene->generateGlobalVertices();
+					scene->updateVertexSSBO();
+				}
 			}
 
 			TableNextRow();
@@ -897,18 +934,25 @@ void ImguiWindow::drawImgui(double frameTime, Scene* scene, Mesh* highlightedMes
 				}
 				PopStyleColor(1);
 				TableNextColumn();
-				if (Button("Reset##tint")) highlightedMesh->tint = glm::vec3(1.0f); currentSample = 0;
+				if (Button("Reset##tint")) {
+					currentSample = 0;
+					highlightedMesh->tint = glm::vec3(1.0f);
+				}
 			}
 
 			TableNextRow();
 			TableNextColumn();
 			Text("Emission");
 			TableNextColumn();
-			if (SliderFloat("##emission", &(highlightedMesh->emissive), 0.0f, 500.0f)) currentSample = 0;
+			if (SliderFloat("##emission", &(highlightedMesh->emissive), 0.0f, 500.0f)) {
+				currentSample = 0;
+				scene->generateMeshHeader();
+				scene->updateMeshHeaderSSBO();
+			}
 
 			TableNextRow();
 			TableNextColumn();
-			if (Button("Delete##scale")) {
+			if (Button("Delete")) {
 				erase(scene->meshCollection, highlightedMesh);
 				scene->link();
 			}

@@ -88,6 +88,21 @@ void Mesh::MeshSetup() {
 
 }
 
+void Mesh::DrawGizmo(Shader& shader) {
+
+	shader.Activate();
+	VAO.Bind();
+
+	GLuint modelMatrixLoc = glGetUniformLocation(shader.ID, "u_modelMatrix");
+	glUniformMatrix4fv(modelMatrixLoc, 1, GL_FALSE, glm::value_ptr(getModelMatrix()));
+
+	GLuint gizmoLoc = glGetUniformLocation(shader.ID, "u_isGizmo");
+	glUniform1i(gizmoLoc, 1);
+
+	glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
+
+}
+
 void Mesh::Draw(Shader& shader, GLuint currentMesh, std::vector<glm::vec4> meshTextures) {
 
 	shader.Activate();
@@ -95,6 +110,9 @@ void Mesh::Draw(Shader& shader, GLuint currentMesh, std::vector<glm::vec4> meshT
 
 	GLuint modelMatrixLoc = glGetUniformLocation(shader.ID, "u_modelMatrix");
 	glUniformMatrix4fv(modelMatrixLoc, 1, GL_FALSE, glm::value_ptr(getModelMatrix()));
+
+	GLuint gizmoLoc = glGetUniformLocation(shader.ID, "u_isGizmo");
+	glUniform1i(gizmoLoc, 0);
 
 	// Uniforms for the index location of each texture
 	GLuint albedoUniformLoc = glGetUniformLocation(shader.ID, "u_albedo");

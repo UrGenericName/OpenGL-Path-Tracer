@@ -62,6 +62,10 @@ private:
 
 	set<string> texturePool;	// all the textures used in the scene
 
+	Mesh* gizmoX { new Mesh("models/core/gizmo_x.obj", glm::vec3(1.0f, 0.0f, 0.0f)) };
+	Mesh* gizmoY { new Mesh("models/core/gizmo_y.obj", glm::vec3(0.0f, 1.0f, 0.0f)) };
+	Mesh* gizmoZ { new Mesh("models/core/gizmo_z.obj", glm::vec3(0.0f, 0.0f, 1.0f)) };
+
 	void generateGlobalVertices();
 	void generateGlobalIndices();
 	void generateMeshTextures();
@@ -71,7 +75,9 @@ private:
 	void updateIndicesSSBO();
 	void updateMeshTexturesSSBO();
 	void updateMeshHeaderSSBO();
+
 	void generateSSBOs(unsigned int width, unsigned int height);
+
 	void generateDepthUniforms(Shader& shader, Camera& camera);
 	void generatePathTracingUniforms(Shader& shader, Camera& camera);
 	void generatePostProcessingUniforms(Shader& shader, Camera& camera);
