@@ -55,6 +55,9 @@ public:
 	inline static char exportName[128] = "";
 	inline static char importOBJname[128] = "";
 
+	// SCREENSHOT
+	bool waitingForScreenshot = false;
+
 	// WINDOW
 	bool pause = false;
 	bool drawWindow = true;

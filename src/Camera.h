@@ -21,8 +21,8 @@ public:
 	glm::vec3 Position;
 	glm::vec3 Orientation = glm::vec3(0.0f, 1.0f, 0.0f);
 
-	unsigned int width;
-	unsigned int height;
+	const unsigned int width;
+	const unsigned int height;
 
 	float FOVdeg = 45.0f;
 	float nearPlane = 0.1f;

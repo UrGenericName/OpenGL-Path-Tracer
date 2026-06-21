@@ -34,6 +34,7 @@ public:
 	Scene(Camera& i_camera, string fileName, unsigned int width = 256, unsigned int height = 256);
 	~Scene();
 
+	void screenshotWindow();
 	void importScene(string fileName);
 	void exportScene(string fileName);
 	void Draw(GLFWwindow* window);

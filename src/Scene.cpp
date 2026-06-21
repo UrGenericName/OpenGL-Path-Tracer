@@ -203,8 +203,20 @@ void Scene::Draw(GLFWwindow* window) {
 	auto raw_duration = end - start;
 	chrono::duration<double, milli> ms_double = raw_duration;
 
+	// HIGHLIGHT MESH
 	Mesh* highlightedMesh = (imguiWindow.highlightedMesh == -1) ? nullptr : meshCollection[imguiWindow.highlightedMesh];
 	imguiWindow.drawImgui(ms_double.count(), this, highlightedMesh);
+
+	// SCREENSHOT
+
+
+}
+
+void Scene::screenshotWindow() {
+
+	vector<GLfloat> pixels(camera.width * camera.height * 3, 0);
+
+	glReadPixels(0, 0, camera.width, camera.height, GL_RGB, GL_FLOAT, pixels.data());
 
 }
 
@@ -598,6 +610,9 @@ void ImguiWindow::drawImgui(double frameTime, Scene* scene, Mesh* highlightedMes
 
 	using namespace ImGui;
 
+	const ImVec4 validPathColor(0.1f, 0.3f, 0.1f, 1.0f);
+	const ImVec4 invalidPathColor(0.15f, 0.15f, 0.15f, 1.0f);
+
 	// DEBUG WINDOW
 	ImGui_ImplOpenGL3_NewFrame();
 	ImGui_ImplGlfw_NewFrame();
@@ -650,9 +665,6 @@ void ImguiWindow::drawImgui(double frameTime, Scene* scene, Mesh* highlightedMes
 		TableHeadersRow();
 
 		TableNextRow();
-
-		const ImVec4 validPathColor(0.1f, 0.3f, 0.1f, 1.0f);
-		const ImVec4 invalidPathColor(0.15f, 0.15f, 0.15f, 1.0f);
 
 		std::filesystem::path filePath;
 
@@ -941,6 +953,14 @@ void ImguiWindow::drawImgui(double frameTime, Scene* scene, Mesh* highlightedMes
 		if (Checkbox("Universal Roughness", &debugUniversalRoughness)) currentSample = 0;
 		TableNextColumn();
 		if (Button("Pause")) pause = !pause;
+
+
+		TableNextColumn();
+		BeginDisabled(waitingForScreenshot);
+		if (Button("Screenshot")) {
+			scene->screenshotWindow();
+		}
+		EndDisabled();
 
 		EndTable();
 	}
