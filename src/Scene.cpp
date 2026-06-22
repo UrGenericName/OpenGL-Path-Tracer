@@ -1,5 +1,8 @@
 #include "Scene.h"
 
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include "stb_image_write.h"
+
 Scene::Scene(Camera& i_camera, unsigned int i_textureWidth, unsigned int i_textureHeight) : camera(i_camera), textureWidth(i_textureWidth), textureHeight(i_textureHeight) {}
 
 Scene::Scene(Camera& i_camera, string fileName, unsigned int i_textureWidth, unsigned int i_textureHeight) : camera(i_camera), textureWidth(i_textureWidth), textureHeight(i_textureHeight) {
@@ -11,6 +14,15 @@ Scene::~Scene() {
 	for (Mesh* mesh : meshCollection) {
 		delete mesh;
 	}
+
+	depthPrepassShader->Delete();
+	pathTracingShader->Delete();
+	postProcessingShader->Delete();
+
+	frameBuffer->Delete();
+	accumulationBuffer->Delete();
+
+	colorNoise->Delete();
 
 }
 
@@ -208,15 +220,58 @@ void Scene::Draw(GLFWwindow* window) {
 	imguiWindow.drawImgui(ms_double.count(), this, highlightedMesh);
 
 	// SCREENSHOT
+	handleQueuedImageRender();
+}
 
+void Scene::handleQueuedImageRender() {
+
+	static int lastHighlightedMeshValue;
+	static bool lastDrawWindowValue;
+
+	if (imguiWindow.imageRenderPhase == ImguiWindow::RenderPhase::WAITING && imguiWindow.currentSample == imguiWindow.maxSamples) {
+
+		lastDrawWindowValue = imguiWindow.drawWindow;
+		lastHighlightedMeshValue = imguiWindow.highlightedMesh;
+
+		imguiWindow.drawWindow = false;
+		imguiWindow.highlightedMesh = -1;
+		imguiWindow.imageRenderPhase = ImguiWindow::RenderPhase::RENDERING;
+
+	}
+	else if (imguiWindow.imageRenderPhase == ImguiWindow::RenderPhase::RENDERING) {
+
+		renderImage();
+
+		imguiWindow.drawWindow = lastDrawWindowValue;
+		imguiWindow.highlightedMesh = lastHighlightedMeshValue;
+
+		imguiWindow.imageRenderPhase = ImguiWindow::RenderPhase::COMPLETE;
+
+	}
 
 }
 
-void Scene::screenshotWindow() {
+void Scene::renderImage() {
 
 	vector<GLfloat> pixels(camera.width * camera.height * 3, 0);
-
 	glReadPixels(0, 0, camera.width, camera.height, GL_RGB, GL_FLOAT, pixels.data());
+
+	vector<unsigned char> pixelsChar(camera.width * camera.height * 3, 0);
+
+	for (int i = 0; i < pixels.size(); ++i) {
+		pixelsChar[i] = static_cast<unsigned char>(pixels[i] * 255.0f);
+	}
+
+	auto now = chrono::system_clock::now();
+	auto local_time = chrono::current_zone()->to_local(now);
+	string timeStamp = format("{:%Y-%m-%d_%H-%M-%S}", local_time);
+
+	filesystem::path destination = string("output/output_" + timeStamp + ".png");
+	string destinationStr = destination.string();
+	const char* destinationCstr = destinationStr.c_str();
+
+	stbi_flip_vertically_on_write(true);
+	stbi_write_png(destinationCstr, camera.width, camera.height, 3, pixelsChar.data(), camera.width * 3);
 
 }
 
@@ -804,7 +859,10 @@ void ImguiWindow::drawImgui(double frameTime, Scene* scene, Mesh* highlightedMes
 				}
 				PopStyleColor(1);
 				TableNextColumn();
-				if (Button("Reset##positon")) highlightedMesh->position = glm::vec3(0.0f); currentSample = 0;
+				if (Button("Reset##positon")) {
+					highlightedMesh->position = glm::vec3(0.0f);
+					currentSample = 0;
+				}
 			}
 
 			TableNextRow();
@@ -836,7 +894,10 @@ void ImguiWindow::drawImgui(double frameTime, Scene* scene, Mesh* highlightedMes
 				}
 				PopStyleColor(1);
 				TableNextColumn();
-				if (Button("Reset##rotation")) highlightedMesh->rotation = glm::vec3(0.0f); currentSample = 0;
+				if (Button("Reset##rotation")) {
+					highlightedMesh->rotation = glm::vec3(0.0f); 
+					currentSample = 0;
+				}
 			}
 
 			TableNextRow();
@@ -868,7 +929,10 @@ void ImguiWindow::drawImgui(double frameTime, Scene* scene, Mesh* highlightedMes
 				}
 				PopStyleColor(1);
 				TableNextColumn();
-				if (Button("Reset##scale")) highlightedMesh->scale = glm::vec3(1.0f); currentSample = 0;
+				if (Button("Reset##scale")) {
+					highlightedMesh->scale = glm::vec3(1.0f);
+					currentSample = 0;
+				}
 			}
 
 			TableNextRow();
@@ -909,7 +973,9 @@ void ImguiWindow::drawImgui(double frameTime, Scene* scene, Mesh* highlightedMes
 				}
 				PopStyleColor(1);
 				TableNextColumn();
-				if (Button("Reset##tint")) highlightedMesh->tint = glm::vec3(1.0f); currentSample = 0;
+				if (Button("Reset##tint")) {
+					highlightedMesh->tint = glm::vec3(1.0f); currentSample = 0;
+				}
 			}
 
 			TableNextRow();
@@ -956,9 +1022,9 @@ void ImguiWindow::drawImgui(double frameTime, Scene* scene, Mesh* highlightedMes
 
 
 		TableNextColumn();
-		BeginDisabled(waitingForScreenshot);
-		if (Button("Screenshot")) {
-			scene->screenshotWindow();
+		BeginDisabled(imageRenderPhase != RenderPhase::COMPLETE);
+		if (Button("Render Image")) {
+			imageRenderPhase = RenderPhase::WAITING;
 		}
 		EndDisabled();
 
