@@ -129,6 +129,9 @@ void Mesh::Draw(Shader& shader, GLuint currentMesh, std::vector<glm::vec4> meshT
 
 
 	// Other unfiorms
+	GLuint tintUniformLoc = glGetUniformLocation(shader.ID, "u_tint");
+	glUniform3f(tintUniformLoc, tint.x, tint.y, tint.z);
+
 	GLuint emissiveUniformLoc = glGetUniformLocation(shader.ID, "u_emissive");
 	glUniform1f(emissiveUniformLoc, static_cast<GLfloat>(emissive) );
 

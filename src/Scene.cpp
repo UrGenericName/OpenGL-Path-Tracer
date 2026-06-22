@@ -1,5 +1,8 @@
 #include "Scene.h"
 
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include "stb_image_write.h"
+
 Scene::Scene(Camera& i_camera, unsigned int i_textureWidth, unsigned int i_textureHeight) : camera(i_camera), textureWidth(i_textureWidth), textureHeight(i_textureHeight) {}
 
 Scene::Scene(Camera& i_camera, string fileName, unsigned int i_textureWidth, unsigned int i_textureHeight) : camera(i_camera), textureWidth(i_textureWidth), textureHeight(i_textureHeight) {
@@ -11,6 +14,15 @@ Scene::~Scene() {
 	for (Mesh* mesh : meshCollection) {
 		delete mesh;
 	}
+
+	depthPrepassShader->Delete();
+	pathTracingShader->Delete();
+	postProcessingShader->Delete();
+
+	frameBuffer->Delete();
+	accumulationBuffer->Delete();
+
+	colorNoise->Delete();
 
 }
 
@@ -114,6 +126,9 @@ void Scene::importScene(string fileName) {
 	}
 
 	file.close();
+	imguiWindow.currentSample = 0;
+
+	file.close();
 
 	link();
 }
@@ -209,8 +224,85 @@ void Scene::Draw(GLFWwindow* window) {
 	auto raw_duration = end - start;
 	chrono::duration<double, milli> ms_double = raw_duration;
 
+	// HIGHLIGHT MESH
 	Mesh* highlightedMesh = (imguiWindow.highlightedMesh == -1) ? nullptr : meshCollection[imguiWindow.highlightedMesh];
 	imguiWindow.drawImgui(ms_double.count(), this, highlightedMesh);
+
+	// SCREENSHOT
+	handleQueuedImageRender();
+
+	// ANIMATE NEXT FRAME
+	AnimateComponents(++sceneAnimationFrame);
+}
+
+void Scene::AnimateComponents(unsigned int currentFrame) {
+
+	// CAMERA ANIMATION
+	if (camera.animation != nullptr) camera.animation(camera, currentFrame);
+
+	// MESH ANIMATION
+	for (int i = 0; i < meshCollection.size(); ++i) {
+
+		Mesh* mesh = meshCollection[i];
+
+		if (mesh->animation != nullptr) {
+			mesh->animation(*mesh, currentFrame);
+		}
+
+	}
+
+}
+
+void Scene::handleQueuedImageRender() {
+
+	static int lastHighlightedMeshValue;
+	static bool lastDrawWindowValue;
+
+	if (imguiWindow.imageRenderPhase == ImguiWindow::RenderPhase::WAITING && imguiWindow.currentSample == imguiWindow.maxSamples) {
+
+		lastDrawWindowValue = imguiWindow.drawWindow;
+		lastHighlightedMeshValue = imguiWindow.highlightedMesh;
+
+		imguiWindow.drawWindow = false;
+		imguiWindow.highlightedMesh = -1;
+		imguiWindow.imageRenderPhase = ImguiWindow::RenderPhase::RENDERING;
+
+	}
+	else if (imguiWindow.imageRenderPhase == ImguiWindow::RenderPhase::RENDERING) {
+
+		auto now = chrono::system_clock::now();
+		auto local_time = chrono::current_zone()->to_local(now);
+		string timeStamp = format("{:%Y-%m-%d_%H-%M-%S}", local_time);
+		string fileName = "output_" + timeStamp + ".png";
+
+		renderImage(fileName);
+
+		imguiWindow.drawWindow = lastDrawWindowValue;
+		imguiWindow.highlightedMesh = lastHighlightedMeshValue;
+
+		imguiWindow.imageRenderPhase = ImguiWindow::RenderPhase::COMPLETE;
+
+	}
+
+}
+
+void Scene::renderImage(string fileName) {
+
+	vector<GLfloat> pixels(camera.width * camera.height * 3, 0);
+	glReadPixels(0, 0, camera.width, camera.height, GL_RGB, GL_FLOAT, pixels.data());
+
+	vector<unsigned char> pixelsChar(camera.width * camera.height * 3, 0);
+
+	for (int i = 0; i < pixels.size(); ++i) {
+		pixelsChar[i] = static_cast<unsigned char>(pixels[i] * 255.0f);
+	}
+
+	filesystem::path destination = string("output/" + fileName);
+	string destinationStr = destination.string();
+	const char* destinationCstr = destinationStr.c_str();
+
+	stbi_flip_vertically_on_write(true);
+	stbi_write_png(destinationCstr, camera.width, camera.height, 3, pixelsChar.data(), camera.width * 3);
 
 }
 
@@ -620,6 +712,9 @@ void ImguiWindow::drawImgui(double frameTime, Scene* scene, Mesh* highlightedMes
 
 	using namespace ImGui;
 
+	const ImVec4 validPathColor(0.1f, 0.3f, 0.1f, 1.0f);
+	const ImVec4 invalidPathColor(0.15f, 0.15f, 0.15f, 1.0f);
+
 	// DEBUG WINDOW
 	ImGui_ImplOpenGL3_NewFrame();
 	ImGui_ImplGlfw_NewFrame();
@@ -672,9 +767,6 @@ void ImguiWindow::drawImgui(double frameTime, Scene* scene, Mesh* highlightedMes
 		TableHeadersRow();
 
 		TableNextRow();
-
-		const ImVec4 validPathColor(0.1f, 0.3f, 0.1f, 1.0f);
-		const ImVec4 invalidPathColor(0.15f, 0.15f, 0.15f, 1.0f);
 
 		std::filesystem::path filePath;
 
@@ -985,6 +1077,14 @@ void ImguiWindow::drawImgui(double frameTime, Scene* scene, Mesh* highlightedMes
 		if (Checkbox("Universal Roughness", &debugUniversalRoughness)) currentSample = 0;
 		TableNextColumn();
 		if (Button("Pause")) pause = !pause;
+
+
+		TableNextColumn();
+		BeginDisabled(imageRenderPhase != RenderPhase::COMPLETE);
+		if (Button("Render Image")) {
+			imageRenderPhase = RenderPhase::WAITING;
+		}
+		EndDisabled();
 
 		EndTable();
 	}

@@ -21,8 +21,10 @@ public:
 	glm::vec3 Position;
 	glm::vec3 Orientation = glm::vec3(0.0f, 1.0f, 0.0f);
 
-	unsigned int width;
-	unsigned int height;
+	std::function<void(Camera&, unsigned int)> animation = nullptr;
+
+	const unsigned int width;
+	const unsigned int height;
 
 	float FOVdeg = 45.0f;
 	float nearPlane = 0.1f;
@@ -40,10 +42,5 @@ public:
 private:
 
 	glm::mat4 cameraMatrix = glm::mat4(1.0f);
-
-	bool speedUp = false;	// used in the speed up section of Inputs(...)
-	bool firstClick = true;	// just to avoid camera snapping when initially selecting window
-	bool lastWindowInput = false;
-
 	const glm::vec3 Up = glm::vec3(0.0f, 0.0f, 1.0f);	// a const vector used to define the up vector
 };

@@ -55,6 +55,18 @@ public:
 	inline static char exportName[128] = "";
 	inline static char importOBJname[128] = "";
 
+	enum class RenderPhase {
+
+		WAITING,
+		RENDER_READY,
+		RENDERING,
+		COMPLETE
+
+	};
+
+	// SCREENSHOT
+	RenderPhase imageRenderPhase = RenderPhase::COMPLETE;
+
 	// WINDOW
 	bool pause = false;
 	bool drawWindow = true;

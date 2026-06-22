@@ -27,6 +27,8 @@ public:
 	unsigned int textureWidth;
 	unsigned int textureHeight;
 
+	unsigned int sceneAnimationFrame = 0;
+
 	std::vector<Mesh*> meshCollection;
 	glm::vec3 backgroundColor = { 0.07f, 0.13f, 0.17f };
 
@@ -65,6 +67,11 @@ private:
 	Mesh* gizmoX { new Mesh("models/core/gizmo_x.obj", glm::vec3(1.0f, 0.0f, 0.0f)) };
 	Mesh* gizmoY { new Mesh("models/core/gizmo_y.obj", glm::vec3(0.0f, 1.0f, 0.0f)) };
 	Mesh* gizmoZ { new Mesh("models/core/gizmo_z.obj", glm::vec3(0.0f, 0.0f, 1.0f)) };
+
+	void AnimateComponents(unsigned int currentFrame);
+
+	void handleQueuedImageRender();
+	void renderImage(string fileName);
 
 	void generateGlobalVertices();
 	void generateGlobalIndices();

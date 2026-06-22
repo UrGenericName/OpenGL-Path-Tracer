@@ -67,6 +67,7 @@ void Camera::Inputs(GLFWwindow* window, ImguiWindow& imguiWindow) {
 	}
 
 	// MOUSE MOVEMENT
+	static bool firstClick = true;
 	if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS) {
 		glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
 
@@ -103,6 +104,7 @@ void Camera::Inputs(GLFWwindow* window, ImguiWindow& imguiWindow) {
 
 
 	// SPEED UP (SHIFT)
+	static bool speedUp = false;
 	if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) {
 
 		if (!speedUp) {		// speedUp check prevents the speed from continuously increasing every frame

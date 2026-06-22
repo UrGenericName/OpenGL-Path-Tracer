@@ -60,6 +60,7 @@ uniform uint u_albedo;
 uniform uint u_normal;
 uniform uint u_roughness;
 uniform uint u_metallic;
+uniform vec3 u_tint;
 uniform float u_emissive;
 uniform uint u_currentMesh;
 
@@ -140,7 +141,7 @@ bool drawDebug(uint debugMode) {
     switch ( debugMode ) {
 
         case DEBUG_ALBEDO:
-            FragColor = vec4( texture(texturePool, vec3(texCoord, u_albedo)).rgb * brightness, 1.0f );
+            FragColor = vec4( texture(texturePool, vec3(texCoord, u_albedo)).rgb * brightness * u_tint, 1.0f );
             imageStore(frameBuffer, pixelCoords, FragColor);
             return true;
 
