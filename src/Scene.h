@@ -68,8 +68,12 @@ private:
 	Mesh* gizmoY { new Mesh("models/core/gizmo_y.obj", glm::vec3(0.0f, 1.0f, 0.0f)) };
 	Mesh* gizmoZ { new Mesh("models/core/gizmo_z.obj", glm::vec3(0.0f, 0.0f, 1.0f)) };
 
+	void setWindowTitle(GLFWwindow* window, double frameTime);
+
 	void AnimateComponents(unsigned int currentFrame);
 
+	void handleQueuedAnimationPreview();
+	void handleQueuedVideoRender();
 	void handleQueuedImageRender();
 	void renderImage(string fileName);
 

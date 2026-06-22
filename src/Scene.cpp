@@ -128,8 +128,6 @@ void Scene::importScene(string fileName) {
 	file.close();
 	imguiWindow.currentSample = 0;
 
-	file.close();
-
 	link();
 }
 
@@ -224,16 +222,33 @@ void Scene::Draw(GLFWwindow* window) {
 	auto end = chrono::high_resolution_clock::now();
 	auto raw_duration = end - start;
 	chrono::duration<double, milli> ms_double = raw_duration;
+	double frameTime = ms_double.count();
 
 	// HIGHLIGHT MESH
 	Mesh* highlightedMesh = (imguiWindow.highlightedMesh == -1) ? nullptr : meshCollection[imguiWindow.highlightedMesh];
-	imguiWindow.drawImgui(ms_double.count(), this, highlightedMesh);
+	imguiWindow.drawImgui(frameTime, sceneAnimationFrame, this, highlightedMesh);
 
 	// SCREENSHOT
 	handleQueuedImageRender();
+	handleQueuedVideoRender();
 
-	// ANIMATE NEXT FRAME
-	AnimateComponents(++sceneAnimationFrame);
+	// ANIMATION PREVIEW
+	handleQueuedAnimationPreview();
+
+	// WINDOW NAME
+	setWindowTitle(window, frameTime);
+
+}
+
+void Scene::setWindowTitle(GLFWwindow* window, double frameTime) {
+
+	string windowName =
+		"Samples: " + to_string(imguiWindow.currentSample) + "/" + to_string(imguiWindow.maxSamples) + "\t" +
+		"FPS: " + to_string(static_cast<int>(1000 / frameTime)) + "\t" +
+		"Animation Frame: " + to_string(sceneAnimationFrame) + "/" + to_string(imguiWindow.totalAnimationFrames);
+
+	glfwSetWindowTitle(window, windowName.c_str());
+
 }
 
 void Scene::AnimateComponents(unsigned int currentFrame) {
@@ -252,6 +267,83 @@ void Scene::AnimateComponents(unsigned int currentFrame) {
 
 	}
 
+	imguiWindow.currentSample = 0;
+
+	generateGlobalVertices();
+	updateVertexSSBO();
+
+}
+
+void Scene::handleQueuedAnimationPreview() {
+
+	if (imguiWindow.previewAnimationPhase == ImguiWindow::RenderPhase::WAITING) {
+
+		// First frame
+		AnimateComponents(sceneAnimationFrame);
+
+		imguiWindow.previewAnimationPhase = ImguiWindow::RenderPhase::RENDERING;
+
+	}
+	else if (imguiWindow.previewAnimationPhase == ImguiWindow::RenderPhase::RENDERING) {
+
+		AnimateComponents(++sceneAnimationFrame);
+
+		if (sceneAnimationFrame == imguiWindow.totalAnimationFrames) {
+			sceneAnimationFrame = 0;
+			imguiWindow.previewAnimationPhase = ImguiWindow::RenderPhase::COMPLETE;
+		}
+
+	}
+
+}
+
+void Scene::handleQueuedVideoRender() {
+
+	static int lastHighlightedMeshValue;
+	static bool lastDrawWindowValue;
+
+	static string timeStamp;
+
+	if (imguiWindow.videoRenderPhase == ImguiWindow::RenderPhase::WAITING) {
+
+		lastDrawWindowValue = imguiWindow.drawWindow;
+		lastHighlightedMeshValue = imguiWindow.highlightedMesh;
+
+		auto now = chrono::system_clock::now();
+		auto local_time = chrono::current_zone()->to_local(now);
+		timeStamp = format("{:%Y-%m-%d_%H-%M-%S}", local_time);
+
+		filesystem::create_directories("output/video_" + timeStamp + "/");
+		string fileName = "video_" + timeStamp + "/" + to_string(sceneAnimationFrame) + ".png";
+
+		imguiWindow.drawWindow = false;
+		imguiWindow.highlightedMesh = -1;
+
+		// First frame
+		AnimateComponents(sceneAnimationFrame);
+
+		imguiWindow.videoRenderPhase = ImguiWindow::RenderPhase::RENDERING;
+
+	}
+	else if (imguiWindow.videoRenderPhase == ImguiWindow::RenderPhase::RENDERING) {
+
+		if (imguiWindow.currentSample == imguiWindow.maxSamples) {
+
+			string fileName = "video_" + timeStamp + "/" + to_string(sceneAnimationFrame) + ".png";
+
+			AnimateComponents(++sceneAnimationFrame);
+			renderImage(fileName);
+
+			if (sceneAnimationFrame == imguiWindow.totalAnimationFrames) {
+				sceneAnimationFrame = 0;
+				imguiWindow.drawWindow = lastDrawWindowValue;
+				imguiWindow.highlightedMesh = lastHighlightedMeshValue;
+				imguiWindow.videoRenderPhase = ImguiWindow::RenderPhase::COMPLETE;
+			}
+
+		}
+	}
+
 }
 
 void Scene::handleQueuedImageRender() {
@@ -259,7 +351,7 @@ void Scene::handleQueuedImageRender() {
 	static int lastHighlightedMeshValue;
 	static bool lastDrawWindowValue;
 
-	if (imguiWindow.imageRenderPhase == ImguiWindow::RenderPhase::WAITING && imguiWindow.currentSample == imguiWindow.maxSamples) {
+	if (imguiWindow.imageRenderPhase == ImguiWindow::RenderPhase::WAITING) {
 
 		lastDrawWindowValue = imguiWindow.drawWindow;
 		lastHighlightedMeshValue = imguiWindow.highlightedMesh;
@@ -271,17 +363,21 @@ void Scene::handleQueuedImageRender() {
 	}
 	else if (imguiWindow.imageRenderPhase == ImguiWindow::RenderPhase::RENDERING) {
 
-		auto now = chrono::system_clock::now();
-		auto local_time = chrono::current_zone()->to_local(now);
-		string timeStamp = format("{:%Y-%m-%d_%H-%M-%S}", local_time);
-		string fileName = "output_" + timeStamp + ".png";
+		if (imguiWindow.currentSample == imguiWindow.maxSamples) {
 
-		renderImage(fileName);
+			auto now = chrono::system_clock::now();
+			auto local_time = chrono::current_zone()->to_local(now);
+			string timeStamp = format("{:%Y-%m-%d_%H-%M-%S}", local_time);
+			string fileName = "output_" + timeStamp + ".png";
 
-		imguiWindow.drawWindow = lastDrawWindowValue;
-		imguiWindow.highlightedMesh = lastHighlightedMeshValue;
+			renderImage(fileName);
 
-		imguiWindow.imageRenderPhase = ImguiWindow::RenderPhase::COMPLETE;
+			imguiWindow.drawWindow = lastDrawWindowValue;
+			imguiWindow.highlightedMesh = lastHighlightedMeshValue;
+
+			imguiWindow.imageRenderPhase = ImguiWindow::RenderPhase::COMPLETE;
+
+		}
 
 	}
 
@@ -710,9 +806,11 @@ void Scene::link() {
 
 }
 
-void ImguiWindow::drawImgui(double frameTime, Scene* scene, Mesh* highlightedMesh) {
+void ImguiWindow::drawImgui(double frameTime, unsigned int animationFrame, Scene* scene, Mesh* highlightedMesh) {
 
 	using namespace ImGui;
+
+	const ImVec4 defaultComponentColor(0.26f, 0.59f, 0.98f, 0.40f);
 
 	const ImVec4 validPathColor(0.1f, 0.3f, 0.1f, 1.0f);
 	const ImVec4 invalidPathColor(0.15f, 0.15f, 0.15f, 1.0f);
@@ -734,30 +832,78 @@ void ImguiWindow::drawImgui(double frameTime, Scene* scene, Mesh* highlightedMes
 
 	Text("Samples: %d/%d\t\tFT(ms): %.3f\t\tFPS: %d", currentSample, maxSamples, frameTime, static_cast<int>(1000 / frameTime));
 
-	// RENDER VISUALIZATION
+	if (BeginTable("ShaderLayoutTable", 2)) {
+
+		TableSetupColumn("Render");
+		TableSetupColumn("Render Settings");
+		TableHeadersRow();
+
+		TableNextRow();
+
+		BeginDisabled(previewAnimationPhase != RenderPhase::COMPLETE);
+
+		// RENDER
+		TableNextColumn();
+		BeginDisabled(imageRenderPhase != RenderPhase::COMPLETE);
+		if (Button("Render Image")) {
+			imageRenderPhase = RenderPhase::WAITING;
+		}
+		EndDisabled();
+		BeginDisabled(videoRenderPhase != RenderPhase::COMPLETE);
+		SameLine();
+		if (Button("Render Video")) {
+			videoRenderPhase = RenderPhase::WAITING;
+			scene->sceneAnimationFrame = 0;
+		}
+
+		SliderInt("Frames", &totalAnimationFrames, 1, 1000);
+		EndDisabled();
+
+		if (Button("Preview")) {
+			previewAnimationPhase = RenderPhase::WAITING;
+			debugMode = static_cast<int>(DebugTypes::ALBEDO);
+		}
+		SameLine();
+		Text("Frame: %d/%d", animationFrame, totalAnimationFrames);
+
+		// RENDER SETTINGS
+		TableNextColumn();
+		if (SliderInt("Bounces", &maxBounces, 1, MAX_BOUNCES)) currentSample = 0;
+		if (SliderInt("Samples", &maxSamples, 1, MAX_SAMPLES)) currentSample = 0;
+		if (Button("Clear Samples")) currentSample = 0;
+		Spacing();
+		if (Button("Pause")) pause = !pause;
+
+		EndDisabled();
+
+		EndTable();
+	}
+
+	// RENDER VISUALIZATION / POST PROCESSING
 	if (BeginTable("ShaderLayoutTable", 2)) {
 
 		TableSetupColumn("Render Visualization");
-		TableSetupColumn("Settings");
+		TableSetupColumn("Post Processing");
 		TableHeadersRow();
 
 		TableNextRow();
 
 		// RENDER VISUALIZATION
 		TableNextColumn();
+		BeginDisabled(previewAnimationPhase != RenderPhase::COMPLETE);
 		if (RadioButton("Disabled", &debugMode, static_cast<int>(DebugTypes::DISABLED))) currentSample = 0;
 		if (RadioButton("Albedo", &debugMode, static_cast<int>(DebugTypes::ALBEDO))) currentSample = 0;
 		if (RadioButton("Normal", &debugMode, static_cast<int>(DebugTypes::NORMAL))) currentSample = 0;
 		if (RadioButton("Roughness", &debugMode, static_cast<int>(DebugTypes::ROUGHNESS))) currentSample = 0;
 		if (RadioButton("Metallic", &debugMode, static_cast<int>(DebugTypes::METALLIC))) currentSample = 0;
-
-		// SETTINGS
-		TableNextColumn();
+		EndDisabled();
+		Spacing();
 		Checkbox("Lambertian Shading", &debugLambertian);
+
+		// POST PROCESSING
+		TableNextColumn();
 		SliderFloat("Min Brightness", &minBrightness, 0.0f, maxBrightness - 0.001f);
 		SliderFloat("Max Brightness", &maxBrightness, minBrightness + 0.001f, 1.0f);
-		if (SliderInt("Bounces", &maxBounces, 1, MAX_BOUNCES)) currentSample = 0;
-		if (SliderInt("Samples", &maxSamples, 1, MAX_SAMPLES)) currentSample = 0;
 
 		EndTable();
 	}
@@ -1070,9 +1216,6 @@ void ImguiWindow::drawImgui(double frameTime, Scene* scene, Mesh* highlightedMes
 		if (SliderFloat("Roughness", &debugUniversalRoughnessAmount, 0, 1)) currentSample = 0;
 		EndDisabled();
 
-		TableNextColumn();
-		if (Button("Clear Samples")) currentSample = 0;
-
 		TableNextRow();
 
 		TableNextColumn();
@@ -1082,11 +1225,6 @@ void ImguiWindow::drawImgui(double frameTime, Scene* scene, Mesh* highlightedMes
 
 
 		TableNextColumn();
-		BeginDisabled(imageRenderPhase != RenderPhase::COMPLETE);
-		if (Button("Render Image")) {
-			imageRenderPhase = RenderPhase::WAITING;
-		}
-		EndDisabled();
 
 		EndTable();
 	}

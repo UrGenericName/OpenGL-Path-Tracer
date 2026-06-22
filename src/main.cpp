@@ -57,7 +57,7 @@ GLFWwindow* initGLFW() {
 	glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
 
 	// Creates the actual glfw window
-	GLFWwindow* window = glfwCreateWindow(WIDTH, HEIGHT, "Graphcis", NULL, NULL);
+	GLFWwindow* window = glfwCreateWindow(WIDTH, HEIGHT, "", NULL, NULL);
 	if (window == NULL) {
 		std::cout << "Failed to create GLFW window" << std::endl;
 		glfwTerminate();

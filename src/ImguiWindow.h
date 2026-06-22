@@ -19,7 +19,7 @@ public:
 	ImguiWindow();
 
 	static void initImgui(GLFWwindow* window);
-	void drawImgui(double frameTime, Scene* scene, Mesh* highlightedMesh);	// defined in Scene.cpp
+	void drawImgui(double frameTime, unsigned int animationFrame, Scene* scene, Mesh* highlightedMesh);	// defined in Scene.cpp
 
 	enum class DebugTypes {
 
@@ -58,14 +58,16 @@ public:
 	enum class RenderPhase {
 
 		WAITING,
-		RENDER_READY,
 		RENDERING,
 		COMPLETE
 
 	};
 
-	// SCREENSHOT
+	// RENDER
 	RenderPhase imageRenderPhase = RenderPhase::COMPLETE;
+	RenderPhase videoRenderPhase = RenderPhase::COMPLETE;
+	RenderPhase previewAnimationPhase = RenderPhase::COMPLETE;
+	int totalAnimationFrames = 10;
 
 	// WINDOW
 	bool pause = false;
