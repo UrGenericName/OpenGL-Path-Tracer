@@ -122,6 +122,9 @@ void Scene::importScene(string fileName) {
 		}
 
 	}
+
+	file.close();
+	imguiWindow.currentSample = 0;
 }
 
 void Scene::exportScene(string fileName) {
@@ -240,7 +243,12 @@ void Scene::handleQueuedImageRender() {
 	}
 	else if (imguiWindow.imageRenderPhase == ImguiWindow::RenderPhase::RENDERING) {
 
-		renderImage();
+		auto now = chrono::system_clock::now();
+		auto local_time = chrono::current_zone()->to_local(now);
+		string timeStamp = format("{:%Y-%m-%d_%H-%M-%S}", local_time);
+		string fileName = "output_" + timeStamp + ".png";
+
+		renderImage(fileName);
 
 		imguiWindow.drawWindow = lastDrawWindowValue;
 		imguiWindow.highlightedMesh = lastHighlightedMeshValue;
@@ -251,7 +259,7 @@ void Scene::handleQueuedImageRender() {
 
 }
 
-void Scene::renderImage() {
+void Scene::renderImage(string fileName) {
 
 	vector<GLfloat> pixels(camera.width * camera.height * 3, 0);
 	glReadPixels(0, 0, camera.width, camera.height, GL_RGB, GL_FLOAT, pixels.data());
@@ -262,11 +270,7 @@ void Scene::renderImage() {
 		pixelsChar[i] = static_cast<unsigned char>(pixels[i] * 255.0f);
 	}
 
-	auto now = chrono::system_clock::now();
-	auto local_time = chrono::current_zone()->to_local(now);
-	string timeStamp = format("{:%Y-%m-%d_%H-%M-%S}", local_time);
-
-	filesystem::path destination = string("output/output_" + timeStamp + ".png");
+	filesystem::path destination = string("output/" + fileName);
 	string destinationStr = destination.string();
 	const char* destinationCstr = destinationStr.c_str();
 

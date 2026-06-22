@@ -63,7 +63,7 @@ private:
 	set<string> texturePool;	// all the textures used in the scene
 
 	void handleQueuedImageRender();
-	void renderImage();
+	void renderImage(string fileName);
 
 	void generateGlobalVertices();
 	void generateGlobalIndices();
