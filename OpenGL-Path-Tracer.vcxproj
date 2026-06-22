@@ -190,6 +190,7 @@
     <ClCompile Include="src\ImguiWindow.cpp">
       <FileType>CppCode</FileType>
     </ClCompile>
+    <ClInclude Include="src\Animation.h" />
     <ClInclude Include="src\FBO.h" />
     <ClInclude Include="src\ImguiWindow.h" />
     <ClInclude Include="imgui\backends\imgui_impl_glfw.h" />

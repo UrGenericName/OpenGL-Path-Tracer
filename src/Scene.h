@@ -27,6 +27,8 @@ public:
 	unsigned int textureWidth;
 	unsigned int textureHeight;
 
+	unsigned int sceneAnimationFrame = 0;
+
 	std::vector<Mesh*> meshCollection;
 	glm::vec3 backgroundColor = { 0.07f, 0.13f, 0.17f };
 
@@ -61,6 +63,8 @@ private:
 	vector<glm::vec4> meshHeader;	// <indicesStartPointer, indicesSize, emissiveValue>
 
 	set<string> texturePool;	// all the textures used in the scene
+
+	void AnimateComponents(unsigned int currentFrame);
 
 	void handleQueuedImageRender();
 	void renderImage(string fileName);

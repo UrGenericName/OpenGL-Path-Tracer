@@ -224,6 +224,27 @@ void Scene::Draw(GLFWwindow* window) {
 
 	// SCREENSHOT
 	handleQueuedImageRender();
+
+	// ANIMATE NEXT FRAME
+	AnimateComponents(++sceneAnimationFrame);
+}
+
+void Scene::AnimateComponents(unsigned int currentFrame) {
+
+	// CAMERA ANIMATION
+	if (camera.animation != nullptr) camera.animation(camera, currentFrame);
+
+	// MESH ANIMATION
+	for (int i = 0; i < meshCollection.size(); ++i) {
+
+		Mesh* mesh = meshCollection[i];
+
+		if (mesh->animation != nullptr) {
+			mesh->animation(*mesh, currentFrame);
+		}
+
+	}
+
 }
 
 void Scene::handleQueuedImageRender() {

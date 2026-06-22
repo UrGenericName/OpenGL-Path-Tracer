@@ -2,13 +2,18 @@
 
 #include <string>
 #include <fstream>
+#include <functional>
 #include <glm/gtc/type_ptr.hpp>
 #include "VAO.h"
 #include "EBO.h"
 #include "Material.h"
 
+class Scene;
+
 class Mesh {
 public:
+
+	friend Scene;
 
 	glm::vec3 position { 0.0f, 0.0f, 0.0f };
 	glm::vec3 rotation { 0.0f, 0.0f, 0.0f };
@@ -20,12 +25,7 @@ public:
 	string fileName;
 	glm::vec3 tint;
 
-	std::vector<Vertex> vertices;
-	std::vector<GLuint> indices;
-
-	VAO VAO;
-	VBO* VBOptr;
-	EBO* EBOptr;
+	std::function<void(Mesh&, unsigned int)> animation = nullptr;
 
 	Mesh(std::vector<Vertex>& vertices, std::vector<GLuint>& indices, Material* i_material, float i_emissive = 0.0f, glm::vec3 i_position = glm::vec3(0.0f), glm::vec3 i_rotation = glm::vec3(0.0f), glm::vec3 i_scale = glm::vec3(0.0f));
 	Mesh(std::vector<Vertex>& vertices, std::vector<GLuint>& indices, float i_emissive = 0.0f);
@@ -39,6 +39,13 @@ public:
 	glm::mat4 getModelMatrix();
 
 private:
+
+	VAO VAO;
+	VBO* VBOptr;
+	EBO* EBOptr;
+
+	std::vector<Vertex> vertices;
+	std::vector<GLuint> indices;
 
 	glm::mat4 modelMatrix;
 

@@ -21,6 +21,8 @@ public:
 	glm::vec3 Position;
 	glm::vec3 Orientation = glm::vec3(0.0f, 1.0f, 0.0f);
 
+	std::function<void(Camera&, unsigned int)> animation = nullptr;
+
 	const unsigned int width;
 	const unsigned int height;
 
