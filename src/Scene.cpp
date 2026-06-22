@@ -140,6 +140,7 @@ void Scene::exportScene(string fileName) {
 	auto local_time = chrono::current_zone()->to_local(now);
 	string timeStamp = format("{:%Y-%m-%d_%H-%M-%S}", local_time);
 
+	filesystem::create_directories("scenes/backups/");
 	filesystem::path destination = string("scenes/backups/" + timeStamp + "_backup_" + fileName);
 	filesystem::path source = string("scenes/" + fileName);
 	filesystem::copy_file(source, destination, filesystem::copy_options::overwrite_existing);
@@ -297,6 +298,7 @@ void Scene::renderImage(string fileName) {
 		pixelsChar[i] = static_cast<unsigned char>(pixels[i] * 255.0f);
 	}
 
+	filesystem::create_directories("output");
 	filesystem::path destination = string("output/" + fileName);
 	string destinationStr = destination.string();
 	const char* destinationCstr = destinationStr.c_str();
