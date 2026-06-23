@@ -77,7 +77,7 @@ void Mesh::MeshSetup() {
 
 }
 
-void Mesh::DrawGizmo(Shader& shader) {
+void Mesh::DrawGizmo(Shader& shader, int axis) {
 
 	shader.Activate();
 	VAO.Bind();
@@ -86,7 +86,7 @@ void Mesh::DrawGizmo(Shader& shader) {
 	glUniformMatrix4fv(modelMatrixLoc, 1, GL_FALSE, glm::value_ptr(getModelMatrix()));
 
 	GLuint gizmoLoc = glGetUniformLocation(shader.ID, "u_isGizmo");
-	glUniform1i(gizmoLoc, 1);
+	glUniform1i(gizmoLoc, axis);
 
 	glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);
 

@@ -37,6 +37,7 @@ public:
 	Camera& operator=(Camera other);
 
 	void updateMatrix();
+	glm::mat4 getMatrix();
 	void Matrix(Shader& shader, const char* uniform);
 
 private:

@@ -30,7 +30,7 @@ public:
 	Mesh(const Mesh& other);
 	~Mesh();
 
-	void DrawGizmo(Shader& shader);
+	void DrawGizmo(Shader& shader, int axis);
 	void Draw(Shader& shader, GLuint currentMesh, std::vector<glm::vec4> meshHeader);
 	bool importObj(string fileName, glm::vec3 importColor);	// imports an obj mesh (MUST BE TRIANGLATED BEFORE IMPORT)
 	void updateBuffers();

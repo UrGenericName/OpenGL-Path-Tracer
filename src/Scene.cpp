@@ -40,8 +40,13 @@ Scene::~Scene() {
 
 void Scene::Inputs(GLFWwindow* window) {
 
+	// MOVE GIZMO
+	if (gizmo.getSelection(window, camera) != Gizmo::Selection::NONE && glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
+
+	}
+
 	// HIGHLIGHT MESH
-	if (!ImGui::GetIO().WantCaptureMouse && glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
+	if ((gizmo.getSelection(window, camera) == Gizmo::Selection::NONE || imguiWindow.highlightedMesh == -1 ) && !ImGui::GetIO().WantCaptureMouse && glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
 
 		imguiWindow.mouseLeftClick = true;
 		imguiWindow.highlightedMesh = -1;
@@ -329,7 +334,7 @@ void Scene::Draw(GLFWwindow* window) {
 
 		Draw_DepthPrepass(*depthPrepassShader);
 		Draw_PathTracingPass(*pathTracingShader);
-		Draw_PostProcessingPass(*postProcessingShader);
+		Draw_PostProcessingPass(*postProcessingShader, window);
 
 	}
 
@@ -611,10 +616,17 @@ void Scene::Draw_PathTracingPass(Shader& PathTracing_shader) {
 
 }
 
-void Scene::Draw_PostProcessingPass(Shader& PostProcessing_shader) {
+void Scene::Draw_PostProcessingPass(Shader& PostProcessing_shader, GLFWwindow* window) {
+
+	if (imguiWindow.highlightedMesh != -1) {
+
+		Mesh* highlightedMesh = meshCollection[imguiWindow.highlightedMesh];
+		gizmo.setPos(highlightedMesh->position);
+
+	}
 
 	PostProcessing_shader.Activate();
-	generatePostProcessingUniforms(PostProcessing_shader, camera);
+	generatePostProcessingUniforms(PostProcessing_shader, camera, window);
 	
 	// RE-USE SAME DEPTH
 	glEnable(GL_DEPTH_TEST);
@@ -635,30 +647,26 @@ void Scene::Draw_PostProcessingPass(Shader& PostProcessing_shader) {
 
 	if (imguiWindow.highlightedMesh != -1) {
 
-		Mesh* highlightedMesh = meshCollection[imguiWindow.highlightedMesh];
-
-		gizmoX->position = highlightedMesh->position;
-		gizmoY->position = highlightedMesh->position;
-		gizmoZ->position = highlightedMesh->position;
-
 		glDisable(GL_DEPTH_TEST);
-		gizmoX->DrawGizmo(PostProcessing_shader);
-		gizmoY->DrawGizmo(PostProcessing_shader);
-		gizmoZ->DrawGizmo(PostProcessing_shader);
+		gizmo.Draw(PostProcessing_shader);
+
 	}
 
 }
 
-void Scene::generatePostProcessingUniforms(Shader& shader, Camera& camera) {
+void Scene::generatePostProcessingUniforms(Shader& shader, Camera& camera, GLFWwindow* window) {
 
-	int debugHighlightedMesh = glGetUniformLocation(shader.ID, "u_debugHighlightedMesh");
-	glUniform1i(debugHighlightedMesh, static_cast<int>(imguiWindow.highlightedMesh));
+	int gizmoSelectionLoc = glGetUniformLocation(shader.ID, "u_gizmoSelection");
+	glUniform1i(gizmoSelectionLoc, static_cast<int>(gizmo.getSelection(window, camera)));
 
-	int debugMinBrightness = glGetUniformLocation(shader.ID, "u_debugMinBrightness");
-	glUniform1f(debugMinBrightness, imguiWindow.minBrightness);
+	int debugHighlightedMeshLoc = glGetUniformLocation(shader.ID, "u_debugHighlightedMesh");
+	glUniform1i(debugHighlightedMeshLoc, static_cast<int>(imguiWindow.highlightedMesh));
 
-	int debugMaxBrightness = glGetUniformLocation(shader.ID, "u_debugMaxBrightness");
-	glUniform1f(debugMaxBrightness, imguiWindow.maxBrightness);
+	int debugMinBrightnessLoc = glGetUniformLocation(shader.ID, "u_debugMinBrightness");
+	glUniform1f(debugMinBrightnessLoc, imguiWindow.minBrightness);
+
+	int debugMaxBrightnessLoc = glGetUniformLocation(shader.ID, "u_debugMaxBrightness");
+	glUniform1f(debugMaxBrightnessLoc, imguiWindow.maxBrightness);
 
 	camera.Matrix(shader, "u_camMatrix");
 }

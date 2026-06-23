@@ -8,6 +8,7 @@
 #include "Mesh.h"
 #include "FBO.h"
 #include "Camera.h"
+#include "Gizmo.h"
 
 #include <GLFW/glfw3.h>
 
@@ -61,9 +62,7 @@ private:
 
 	set<string> texturePool;	// all the textures used in the scene
 
-	Mesh* gizmoX { new Mesh("models/core/gizmo_x.obj", glm::vec3(1.0f, 0.0f, 0.0f)) };
-	Mesh* gizmoY { new Mesh("models/core/gizmo_y.obj", glm::vec3(0.0f, 1.0f, 0.0f)) };
-	Mesh* gizmoZ { new Mesh("models/core/gizmo_z.obj", glm::vec3(0.0f, 0.0f, 1.0f)) };
+	Gizmo gizmo;
 
 	void Inputs(GLFWwindow* window);
 
@@ -90,11 +89,11 @@ private:
 
 	void generateDepthUniforms(Shader& shader, Camera& camera);
 	void generatePathTracingUniforms(Shader& shader, Camera& camera);
-	void generatePostProcessingUniforms(Shader& shader, Camera& camera);
+	void generatePostProcessingUniforms(Shader& shader, Camera& camera, GLFWwindow* window);
 
 	void Draw_DepthPrepass(Shader& Depth_shader);
 	void Draw_PathTracingPass(Shader& PathTracing_shader);
-	void Draw_PostProcessingPass(Shader& PostProcessing_shader);
+	void Draw_PostProcessingPass(Shader& PostProcessing_shader, GLFWwindow* window);
 
 	// Random generators
 	inline static std::random_device m_rd;
