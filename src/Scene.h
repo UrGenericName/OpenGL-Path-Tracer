@@ -1,18 +1,15 @@
 #pragma once
 
-#include <chrono>
 #include <vector>
 #include <set>
 #include <random>
 #include <string>
-#include <fstream>
-#include <iostream>
-#include <filesystem>
-#include <format>
 #include "ImguiWindow.h"
 #include "Mesh.h"
 #include "FBO.h"
 #include "Camera.h"
+
+#include <GLFW/glfw3.h>
 
 #define COLOR_NOISE "textures/core/color_noise.png"
 #define SCENE_FILE_EXTENSION ".txt"
@@ -29,7 +26,7 @@ public:
 
 	unsigned int sceneAnimationFrame = 0;
 
-	std::vector<Mesh*> meshCollection;
+	vector<Mesh*> meshCollection;
 	glm::vec3 backgroundColor = { 0.07f, 0.13f, 0.17f };
 
 	Scene(Camera& i_camera, unsigned int width = 256, unsigned int height = 256);
@@ -67,6 +64,8 @@ private:
 	Mesh* gizmoX { new Mesh("models/core/gizmo_x.obj", glm::vec3(1.0f, 0.0f, 0.0f)) };
 	Mesh* gizmoY { new Mesh("models/core/gizmo_y.obj", glm::vec3(0.0f, 1.0f, 0.0f)) };
 	Mesh* gizmoZ { new Mesh("models/core/gizmo_z.obj", glm::vec3(0.0f, 0.0f, 1.0f)) };
+
+	void Inputs(GLFWwindow* window);
 
 	void setWindowTitle(GLFWwindow* window, double frameTime);
 

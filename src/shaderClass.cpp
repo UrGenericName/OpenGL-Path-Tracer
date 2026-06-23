@@ -1,4 +1,11 @@
+#pragma once
+
 #include "shaderClass.h"
+
+#include <fstream>
+#include <sstream>
+#include <iostream>
+#include <cerrno>
 
 using namespace std;
 

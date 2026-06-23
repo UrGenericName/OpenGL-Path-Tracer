@@ -3,28 +3,27 @@
 #define GLM_ENABLE_EXPERIMENTAL
 
 #include <glad/glad.h>
-#include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtc/type_ptr.hpp>
-#include <glm/gtx/rotate_vector.hpp>
-#include <glm/gtx/vector_angle.hpp>
 
 #include "shaderClass.h"
-#include "ImguiWindow.h"
 
 #define SENSITIVITY_DEFAULT 100.0f;
 #define SPEED_DEFAULT 0.1f;
 
+class Scene;
+
 class Camera {
 public:
+
+	friend Scene;
+
 	glm::vec3 Position;
 	glm::vec3 Orientation = glm::vec3(0.0f, 1.0f, 0.0f);
 
 	std::function<void(Camera&, unsigned int)> animation = nullptr;
 
-	const unsigned int width;
-	const unsigned int height;
+	unsigned int width;
+	unsigned int height;
 
 	float FOVdeg = 45.0f;
 	float nearPlane = 0.1f;
@@ -34,10 +33,11 @@ public:
 	float sensitivity = SENSITIVITY_DEFAULT;
 
 	Camera(unsigned int width, unsigned int height, glm::vec3 position);
+	
+	Camera& operator=(Camera other);
 
 	void updateMatrix();
 	void Matrix(Shader& shader, const char* uniform);
-	void Inputs(GLFWwindow* window, ImguiWindow& imguiWindow);
 
 private:
 

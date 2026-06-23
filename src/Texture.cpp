@@ -1,4 +1,9 @@
+#pragma once
+
 #include "Texture.h"
+
+#include <stb/stb_image.h>
+#include <filesystem>
 
 Texture::Texture(GLenum texType, GLenum slot) {
 

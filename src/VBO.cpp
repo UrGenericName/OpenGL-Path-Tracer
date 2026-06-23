@@ -1,3 +1,4 @@
+#pragma once
 #include "VBO.h"
 
 VBO::VBO(std::vector<Vertex>& vertices) {

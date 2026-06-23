@@ -1,6 +1,7 @@
 #pragma once
+#include <iostream>
+
 #include "Scene.h"
-#include "Animation.h"
 
 #define WIDTH 1200
 #define HEIGHT 800
@@ -22,8 +23,6 @@ int main() {
 
 	while (!glfwWindowShouldClose(window))
 	{
-
-		if (scene.meshCollection.size() != 0) scene.meshCollection[0]->animation = Animation::meshSpin;
 
 		scene.Draw(window);
 

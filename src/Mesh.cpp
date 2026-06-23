@@ -1,34 +1,11 @@
+#pragma once
+
 #include "Mesh.h"
 
+#include <glm/gtc/type_ptr.hpp>
+#include <fstream>
+
 using namespace std;
-
-Mesh::Mesh(std::vector<Vertex>& i_vertices, std::vector<GLuint>& i_indices, Material* i_material, float i_emissive, glm::vec3 i_position, glm::vec3 i_rotation, glm::vec3 i_scale) {
-
-	position = i_position;
-	rotation = i_position;
-	i_scale = i_position;
-
-	vertices = i_vertices;
-	indices = i_indices;
-
-	MeshSetup();
-
-	material = i_material;
-	emissive = i_emissive;
-
-}
-
-Mesh::Mesh(std::vector<Vertex>& i_vertices, std::vector<GLuint>& i_indices, float i_emissive) {
-
-	vertices = i_vertices;
-	indices = i_indices;
-
-	MeshSetup();
-
-	material = new Material();
-	emissive = i_emissive;
-
-}
 
 Mesh::Mesh(string fileName, Material* i_material, glm::vec3 importColor, float i_emissive, glm::vec3 i_position, glm::vec3 i_rotation, glm::vec3 i_scale) {
 
@@ -61,6 +38,18 @@ Mesh::~Mesh() {
 	EBOptr->Delete();
 	delete material;
 
+}
+
+Mesh::Mesh(const Mesh& other) {
+
+	importObj(other.fileName, other.tint);
+	MeshSetup();
+
+	position = other.position;
+	rotation = other.rotation;
+	emissive = other.emissive;
+
+	animation = other.animation;
 }
 
 void Mesh::MeshSetup() {

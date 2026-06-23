@@ -1,4 +1,16 @@
+#pragma once
+
 #include "Scene.h"
+#include "Animation.h"
+
+#include <chrono>
+#include <fstream>
+#include <filesystem>
+#include <format>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
+#include <glm/gtx/rotate_vector.hpp>
+#include <glm/gtx/vector_angle.hpp>
 
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb_image_write.h"
@@ -23,6 +35,110 @@ Scene::~Scene() {
 	accumulationBuffer->Delete();
 
 	colorNoise->Delete();
+
+}
+
+void Scene::Inputs(GLFWwindow* window) {
+
+	// HIGHLIGHT MESH
+	if (!ImGui::GetIO().WantCaptureMouse && glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
+
+		imguiWindow.mouseLeftClick = true;
+		imguiWindow.highlightedMesh = -1;
+		glfwGetCursorPos(window, &imguiWindow.mouseX, &imguiWindow.mouseY);
+
+	}
+	else if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_RELEASE) {
+		imguiWindow.mouseLeftClick = false;
+	}	// MOVEMENT (w, a, s, d)
+	if (!ImGui::GetIO().WantCaptureMouse && glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
+		camera.Position += camera.speed * camera.Orientation;	// move position foward from orientation
+		imguiWindow.currentSample = 0;
+	}
+
+	if (!ImGui::GetIO().WantCaptureMouse && glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
+		camera.Position += camera.speed * -glm::normalize(glm::cross(camera.Orientation, camera.Up)); // find the left vector from orientation and add to position
+		imguiWindow.currentSample = 0;
+	}
+
+	if (!ImGui::GetIO().WantCaptureMouse && glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
+		camera.Position += camera.speed * -camera.Orientation;	// move position backward from orientation
+		imguiWindow.currentSample = 0;
+	}
+
+	if (!ImGui::GetIO().WantCaptureMouse && glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
+		camera.Position += camera.speed * glm::normalize(glm::cross(camera.Orientation, camera.Up));	// find the right vector from orientation and add to position
+		imguiWindow.currentSample = 0;
+	}
+
+
+
+	// UP & DOWN (space, ctrl)
+	if (!ImGui::GetIO().WantCaptureMouse && glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
+		camera.Position += camera.speed * camera.Up;
+		imguiWindow.currentSample = 0;
+	}
+	if (!ImGui::GetIO().WantCaptureMouse && glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) {
+		camera.Position += camera.speed * -camera.Up;
+		imguiWindow.currentSample = 0;
+	}
+
+	// MOUSE MOVEMENT
+	static bool firstClick = true;
+	if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS) {
+		glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
+
+		if (firstClick) {
+			glfwSetCursorPos(window, (camera.width / 2), (camera.height / 2));
+			firstClick = false;
+		}
+
+		double mouseX;
+		double mouseY;
+		glfwGetCursorPos(window, &mouseX, &mouseY);
+
+		float rotX = camera.sensitivity * (float)(mouseY - (camera.height / 2)) / camera.height;
+		float rotY = camera.sensitivity * (float)(mouseX - (camera.width / 2)) / camera.width;
+
+		glm::vec3 newOrientation = glm::rotate(camera.Orientation, glm::radians(-rotX), glm::normalize(glm::cross(camera.Orientation, camera.Up)));
+
+		if (!((glm::angle(newOrientation, camera.Up) <= glm::radians(5.0f)) || (glm::angle(newOrientation, -camera.Up) <= glm::radians(5.0f)))) {
+
+			camera.Orientation = newOrientation;
+
+		}
+
+		camera.Orientation = glm::rotate(camera.Orientation, glm::radians(-rotY), camera.Up);
+
+		glfwSetCursorPos(window, (float(camera.width) / 2), (float(camera.height) / 2));
+		imguiWindow.currentSample = 0;
+
+	}
+	else if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_RELEASE) {
+		glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+		firstClick = true;
+	}
+
+
+
+	// SPEED UP (SHIFT)
+	static bool speedUp = false;
+	if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) {
+
+		if (!speedUp) {		// speedUp check prevents the speed from continuously increasing every frame
+			camera.speed *= 2;
+			speedUp = true;
+		}
+
+	}
+	if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_RELEASE) {
+
+		if (speedUp) {		// speedUp check prevents the speed from continuously decreasing every frame
+			camera.speed /= 2;
+			speedUp = false;
+		}
+
+	}
 
 }
 
@@ -201,7 +317,7 @@ void Scene::Draw(GLFWwindow* window) {
 
 	auto start = chrono::high_resolution_clock::now();
 
-	camera.Inputs(window, imguiWindow);
+	if (imguiWindow.videoRenderPhase == ImguiWindow::RenderPhase::COMPLETE) this->Inputs(window);
 	camera.updateMatrix();
 
 	if (!imguiWindow.pause) {
@@ -216,8 +332,6 @@ void Scene::Draw(GLFWwindow* window) {
 		Draw_PostProcessingPass(*postProcessingShader);
 
 	}
-
-	if (imguiWindow.currentSample != imguiWindow.maxSamples) ++imguiWindow.currentSample;
 
 	auto end = chrono::high_resolution_clock::now();
 	auto raw_duration = end - start;
@@ -235,6 +349,8 @@ void Scene::Draw(GLFWwindow* window) {
 	// ANIMATION PREVIEW
 	handleQueuedAnimationPreview();
 
+	if (imguiWindow.currentSample != imguiWindow.maxSamples) ++imguiWindow.currentSample;
+
 	// WINDOW NAME
 	setWindowTitle(window, frameTime);
 
@@ -244,7 +360,7 @@ void Scene::setWindowTitle(GLFWwindow* window, double frameTime) {
 
 	string windowName =
 		"Samples: " + to_string(imguiWindow.currentSample) + "/" + to_string(imguiWindow.maxSamples) + "\t" +
-		"FPS: " + to_string(static_cast<int>(1000 / frameTime)) + "\t" +
+		"FPS: " + (to_string(static_cast<int>(1000 / frameTime)) + "      ").substr(0, 6) + "\t" +
 		"Animation Frame: " + to_string(sceneAnimationFrame) + "/" + to_string(imguiWindow.totalAnimationFrames);
 
 	glfwSetWindowTitle(window, windowName.c_str());
@@ -276,7 +392,15 @@ void Scene::AnimateComponents(unsigned int currentFrame) {
 
 void Scene::handleQueuedAnimationPreview() {
 
+	static vector<Mesh*> meshCollectionDeepCopy;
+	static Camera cameraCopy(camera);
+
 	if (imguiWindow.previewAnimationPhase == ImguiWindow::RenderPhase::WAITING) {
+
+		// save previous mesh data before animating
+		for (auto mesh : meshCollection) {
+			meshCollectionDeepCopy.push_back(new Mesh(*mesh));
+		}
 
 		// First frame
 		AnimateComponents(sceneAnimationFrame);
@@ -289,6 +413,17 @@ void Scene::handleQueuedAnimationPreview() {
 		AnimateComponents(++sceneAnimationFrame);
 
 		if (sceneAnimationFrame == imguiWindow.totalAnimationFrames) {
+
+			// Reset mesh collection back to deep copy
+			for (auto mesh : meshCollection) delete mesh;
+			meshCollection = meshCollectionDeepCopy;
+			meshCollectionDeepCopy.resize(0);
+
+			generateGlobalVertices(); updateVertexSSBO();
+			generateGlobalIndices(); updateIndicesSSBO();
+
+			camera = cameraCopy;
+
 			sceneAnimationFrame = 0;
 			imguiWindow.previewAnimationPhase = ImguiWindow::RenderPhase::COMPLETE;
 		}
@@ -304,7 +439,15 @@ void Scene::handleQueuedVideoRender() {
 
 	static string timeStamp;
 
+	static vector<Mesh*> meshCollectionDeepCopy;
+	static Camera cameraCopy(camera);
+
 	if (imguiWindow.videoRenderPhase == ImguiWindow::RenderPhase::WAITING) {
+
+		// save previous mesh data before animating
+		for (auto mesh : meshCollection) {
+			meshCollectionDeepCopy.push_back(new Mesh(*mesh));
+		}
 
 		lastDrawWindowValue = imguiWindow.drawWindow;
 		lastHighlightedMeshValue = imguiWindow.highlightedMesh;
@@ -334,7 +477,18 @@ void Scene::handleQueuedVideoRender() {
 			AnimateComponents(++sceneAnimationFrame);
 			renderImage(fileName);
 
-			if (sceneAnimationFrame == imguiWindow.totalAnimationFrames) {
+			if (sceneAnimationFrame == (imguiWindow.totalAnimationFrames + 1)) {
+
+				// Reset mesh collection back to deep copy
+				for (auto mesh : meshCollection) delete mesh;
+				meshCollection = meshCollectionDeepCopy;
+				meshCollectionDeepCopy.resize(0);
+
+				generateGlobalVertices(); updateVertexSSBO();
+				generateGlobalIndices(); updateIndicesSSBO();
+
+				camera = cameraCopy;
+
 				sceneAnimationFrame = 0;
 				imguiWindow.drawWindow = lastDrawWindowValue;
 				imguiWindow.highlightedMesh = lastHighlightedMeshValue;
@@ -1004,12 +1158,59 @@ void ImguiWindow::drawImgui(double frameTime, unsigned int animationFrame, Scene
 
 		TableNextRow();
 		TableNextColumn();
+		Text("Animation");
+		TableNextColumn();
+
+		static int current_selection;
+
+		// some fucked up shit to get the current_selection of the camera animation
+		current_selection = 0;
+		auto highlighedCameraAnimation = (scene->camera.animation.target<void(*)(Camera&, unsigned int)>());
+		auto rawHighlightedCameraAnimation = highlighedCameraAnimation ? (void*)*(highlighedCameraAnimation) : nullptr;
+
+		for (int i = 0; i < Animation::animationCameraFunctions.size(); ++i) {
+			auto currentCameraAnimation = (Animation::animationCameraFunctions[i]->function.target<void(*)(Camera&, unsigned int)>());
+			auto rawCurrentCameraAnimation = currentCameraAnimation ? (void*)*(currentCameraAnimation) : nullptr;
+
+			if (rawHighlightedCameraAnimation == rawCurrentCameraAnimation) {
+				current_selection = i;
+				break;
+			}
+
+		}
+
+		const char* current_selection_name = Animation::animationCameraFunctions[current_selection]->name.c_str();
+
+		// Create drop down component
+		if (BeginCombo("", current_selection_name)) {
+
+			for (int i = 0; i < Animation::animationCameraFunctions.size(); ++i) {
+
+				const bool is_selected = (current_selection == i);
+
+				// Assign new selected animation to highlighted mesh
+				if (Selectable(Animation::animationCameraFunctions[i]->name.c_str(), is_selected)) {
+					current_selection = i;
+					scene->camera.animation = Animation::animationCameraFunctions[i]->function;
+				}
+
+				if (is_selected) SetItemDefaultFocus();
+
+			}
+
+			EndCombo();
+		}
+
+		TableNextRow();
+		TableNextColumn();
+		Text("Settings");
+		TableNextColumn();
+
 		if (SliderFloat("FOV", &(scene->camera.FOVdeg), 0.0f, 90.0f)) currentSample = 0;
 		TableNextColumn();
 		if (SliderFloat("Near Plane", &(scene->camera.nearPlane), 0.0f, scene->camera.farPlane)) currentSample = 0;
 		TableNextColumn();
 		if (SliderFloat("Far Plane", &(scene->camera.farPlane), scene->camera.nearPlane, 10000.0f)) currentSample = 0;
-
 
 		EndTable();
 	}
@@ -1188,6 +1389,51 @@ void ImguiWindow::drawImgui(double frameTime, unsigned int animationFrame, Scene
 				currentSample = 0;
 				scene->generateMeshHeader();
 				scene->updateMeshHeaderSSBO();
+			}
+
+			TableNextRow();
+			TableNextColumn();
+			Text("Animation");
+			TableNextColumn();
+
+			static int current_selection;
+
+			// some fucked up shit to get the current_selection of the highlightedMesh animation
+			current_selection = 0;
+			auto highlighedMeshAnimation = (highlightedMesh->animation.target<void(*)(Mesh&, unsigned int)>());
+			auto rawHighlightedMeshAnimation = highlighedMeshAnimation ? (void*)*(highlighedMeshAnimation) : nullptr;
+
+			for (int i = 0; i < Animation::animationMeshFunctions.size(); ++i) {
+				auto currentMeshAnimation = (Animation::animationMeshFunctions[i]->function.target<void(*)(Mesh&, unsigned int)>());
+				auto rawCurrentMeshAnimation = currentMeshAnimation ? (void*)*(currentMeshAnimation) : nullptr;
+
+				if (rawHighlightedMeshAnimation == rawCurrentMeshAnimation) {
+					current_selection = i;
+					break;
+				}
+
+			}
+
+			const char* current_selection_name = Animation::animationMeshFunctions[current_selection]->name.c_str();
+
+			// Create drop down component
+			if (BeginCombo("", current_selection_name)) {
+
+				for (int i = 0; i < Animation::animationMeshFunctions.size(); ++i) {
+
+					const bool is_selected = (current_selection == i);
+
+					// Assign new selected animation to highlighted mesh
+					if (Selectable(Animation::animationMeshFunctions[i]->name.c_str(), is_selected)) {
+						current_selection = i;
+						highlightedMesh->animation = Animation::animationMeshFunctions[i]->function;
+					}
+
+					if (is_selected) SetItemDefaultFocus();
+
+				}
+
+				EndCombo();
 			}
 
 			TableNextRow();

@@ -1,8 +1,7 @@
 #pragma once
 
 #include <glad/glad.h>
-#include <stb/stb_image.h>
-#include <filesystem>
+#include <vector>
 #include <string>
 
 #include "shaderClass.h";
