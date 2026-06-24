@@ -169,6 +169,8 @@
     </ClCompile>
     <ClCompile Include="src\Material.cpp" />
     <ClCompile Include="src\Mesh.cpp" />
+    <ClCompile Include="src\RenderComponent.cpp" />
+    <ClCompile Include="src\RenderComponent.h" />
     <ClCompile Include="src\Scene.cpp" />
     <ClCompile Include="src\shaderClass.cpp" />
     <ClCompile Include="src\SSBOcomponent.cpp" />

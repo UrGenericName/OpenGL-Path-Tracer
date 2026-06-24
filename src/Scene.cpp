@@ -12,9 +12,6 @@
 #include <glm/gtx/rotate_vector.hpp>
 #include <glm/gtx/vector_angle.hpp>
 
-#define STB_IMAGE_WRITE_IMPLEMENTATION
-#include "stb_image_write.h"
-
 Scene::Scene(Camera& i_camera, unsigned int i_textureWidth, unsigned int i_textureHeight) : camera(i_camera), textureWidth(i_textureWidth), textureHeight(i_textureHeight) {}
 
 Scene::Scene(Camera& i_camera, string fileName, unsigned int i_textureWidth, unsigned int i_textureHeight) : camera(i_camera), textureWidth(i_textureWidth), textureHeight(i_textureHeight) {
@@ -394,14 +391,14 @@ void Scene::Draw(GLFWwindow* window) {
 
 	// HIGHLIGHT MESH
 	Mesh* highlightedMesh = (imguiWindow.highlightedMesh == -1) ? nullptr : meshCollection[imguiWindow.highlightedMesh];
-	imguiWindow.drawImgui(frameTime, sceneAnimationFrame, this, highlightedMesh);
+	imguiWindow.drawImgui(frameTime, RenderComponent.sceneAnimationFrame, this, highlightedMesh);
 
 	// SCREENSHOT
-	handleQueuedImageRender();
-	handleQueuedVideoRender();
+	RenderComponent.handleQueuedImageRender(imguiWindow, camera);
+	RenderComponent.handleQueuedVideoRender(imguiWindow, camera, SSBOcomponent, meshCollection);
 
 	// ANIMATION PREVIEW
-	handleQueuedAnimationPreview();
+	RenderComponent.handleQueuedAnimationPreview(imguiWindow, camera, SSBOcomponent, meshCollection);
 
 	if (imguiWindow.currentSample != imguiWindow.maxSamples) ++imguiWindow.currentSample;
 
@@ -415,202 +412,9 @@ void Scene::setWindowTitle(GLFWwindow* window, double frameTime) {
 	string windowName =
 		"Samples: " + to_string(imguiWindow.currentSample) + "/" + to_string(imguiWindow.maxSamples) + "\t" +
 		"FPS: " + (to_string(static_cast<int>(1000 / frameTime)) + "      ").substr(0, 6) + "\t" +
-		"Animation Frame: " + to_string(sceneAnimationFrame) + "/" + to_string(imguiWindow.totalAnimationFrames);
+		"Animation Frame: " + to_string(RenderComponent.sceneAnimationFrame) + "/" + to_string(imguiWindow.totalAnimationFrames);
 
 	glfwSetWindowTitle(window, windowName.c_str());
-
-}
-
-void Scene::AnimateComponents(unsigned int currentFrame) {
-
-	// CAMERA ANIMATION
-	if (camera.animation != nullptr) camera.animation(camera, currentFrame);
-
-	// MESH ANIMATION
-	for (int i = 0; i < meshCollection.size(); ++i) {
-
-		Mesh* mesh = meshCollection[i];
-
-		if (mesh->animation != nullptr) {
-			mesh->animation(*mesh, currentFrame);
-		}
-
-		mesh->updateBuffers();
-
-	}
-
-	imguiWindow.currentSample = 0;
-
-	SSBOcomponent.generateGlobalVertices(meshCollection);
-	SSBOcomponent.updateVertexSSBO();
-
-}
-
-void Scene::handleQueuedAnimationPreview() {
-
-	static vector<Mesh*> meshCollectionDeepCopy;
-	static Camera cameraCopy(camera);
-
-	if (imguiWindow.previewAnimationPhase == ImguiWindow::RenderPhase::WAITING) {
-
-		// save previous mesh data before animating
-		for (auto mesh : meshCollection) {
-			meshCollectionDeepCopy.push_back(new Mesh(*mesh));
-		}
-
-		// First frame
-		AnimateComponents(sceneAnimationFrame);
-
-		imguiWindow.previewAnimationPhase = ImguiWindow::RenderPhase::RENDERING;
-
-	}
-	else if (imguiWindow.previewAnimationPhase == ImguiWindow::RenderPhase::RENDERING) {
-
-		AnimateComponents(++sceneAnimationFrame);
-
-		if (sceneAnimationFrame == imguiWindow.totalAnimationFrames) {
-
-			// Reset mesh collection back to deep copy
-			for (auto mesh : meshCollection) delete mesh;
-			meshCollection = meshCollectionDeepCopy;
-			meshCollectionDeepCopy.resize(0);
-
-			SSBOcomponent.generateGlobalVertices(meshCollection); SSBOcomponent.updateVertexSSBO();
-			SSBOcomponent.generateGlobalIndices(meshCollection); SSBOcomponent.updateIndicesSSBO();
-
-			if (camera.animation != nullptr) camera = cameraCopy;
-
-			sceneAnimationFrame = 0;
-			imguiWindow.previewAnimationPhase = ImguiWindow::RenderPhase::COMPLETE;
-		}
-
-	}
-
-}
-
-void Scene::handleQueuedVideoRender() {
-
-	static int lastHighlightedMeshValue;
-	static bool lastDrawWindowValue;
-
-	static string timeStamp;
-
-	static vector<Mesh*> meshCollectionDeepCopy;
-	static Camera cameraCopy(camera);
-
-	if (imguiWindow.videoRenderPhase == ImguiWindow::RenderPhase::WAITING) {
-
-		// save previous mesh data before animating
-		for (auto mesh : meshCollection) {
-			meshCollectionDeepCopy.push_back(new Mesh(*mesh));
-		}
-
-		lastDrawWindowValue = imguiWindow.drawWindow;
-		lastHighlightedMeshValue = imguiWindow.highlightedMesh;
-
-		auto now = chrono::system_clock::now();
-		auto local_time = chrono::current_zone()->to_local(now);
-		timeStamp = format("{:%Y-%m-%d_%H-%M-%S}", local_time);
-
-		filesystem::create_directories("output/video_" + timeStamp + "/");
-		string fileName = "video_" + timeStamp + "/" + to_string(sceneAnimationFrame) + ".png";
-
-		imguiWindow.drawWindow = false;
-		imguiWindow.highlightedMesh = -1;
-
-		// First frame
-		AnimateComponents(sceneAnimationFrame);
-
-		imguiWindow.videoRenderPhase = ImguiWindow::RenderPhase::RENDERING;
-
-	}
-	else if (imguiWindow.videoRenderPhase == ImguiWindow::RenderPhase::RENDERING) {
-
-		if (imguiWindow.currentSample == imguiWindow.maxSamples) {
-
-			string fileName = "video_" + timeStamp + "/" + to_string(sceneAnimationFrame) + ".png";
-
-			AnimateComponents(++sceneAnimationFrame);
-			renderImage(fileName);
-
-			if (sceneAnimationFrame == (imguiWindow.totalAnimationFrames + 1)) {
-
-				// Reset mesh collection back to deep copy
-				for (auto mesh : meshCollection) delete mesh;
-				meshCollection = meshCollectionDeepCopy;
-				meshCollectionDeepCopy.resize(0);
-
-				SSBOcomponent.generateGlobalVertices(meshCollection); SSBOcomponent.updateVertexSSBO();
-				SSBOcomponent.generateGlobalIndices(meshCollection); SSBOcomponent.updateIndicesSSBO();
-
-				if (camera.animation != nullptr) camera = cameraCopy;
-
-				sceneAnimationFrame = 0;
-				imguiWindow.drawWindow = lastDrawWindowValue;
-				imguiWindow.highlightedMesh = lastHighlightedMeshValue;
-				imguiWindow.videoRenderPhase = ImguiWindow::RenderPhase::COMPLETE;
-			}
-
-		}
-	}
-
-}
-
-void Scene::handleQueuedImageRender() {
-
-	static int lastHighlightedMeshValue;
-	static bool lastDrawWindowValue;
-
-	if (imguiWindow.imageRenderPhase == ImguiWindow::RenderPhase::WAITING) {
-
-		lastDrawWindowValue = imguiWindow.drawWindow;
-		lastHighlightedMeshValue = imguiWindow.highlightedMesh;
-
-		imguiWindow.drawWindow = false;
-		imguiWindow.highlightedMesh = -1;
-		imguiWindow.imageRenderPhase = ImguiWindow::RenderPhase::RENDERING;
-
-	}
-	else if (imguiWindow.imageRenderPhase == ImguiWindow::RenderPhase::RENDERING) {
-
-		if (imguiWindow.currentSample == imguiWindow.maxSamples) {
-
-			auto now = chrono::system_clock::now();
-			auto local_time = chrono::current_zone()->to_local(now);
-			string timeStamp = format("{:%Y-%m-%d_%H-%M-%S}", local_time);
-			string fileName = "output_" + timeStamp + ".png";
-
-			renderImage(fileName);
-
-			imguiWindow.drawWindow = lastDrawWindowValue;
-			imguiWindow.highlightedMesh = lastHighlightedMeshValue;
-
-			imguiWindow.imageRenderPhase = ImguiWindow::RenderPhase::COMPLETE;
-
-		}
-
-	}
-
-}
-
-void Scene::renderImage(string fileName) {
-
-	vector<GLfloat> pixels(camera.width * camera.height * 3, 0);
-	glReadPixels(0, 0, camera.width, camera.height, GL_RGB, GL_FLOAT, pixels.data());
-
-	vector<unsigned char> pixelsChar(camera.width * camera.height * 3, 0);
-
-	for (int i = 0; i < pixels.size(); ++i) {
-		pixelsChar[i] = static_cast<unsigned char>(pixels[i] * 255.0f);
-	}
-
-	filesystem::create_directories("output");
-	filesystem::path destination = string("output/" + fileName);
-	string destinationStr = destination.string();
-	const char* destinationCstr = destinationStr.c_str();
-
-	stbi_flip_vertically_on_write(true);
-	stbi_write_png(destinationCstr, camera.width, camera.height, 3, pixelsChar.data(), camera.width * 3);
 
 }
 
@@ -858,7 +662,7 @@ void ImguiWindow::drawImgui(double frameTime, unsigned int animationFrame, Scene
 		SameLine();
 		if (Button("Render Video")) {
 			videoRenderPhase = RenderPhase::WAITING;
-			scene->sceneAnimationFrame = 0;
+			scene->RenderComponent.sceneAnimationFrame = 0;
 		}
 
 		SliderInt("Frames", &totalAnimationFrames, 1, 1000);
