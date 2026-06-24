@@ -9,6 +9,7 @@
 #include "FBO.h"
 #include "Camera.h"
 #include "Gizmo.h"
+#include "SSBOcomponent.h"
 
 #include <GLFW/glfw3.h>
 
@@ -29,6 +30,8 @@ public:
 
 	vector<Mesh*> meshCollection;
 	glm::vec3 backgroundColor = { 0.07f, 0.13f, 0.17f };
+
+	SSBOcomponent SSBOcomponent;
 
 	Scene(Camera& i_camera, unsigned int width = 256, unsigned int height = 256);
 	Scene(Camera& i_camera, string fileName, unsigned int width = 256, unsigned int height = 256);
@@ -53,14 +56,6 @@ private:
 	Texture* colorNoise;
 	ImguiWindow imguiWindow;
 
-	GLuint vertexSSBO, indicesSSBO, meshTextureSSBO, meshHeaderSSBO, textureArray, boundingBoxesSSBO;
-
-	vector<Vertex> globalVertices;
-	vector<GLuint> globalIndices;
-	vector<glm::vec4> meshTextures; // <albedoIndex, normalIndex, roughnessIndex, metallicIndex>
-	vector<glm::vec4> meshHeader;	// <indicesStartPointer, indicesSize, emissiveValue>
-	vector<BoundingBox> boundingBoxes;
-
 	set<string> texturePool;	// all the textures used in the scene
 
 	Gizmo gizmo;
@@ -75,20 +70,6 @@ private:
 	void handleQueuedVideoRender();
 	void handleQueuedImageRender();
 	void renderImage(string fileName);
-
-	void generateGlobalVertices();
-	void generateGlobalIndices();
-	void generateMeshTextures();
-	void generateMeshHeader();
-	void generateBoundingBoxes();
-
-	void updateVertexSSBO();
-	void updateIndicesSSBO();
-	void updateMeshTexturesSSBO();
-	void updateMeshHeaderSSBO();
-	void updateBoundingBoxesSSBO();
-
-	void generateSSBOs(unsigned int width, unsigned int height);
 
 	void generateDepthUniforms(Shader& shader, Camera& camera);
 	void generatePathTracingUniforms(Shader& shader, Camera& camera);

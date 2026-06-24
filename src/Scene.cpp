@@ -174,8 +174,8 @@ void Scene::Inputs(GLFWwindow* window) {
 		// if gizmo has moved, update buffers
 		if (gizmoPointDifference != glm::vec3(0.0f)) {
 			imguiWindow.currentSample = 0;
-			generateGlobalVertices();
-			updateVertexSSBO();
+			SSBOcomponent.generateGlobalVertices(meshCollection);
+			SSBOcomponent.updateVertexSSBO();
 		}
 
 		// set mouse pos back to original
@@ -366,8 +366,8 @@ void Scene::exportScene(string fileName) {
 
 void Scene::Draw(GLFWwindow* window) {
 
-	generateBoundingBoxes();
-	updateBoundingBoxesSSBO();
+	SSBOcomponent.generateBoundingBoxes(meshCollection);
+	SSBOcomponent.updateBoundingBoxesSSBO();
 
 	auto start = chrono::high_resolution_clock::now();
 
@@ -435,12 +435,14 @@ void Scene::AnimateComponents(unsigned int currentFrame) {
 			mesh->animation(*mesh, currentFrame);
 		}
 
+		mesh->updateBuffers();
+
 	}
 
 	imguiWindow.currentSample = 0;
 
-	generateGlobalVertices();
-	updateVertexSSBO();
+	SSBOcomponent.generateGlobalVertices(meshCollection);
+	SSBOcomponent.updateVertexSSBO();
 
 }
 
@@ -473,8 +475,8 @@ void Scene::handleQueuedAnimationPreview() {
 			meshCollection = meshCollectionDeepCopy;
 			meshCollectionDeepCopy.resize(0);
 
-			generateGlobalVertices(); updateVertexSSBO();
-			generateGlobalIndices(); updateIndicesSSBO();
+			SSBOcomponent.generateGlobalVertices(meshCollection); SSBOcomponent.updateVertexSSBO();
+			SSBOcomponent.generateGlobalIndices(meshCollection); SSBOcomponent.updateIndicesSSBO();
 
 			if (camera.animation != nullptr) camera = cameraCopy;
 
@@ -538,8 +540,8 @@ void Scene::handleQueuedVideoRender() {
 				meshCollection = meshCollectionDeepCopy;
 				meshCollectionDeepCopy.resize(0);
 
-				generateGlobalVertices(); updateVertexSSBO();
-				generateGlobalIndices(); updateIndicesSSBO();
+				SSBOcomponent.generateGlobalVertices(meshCollection); SSBOcomponent.updateVertexSSBO();
+				SSBOcomponent.generateGlobalIndices(meshCollection); SSBOcomponent.updateIndicesSSBO();
 
 				if (camera.animation != nullptr) camera = cameraCopy;
 
@@ -626,7 +628,7 @@ void Scene::Draw_DepthPrepass(Shader& Depth_shader) {
 
 	// DRAW MESHES
 	for (size_t i = 0; i < meshCollection.size(); ++i) {
-		meshCollection[i]->Draw(Depth_shader, i, meshTextures);
+		meshCollection[i]->Draw(Depth_shader, i, SSBOcomponent.meshTextures);
 	}
 
 }
@@ -655,7 +657,7 @@ void Scene::Draw_PathTracingPass(Shader& PathTracing_shader) {
 
 	// DRAW MESHES
 	for (size_t i = 0; i < meshCollection.size(); ++i) {
-		meshCollection[i]->Draw(PathTracing_shader, i, meshTextures);
+		meshCollection[i]->Draw(PathTracing_shader, i, SSBOcomponent.meshTextures);
 	}
 
 	// SEND HIGHLIGHT BUFFER INFORMATION TO IMGUI WINDOW
@@ -691,7 +693,7 @@ void Scene::Draw_PostProcessingPass(Shader& PostProcessing_shader, GLFWwindow* w
 
 	// DRAW MESHES
 	for (size_t i = 0; i < meshCollection.size(); ++i) {
-		meshCollection[i]->Draw(PostProcessing_shader, i, meshTextures);
+		meshCollection[i]->Draw(PostProcessing_shader, i, SSBOcomponent.meshTextures);
 	}
 
 	if (imguiWindow.highlightedMesh != -1) {
@@ -767,270 +769,21 @@ void Scene::generateDepthUniforms(Shader& shader, Camera& camera) {
 	camera.Matrix(shader, "u_camMatrix");
 }
 
-void Scene::updateVertexSSBO() {
-
-	glBindBuffer(GL_SHADER_STORAGE_BUFFER, vertexSSBO);
-	glBufferSubData(
-		GL_SHADER_STORAGE_BUFFER,
-		0,
-		globalVertices.size() * sizeof(globalVertices[0]),
-		globalVertices.data()
-	);
-	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
-
-}
-
-void Scene::updateIndicesSSBO() {
-
-	glBindBuffer(GL_SHADER_STORAGE_BUFFER, indicesSSBO);
-	glBufferSubData(
-		GL_SHADER_STORAGE_BUFFER,
-		0,
-		globalIndices.size() * sizeof(globalIndices[0]),
-		globalIndices.data()
-	);
-	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
-
-}
-
-void Scene::updateMeshTexturesSSBO() {
-
-	glBindBuffer(GL_SHADER_STORAGE_BUFFER, meshTextureSSBO);
-	glBufferSubData(
-		GL_SHADER_STORAGE_BUFFER,
-		0,
-		meshTextures.size() * sizeof(meshTextures[0]),
-		meshTextures.data()
-	);
-	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
-
-}
-
-void Scene::updateMeshHeaderSSBO() {
-
-	glBindBuffer(GL_SHADER_STORAGE_BUFFER, meshHeaderSSBO);
-	glBufferSubData(
-		GL_SHADER_STORAGE_BUFFER,
-		0,
-		meshHeader.size() * sizeof(meshHeader[0]),
-		meshHeader.data()
-	);
-	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
-
-}
-
-void Scene::updateBoundingBoxesSSBO() {
-
-	glBindBuffer(GL_SHADER_STORAGE_BUFFER, boundingBoxesSSBO);
-	glBufferSubData(
-		GL_SHADER_STORAGE_BUFFER,
-		0,
-		boundingBoxes.size() * sizeof(boundingBoxes[0]),
-		boundingBoxes.data()
-	);
-	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
-
-}
-
-void Scene::generateGlobalVertices() {
-
-	globalVertices.resize(0);
-
-	for (Mesh* mesh : meshCollection) {
-
-		// VERTICES
-		for (auto vertex : mesh->vertices) {
-
-			vertex.position = mesh->getModelMatrix() * vertex.position;
-			vertex.normal = normalize(mesh->getRotationMatrix() * mesh->getScaleMatrix() * vertex.normal);
-			vertex.color = glm::vec4(mesh->tint, 1.0f);
-			globalVertices.push_back(vertex);
-
-		}
-
-	}
-
-}
-
-void Scene::generateGlobalIndices() {
-
-	globalIndices.resize(0);
-
-	size_t indexPointer = 0;
-	for (Mesh* mesh : meshCollection) {
-
-		// INDICES
-		vector<GLuint> tempIndices = mesh->indices;
-		for (size_t i = 0; i < tempIndices.size(); ++i) tempIndices[i] += indexPointer;
-		globalIndices.insert(globalIndices.end(), tempIndices.begin(), tempIndices.end());
-
-		// Loop increment (used to convert local indices to global indices)
-		indexPointer += mesh->vertices.size();
-
-	}
-
-}
-
-void Scene::generateMeshTextures() {
-
-	meshTextures.resize(0);
-	texturePool.clear();
-
-	for (Mesh* mesh : meshCollection) {
-
-		// TEXTURE POOL
-		texturePool.insert(mesh->material->albedo);
-		texturePool.insert(mesh->material->normal);
-		texturePool.insert(mesh->material->roughness);
-		texturePool.insert(mesh->material->metallic);
-
-	}
-
-	// calculates the positional index for each mesh texture
-	for (Mesh* mesh : meshCollection) {
-
-		glm::vec4 texturePointers;
-		texturePointers.x = distance(texturePool.begin(), texturePool.find(mesh->material->albedo));
-		texturePointers.y = distance(texturePool.begin(), texturePool.find(mesh->material->normal));
-		texturePointers.z = distance(texturePool.begin(), texturePool.find(mesh->material->roughness));
-		texturePointers.w = distance(texturePool.begin(), texturePool.find(mesh->material->metallic));
-
-		meshTextures.push_back(texturePointers);
-
-	}
-
-}
-
-void Scene::generateMeshHeader() {
-
-	meshHeader.resize(0);
-
-	size_t indexPointer = 0;
-	for (Mesh* mesh : meshCollection) {
-
-		// MESH-HEADER
-		meshHeader.push_back(glm::vec4(indexPointer, mesh->indices.size(), mesh->emissive, 0.0f));
-
-		// Loop increment (used to convert local indices to global indices)
-		indexPointer += mesh->vertices.size();
-
-	}
-
-}
-
-void Scene::generateBoundingBoxes() {
-
-	boundingBoxes.resize(0);
-
-	for (Mesh* mesh : meshCollection) {
-
-		boundingBoxes.push_back(mesh->getBoundingBox());
-
-	}
-
-}
-
-void Scene::generateSSBOs(unsigned int width, unsigned int height) {
-
-	// GENERATE VERTEX SSBO
-	glGenBuffers(1, &vertexSSBO);
-	glBindBuffer(GL_SHADER_STORAGE_BUFFER, vertexSSBO);
-
-	glBufferData(
-		GL_SHADER_STORAGE_BUFFER,
-		globalVertices.size() * sizeof(globalVertices[0]),
-		globalVertices.data(),
-		GL_STATIC_DRAW
-	);
-
-	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, vertexSSBO);
-	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
-
-	// GENERATE INDICES SSBO
-	glGenBuffers(1, &indicesSSBO);
-	glBindBuffer(GL_SHADER_STORAGE_BUFFER, indicesSSBO);
-
-	glBufferData(
-		GL_SHADER_STORAGE_BUFFER,
-		globalIndices.size() * sizeof(globalIndices[0]),
-		globalIndices.data(),
-		GL_STATIC_DRAW
-	);
-
-	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, indicesSSBO);
-	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
-
-	// MESH-TEXTURES SSBO
-	glGenBuffers(1, &meshTextureSSBO);
-	glBindBuffer(GL_SHADER_STORAGE_BUFFER, meshTextureSSBO);
-
-	glBufferData(
-		GL_SHADER_STORAGE_BUFFER,
-		meshTextures.size() * sizeof(meshTextures[0]),
-		meshTextures.data(),
-		GL_STATIC_DRAW
-	);
-
-	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, meshTextureSSBO);
-	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
-
-	// MESH-HEADER SSBO
-	glGenBuffers(1, &meshHeaderSSBO);
-	glBindBuffer(GL_SHADER_STORAGE_BUFFER, meshHeaderSSBO);
-
-	glBufferData(
-		GL_SHADER_STORAGE_BUFFER,
-		meshHeader.size() * sizeof(meshHeader[0]),
-		meshHeader.data(),
-		GL_STATIC_DRAW
-	);
-
-	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, meshHeaderSSBO);
-	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
-
-	// GENERATE BOUNDING BOXES SSBO
-	glGenBuffers(1, &boundingBoxesSSBO);
-	glBindBuffer(GL_SHADER_STORAGE_BUFFER, boundingBoxesSSBO);
-
-	glBufferData(
-		GL_SHADER_STORAGE_BUFFER,
-		boundingBoxes.size() * sizeof(boundingBoxes[0]),
-		boundingBoxes.data(),
-		GL_STATIC_DRAW
-	);
-
-	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 5, boundingBoxesSSBO);
-	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
-
-	// 2D-TEXTURE ARRAY
-	glGenTextures(1, &textureArray);
-
-	GLuint maxTextureCount = texturePool.size();
-
-	vector<string> texturePoolVector(texturePool.begin(), texturePool.end());
-	Texture::loadTextureArray(textureArray, texturePoolVector, width, height);
-
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D_ARRAY, textureArray);
-
-
-}
-
 void Scene::link() {
 
 	depthPrepassShader = new Shader("shaders/z_prepass.vert", "shaders/z_prepass.frag");
 	pathTracingShader = new Shader("shaders/path_tracing.vert", "shaders/path_tracing.frag");
 	postProcessingShader = new Shader("shaders/post_processing.vert", "shaders/post_processing.frag");
 
-	GLuint buffersToDelete[] = { vertexSSBO, indicesSSBO, meshTextureSSBO, meshHeaderSSBO, textureArray };
-	glDeleteBuffers(5, buffersToDelete);
+	SSBOcomponent.deleteSSBOs();
 
-	generateGlobalVertices();
-	generateGlobalIndices();
-	generateMeshTextures();
-	generateMeshHeader();
-	generateBoundingBoxes();
-	generateSSBOs(textureWidth, textureHeight);
+	SSBOcomponent.generateGlobalVertices(meshCollection);
+	SSBOcomponent.generateGlobalIndices(meshCollection);
+	SSBOcomponent.generateMeshTextures(meshCollection);
+	SSBOcomponent.generateMeshHeader(meshCollection);
+	SSBOcomponent.generateBoundingBoxes(meshCollection);
+
+	SSBOcomponent.generateSSBOs(textureWidth, textureHeight);
 
 	// COLOR NOISE
 	colorNoise = new Texture(COLOR_NOISE);
@@ -1336,32 +1089,32 @@ void ImguiWindow::drawImgui(double frameTime, unsigned int animationFrame, Scene
 				PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.3f, 0.1f, 0.1f, 1.0f));
 				if (DragFloat("##posX", &(highlightedMesh->position.x), 0.5f)) {
 					currentSample = 0;
-					scene->generateGlobalVertices();
-					scene->updateVertexSSBO();
+					scene->SSBOcomponent.generateGlobalVertices(scene->meshCollection);
+					scene->SSBOcomponent.updateVertexSSBO();
 				}
 				PopStyleColor(1);
 				TableNextColumn();
 				PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.1f, 0.3f, 0.1f, 1.0f));
 				if (DragFloat("##posY", &(highlightedMesh->position.y), 0.5f)) {
 					currentSample = 0;
-					scene->generateGlobalVertices();
-					scene->updateVertexSSBO();
+					scene->SSBOcomponent.generateGlobalVertices(scene->meshCollection);
+					scene->SSBOcomponent.updateVertexSSBO();
 				}
 				PopStyleColor(1);
 				TableNextColumn();
 				PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.15f, 0.15f, 0.3f, 1.0f));
 				if (DragFloat("##posZ", &(highlightedMesh->position.z), 0.5f)) {
 					currentSample = 0;
-					scene->generateGlobalVertices();
-					scene->updateVertexSSBO();
+					scene->SSBOcomponent.generateGlobalVertices(scene->meshCollection);
+					scene->SSBOcomponent.updateVertexSSBO();
 				}
 				PopStyleColor(1);
 				TableNextColumn();
 				if (Button("Reset##positon")) {
 					currentSample = 0;
 					highlightedMesh->position = glm::vec3(0.0f);
-					scene->generateGlobalVertices();
-					scene->updateVertexSSBO();
+					scene->SSBOcomponent.generateGlobalVertices(scene->meshCollection);
+					scene->SSBOcomponent.updateVertexSSBO();
 				}
 			}
 
@@ -1373,32 +1126,32 @@ void ImguiWindow::drawImgui(double frameTime, unsigned int animationFrame, Scene
 				PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.3f, 0.1f, 0.1f, 1.0f));
 				if (DragFloat("##pitch", &(highlightedMesh->rotation.x), glm::pi<float>() * 0.05f)) {
 					currentSample = 0;
-					scene->generateGlobalVertices();
-					scene->updateVertexSSBO();
+					scene->SSBOcomponent.generateGlobalVertices(scene->meshCollection);
+					scene->SSBOcomponent.updateVertexSSBO();
 				}
 				PopStyleColor(1);
 				TableNextColumn();
 				PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.1f, 0.3f, 0.1f, 1.0f));
 				if (DragFloat("##yaw", &(highlightedMesh->rotation.y), glm::pi<float>() * 0.05f)) {
 					currentSample = 0;
-					scene->generateGlobalVertices();
-					scene->updateVertexSSBO();
+					scene->SSBOcomponent.generateGlobalVertices(scene->meshCollection);
+					scene->SSBOcomponent.updateVertexSSBO();
 				}
 				PopStyleColor(1);
 				TableNextColumn();
 				PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.15f, 0.15f, 0.3f, 1.0f));
 				if (DragFloat("##roll", &(highlightedMesh->rotation.z), glm::pi<float>() * 0.05f)) {
 					currentSample = 0;
-					scene->generateGlobalVertices();
-					scene->updateVertexSSBO();
+					scene->SSBOcomponent.generateGlobalVertices(scene->meshCollection);
+					scene->SSBOcomponent.updateVertexSSBO();
 				}
 				PopStyleColor(1);
 				TableNextColumn();
 				if (Button("Reset##rotation")) {
 					highlightedMesh->rotation = glm::vec3(0.0f); 
 					currentSample = 0;
-					scene->generateGlobalVertices();
-					scene->updateVertexSSBO();
+					scene->SSBOcomponent.generateGlobalVertices(scene->meshCollection);
+					scene->SSBOcomponent.updateVertexSSBO();
 				}
 			}
 
@@ -1410,32 +1163,32 @@ void ImguiWindow::drawImgui(double frameTime, unsigned int animationFrame, Scene
 				PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.3f, 0.1f, 0.1f, 1.0f));
 				if (DragFloat("##scaleX", &(highlightedMesh->scale.x), 0.1f)) {
 					currentSample = 0;
-					scene->generateGlobalVertices();
-					scene->updateVertexSSBO();
+					scene->SSBOcomponent.generateGlobalVertices(scene->meshCollection);
+					scene->SSBOcomponent.updateVertexSSBO();
 				}
 				PopStyleColor(1);
 				TableNextColumn();
 				PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.1f, 0.3f, 0.1f, 1.0f));
 				if (DragFloat("##scaleY", &(highlightedMesh->scale.y), 0.1f)) {
 					currentSample = 0;
-					scene->generateGlobalVertices();
-					scene->updateVertexSSBO();
+					scene->SSBOcomponent.generateGlobalVertices(scene->meshCollection);
+					scene->SSBOcomponent.updateVertexSSBO();
 				}
 				PopStyleColor(1);
 				TableNextColumn();
 				PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.15f, 0.15f, 0.3f, 1.0f));
 				if (DragFloat("##scaleZ", &(highlightedMesh->scale.z), 0.1f)) {
 					currentSample = 0;
-					scene->generateGlobalVertices();
-					scene->updateVertexSSBO();
+					scene->SSBOcomponent.generateGlobalVertices(scene->meshCollection);
+					scene->SSBOcomponent.updateVertexSSBO();
 				}
 				PopStyleColor(1);
 				TableNextColumn();
 				if (Button("Reset##scale")) {
 					highlightedMesh->scale = glm::vec3(1.0f); 
 					currentSample = 0;
-					scene->generateGlobalVertices();
-					scene->updateVertexSSBO();
+					scene->SSBOcomponent.generateGlobalVertices(scene->meshCollection);
+					scene->SSBOcomponent.updateVertexSSBO();
 				}
 			}
 
@@ -1447,8 +1200,8 @@ void ImguiWindow::drawImgui(double frameTime, unsigned int animationFrame, Scene
 				PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.3f, 0.1f, 0.1f, 1.0f));
 				if (SliderFloat("##tintR", &(highlightedMesh->tint.x), 0.0f, 1.0f)) {
 					currentSample = 0;
-					scene->generateGlobalVertices();
-					scene->updateVertexSSBO();
+					scene->SSBOcomponent.generateGlobalVertices(scene->meshCollection);
+					scene->SSBOcomponent.updateVertexSSBO();
 					for (Mesh* mesh : scene->meshCollection) {
 						mesh->updateBuffers();
 					}
@@ -1458,8 +1211,8 @@ void ImguiWindow::drawImgui(double frameTime, unsigned int animationFrame, Scene
 				PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.1f, 0.3f, 0.1f, 1.0f));
 				if (SliderFloat("##tintG", &(highlightedMesh->tint.y), 0.0f, 1.0f)) {
 					currentSample = 0;
-					scene->generateGlobalVertices();
-					scene->updateVertexSSBO();
+					scene->SSBOcomponent.generateGlobalVertices(scene->meshCollection);
+					scene->SSBOcomponent.updateVertexSSBO();
 					for (Mesh* mesh : scene->meshCollection) {
 						mesh->updateBuffers();
 					}
@@ -1468,9 +1221,9 @@ void ImguiWindow::drawImgui(double frameTime, unsigned int animationFrame, Scene
 				TableNextColumn();
 				PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.15f, 0.15f, 0.3f, 1.0f));
 				if (SliderFloat("##tintB", &(highlightedMesh->tint.z), 0.0f, 1.0f)) {
-					currentSample = 0; 
-					scene->generateGlobalVertices();
-					scene->updateVertexSSBO();
+					currentSample = 0;
+					scene->SSBOcomponent.generateGlobalVertices(scene->meshCollection);
+					scene->SSBOcomponent.updateVertexSSBO();
 					for (Mesh* mesh : scene->meshCollection) {
 						mesh->updateBuffers();
 					}
@@ -1489,8 +1242,8 @@ void ImguiWindow::drawImgui(double frameTime, unsigned int animationFrame, Scene
 			TableNextColumn();
 			if (SliderFloat("##emission", &(highlightedMesh->emissive), 0.0f, 500.0f)) {
 				currentSample = 0;
-				scene->generateMeshHeader();
-				scene->updateMeshHeaderSSBO();
+				scene->SSBOcomponent.generateMeshHeader(scene->meshCollection);
+				scene->SSBOcomponent.updateMeshHeaderSSBO();
 			}
 
 			TableNextRow();

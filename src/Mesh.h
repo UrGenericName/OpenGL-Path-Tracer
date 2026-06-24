@@ -7,6 +7,7 @@
 #include "Material.h"
 
 class Scene;
+class SSBOcomponent;
 
 struct BoundingBox {
 
@@ -19,6 +20,7 @@ class Mesh {
 public:
 
 	friend Scene;
+	friend SSBOcomponent;
 
 	glm::vec3 position { 0.0f, 0.0f, 0.0f };
 	glm::vec3 rotation { 0.0f, 0.0f, 0.0f };

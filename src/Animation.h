@@ -1,5 +1,7 @@
 #pragma once
 
+#include <glm/gtx/color_space.hpp>
+
 #include "Camera.h"
 #include "Mesh.h"
 
@@ -33,6 +35,20 @@ namespace Animation {
 
 	}
 
+
+	void meshLightHue(Mesh& mesh, unsigned int currentFrame) {
+		// 1. Calculate hue shift (0.0 to 360.0 degrees)
+		// Adjust the multiplier (1.0f) to speed up or slow down the shift
+		float hue = fmod(static_cast<float>(currentFrame) * 6.0f, 360.0f);
+
+		// 2. Define Saturation and Value (Brightness) at maximum (0.0 to 1.0)
+		glm::vec3 hsv(hue, 1.0f, 1.0f);
+
+		// 3. Convert HSV to RGB and assign to mesh tint
+		mesh.tint = glm::rgbColor(hsv);
+
+	}
+
 	// VECTORS
 	vector<AnimationCameraFunction*> animationCameraFunctions {
 
@@ -44,7 +60,8 @@ namespace Animation {
 	vector<AnimationMeshFunction*> animationMeshFunctions {
 
 		new AnimationMeshFunction{ "Disabled", nullptr },
-		new AnimationMeshFunction{ "meshSpin", meshSpin }
+		new AnimationMeshFunction{ "meshSpin", meshSpin },
+		new AnimationMeshFunction{ "meshLightHue", meshLightHue }
 
 	};
 

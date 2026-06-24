@@ -171,6 +171,7 @@
     <ClCompile Include="src\Mesh.cpp" />
     <ClCompile Include="src\Scene.cpp" />
     <ClCompile Include="src\shaderClass.cpp" />
+    <ClCompile Include="src\SSBOcomponent.cpp" />
     <ClCompile Include="src\stb.cpp" />
     <ClCompile Include="src\Texture.cpp" />
     <ClCompile Include="src\VAO.cpp" />
@@ -209,6 +210,7 @@
     <ClInclude Include="src\Mesh.h" />
     <ClInclude Include="src\Scene.h" />
     <ClInclude Include="src\shaderClass.h" />
+    <ClInclude Include="src\SSBOcomponent.h" />
     <ClInclude Include="src\Texture.h" />
     <ClInclude Include="src\VAO.h" />
     <ClInclude Include="src\VBO.h" />
