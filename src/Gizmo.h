@@ -14,15 +14,21 @@ public:
 		Z
 	};
 
-	Selection selection;
+	bool currentlyInUse = false;
+	float gizmoDragSensitivity = 9.0f;
 
 	Gizmo();
 
 	void Draw(Shader& shader);
 	void setPos(glm::vec3 positon);
-	Selection getSelection(GLFWwindow* window, Camera& camera);
+	Selection getSelection(GLFWwindow* window, Camera& camera, bool visible);
+	glm::vec3 newPointFromMouseDrag(glm::vec2 mouseStart, glm::vec2 mouseNew, Selection axis, Camera& camera);
 
 private:
+
+	const float axisLength = 2.0f;	// internal variable used to determine the threshold of when the gizmo should be selectable
+
+	Selection lastSelection;
 
 	Mesh* gizmoX{ new Mesh("models/core/gizmo_x.obj", glm::vec3(1.0f, 0.0f, 0.0f)) };
 	Mesh* gizmoY{ new Mesh("models/core/gizmo_y.obj", glm::vec3(0.0f, 1.0f, 0.0f)) };

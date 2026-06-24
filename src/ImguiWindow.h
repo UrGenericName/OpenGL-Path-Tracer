@@ -27,7 +27,8 @@ public:
 		ALBEDO,
 		NORMAL,
 		ROUGHNESS,
-		METALLIC
+		METALLIC,
+		VERTEX_NORMAL
 
 	};
 
@@ -67,7 +68,7 @@ public:
 	RenderPhase imageRenderPhase = RenderPhase::COMPLETE;
 	RenderPhase videoRenderPhase = RenderPhase::COMPLETE;
 	RenderPhase previewAnimationPhase = RenderPhase::COMPLETE;
-	int totalAnimationFrames = 10;
+	int totalAnimationFrames = 128;
 
 	// WINDOW
 	bool pause = false;

@@ -2,6 +2,11 @@
 
 layout(early_fragment_tests) in;
 
+struct BoundingBox {
+    vec4 minBounds;
+    vec4 maxBounds;
+};
+
 struct Vertex {
     vec4 position;
     vec4 color;
@@ -30,6 +35,11 @@ layout(std430, binding = 3) readonly buffer MeshHeaderBuffer {
 layout(std430, binding = 4) coherent buffer highlightedMeshBuffer {
     uint highlightedMesh;
 };
+
+layout(std430, binding = 5) readonly buffer boundingBoxesBuffer {
+    BoundingBox boundingBoxes[];
+};
+
 
 // OUTPUT
 layout(location = 0) out vec4 FragColor;
@@ -93,7 +103,7 @@ const ivec2 pixelCoords = ivec2(gl_FragCoord.xy);
 const uint pixelSeed = (pixelCoords.x * 1664525u + pixelCoords.y * 1013904223u) ^ floatBitsToUint(intersectionPoint.x) ^ floatBitsToUint(texCoord.y) ^ (u_seed * 2246822519u);
 
 void main() {
-    
+
     if (u_debugMouseLeftClick && u_debugMousePos == pixelCoords) highlightedMesh = u_currentMesh;
 
     if (drawDebug(u_debugMode)) return;
@@ -126,6 +136,7 @@ bool drawDebug(uint debugMode) {
     const uint DEBUG_NORMAL = 2;
     const uint DEBUG_ROUGHNESS = 3;
     const uint DEBUG_METALLIC = 4;
+    const uint DEBUG_VERTEX_NORMAL = 5;
 
     float brightness = 1.0f;
     if (u_debugLambertian) {
@@ -160,10 +171,38 @@ bool drawDebug(uint debugMode) {
             imageStore(frameBuffer, pixelCoords, FragColor);
             return true;
 
+        case DEBUG_VERTEX_NORMAL:
+            FragColor = vec4( geometricFaceNormal, 1.0f );
+            imageStore(frameBuffer, pixelCoords, FragColor);
+            return true;
+
     }
 
     return false;
 
+}
+
+bool intersectionBoundingBoxCamera(vec3 orig, vec3 dir, BoundingBox box) {
+    // 1. Calculate inverse direction
+    vec3 invD = 1.0 / dir;
+
+    // 2. Calculate entry and exit times for all axes relative to orig
+    vec3 t1 = (box.minBounds.xyz - orig) * invD;
+    vec3 t2 = (box.maxBounds.xyz - orig) * invD;
+
+    // 3. Sort component-wise
+    vec3 tMinAxes = min(t1, t2);
+    vec3 tMaxAxes = max(t1, t2);
+
+    // 4. Reduce to find global entry and exit parameters
+    // Keeping this calculation pure allows faster instruction execution
+    float tmin = max(tMinAxes.x, max(tMinAxes.y, tMinAxes.z));
+    float tmax = min(tMaxAxes.x, min(tMaxAxes.y, tMaxAxes.z));
+
+    // 5. Valid hit condition:
+    // tmin <= tmax: The ray passes through the box volume
+    // tmax >= 0.0: The box is in front of the origin point (not behind it)
+    return (tmin <= tmax) && (tmax >= 0.0);
 }
 
 void calculateSample(out vec4 outputColor) {
@@ -263,6 +302,8 @@ void calculatePath(vec3 init_Intersection, vec3 init_Origin, vec3 init_FaceNorma
 
             uint meshCount = meshHeader.length();
             for (uint i = 0u; i < meshCount; ++i) {
+                
+                //if (!intersectionBoundingBoxCamera(ref_intersection, reflectionBounceDir, boundingBoxes[i])) continue;
 
                 uint trigCount = uint(meshHeader[i].y) / 3u;
                 for (uint j = 0u; j < trigCount; ++j) {

@@ -8,6 +8,13 @@
 
 class Scene;
 
+struct BoundingBox {
+
+	glm::vec4 min;
+	glm::vec4 max;
+
+};
+
 class Mesh {
 public:
 
@@ -30,11 +37,17 @@ public:
 	Mesh(const Mesh& other);
 	~Mesh();
 
+	BoundingBox getBoundingBox();
 	void DrawGizmo(Shader& shader, int axis);
 	void Draw(Shader& shader, GLuint currentMesh, std::vector<glm::vec4> meshHeader);
 	bool importObj(string fileName, glm::vec3 importColor);	// imports an obj mesh (MUST BE TRIANGLATED BEFORE IMPORT)
 	void updateBuffers();
+
 	glm::mat4 getModelMatrix();
+
+	glm::mat4 getTranslationMatrix();
+	glm::mat4 getRotationMatrix();
+	glm::mat4 getScaleMatrix();
 
 private:
 
@@ -44,8 +57,6 @@ private:
 
 	std::vector<Vertex> vertices;
 	std::vector<GLuint> indices;
-
-	glm::mat4 modelMatrix;
 
 	void MeshSetup();
 };

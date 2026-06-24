@@ -40,13 +40,8 @@ Scene::~Scene() {
 
 void Scene::Inputs(GLFWwindow* window) {
 
-	// MOVE GIZMO
-	if (gizmo.getSelection(window, camera) != Gizmo::Selection::NONE && glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
-
-	}
-
 	// HIGHLIGHT MESH
-	if ((gizmo.getSelection(window, camera) == Gizmo::Selection::NONE || imguiWindow.highlightedMesh == -1 ) && !ImGui::GetIO().WantCaptureMouse && glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
+	if ((gizmo.getSelection(window, camera, imguiWindow.highlightedMesh != -1) == Gizmo::Selection::NONE) && !ImGui::GetIO().WantCaptureMouse && glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
 
 		imguiWindow.mouseLeftClick = true;
 		imguiWindow.highlightedMesh = -1;
@@ -143,6 +138,54 @@ void Scene::Inputs(GLFWwindow* window) {
 			speedUp = false;
 		}
 
+	}
+
+	// MOVE GIZMO
+	static bool gizmoFirstClick = true;
+	if (!ImGui::GetIO().WantCaptureMouse && gizmo.getSelection(window, camera, imguiWindow.highlightedMesh != -1) != Gizmo::Selection::NONE && glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
+
+		glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
+
+		gizmo.currentlyInUse = true;
+		static glm::vec2 origMouse;
+
+		// only executes on first click
+		if (gizmoFirstClick) {
+
+			double mouseX, mouseY;
+			glfwGetCursorPos(window, &mouseX, &mouseY);
+			origMouse = glm::vec2(mouseX, mouseY);
+
+			gizmoFirstClick = false;
+
+			return;
+
+		}
+
+		// fetch current mouse pos
+		double mouseX, mouseY;
+		glfwGetCursorPos(window, &mouseX, &mouseY);
+		glm::vec2 currentMouse(mouseX, mouseY);
+
+		// move highlighted mesh 
+		glm::vec3 gizmoPointDifference = gizmo.newPointFromMouseDrag(origMouse, currentMouse, gizmo.getSelection(window, camera, imguiWindow.highlightedMesh != -1), camera);
+		meshCollection[imguiWindow.highlightedMesh]->position += gizmoPointDifference;
+
+		// if gizmo has moved, update buffers
+		if (gizmoPointDifference != glm::vec3(0.0f)) {
+			imguiWindow.currentSample = 0;
+			generateGlobalVertices();
+			updateVertexSSBO();
+		}
+
+		// set mouse pos back to original
+		glfwSetCursorPos(window, origMouse.x, origMouse.y);
+
+	}
+	else if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_RELEASE) {
+		glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+		gizmo.currentlyInUse = false;
+		gizmoFirstClick = true;
 	}
 
 }
@@ -250,6 +293,11 @@ void Scene::importScene(string fileName) {
 	imguiWindow.currentSample = 0;
 
 	link();
+
+	BoundingBox temp = meshCollection[0]->getBoundingBox();
+
+	printf("Min: (%f, %f, %f)\n", temp.min.x, temp.min.y, temp.min.z);
+	printf("Max: (%f, %f, %f)\n", temp.max.x, temp.max.y, temp.max.z);
 }
 
 void Scene::exportScene(string fileName) {
@@ -319,6 +367,9 @@ void Scene::exportScene(string fileName) {
 }
 
 void Scene::Draw(GLFWwindow* window) {
+
+	generateBoundingBoxes();
+	updateBoundingBoxesSSBO();
 
 	auto start = chrono::high_resolution_clock::now();
 
@@ -427,7 +478,7 @@ void Scene::handleQueuedAnimationPreview() {
 			generateGlobalVertices(); updateVertexSSBO();
 			generateGlobalIndices(); updateIndicesSSBO();
 
-			camera = cameraCopy;
+			if (camera.animation != nullptr) camera = cameraCopy;
 
 			sceneAnimationFrame = 0;
 			imguiWindow.previewAnimationPhase = ImguiWindow::RenderPhase::COMPLETE;
@@ -492,7 +543,7 @@ void Scene::handleQueuedVideoRender() {
 				generateGlobalVertices(); updateVertexSSBO();
 				generateGlobalIndices(); updateIndicesSSBO();
 
-				camera = cameraCopy;
+				if (camera.animation != nullptr) camera = cameraCopy;
 
 				sceneAnimationFrame = 0;
 				imguiWindow.drawWindow = lastDrawWindowValue;
@@ -657,7 +708,7 @@ void Scene::Draw_PostProcessingPass(Shader& PostProcessing_shader, GLFWwindow* w
 void Scene::generatePostProcessingUniforms(Shader& shader, Camera& camera, GLFWwindow* window) {
 
 	int gizmoSelectionLoc = glGetUniformLocation(shader.ID, "u_gizmoSelection");
-	glUniform1i(gizmoSelectionLoc, static_cast<int>(gizmo.getSelection(window, camera)));
+	glUniform1i(gizmoSelectionLoc, static_cast<int>(gizmo.getSelection(window, camera, imguiWindow.highlightedMesh != -1)));
 
 	int debugHighlightedMeshLoc = glGetUniformLocation(shader.ID, "u_debugHighlightedMesh");
 	glUniform1i(debugHighlightedMeshLoc, static_cast<int>(imguiWindow.highlightedMesh));
@@ -667,14 +718,6 @@ void Scene::generatePostProcessingUniforms(Shader& shader, Camera& camera, GLFWw
 
 	int debugMaxBrightnessLoc = glGetUniformLocation(shader.ID, "u_debugMaxBrightness");
 	glUniform1f(debugMaxBrightnessLoc, imguiWindow.maxBrightness);
-
-	camera.Matrix(shader, "u_camMatrix");
-}
-
-void Scene::generateDepthUniforms(Shader& shader, Camera& camera) {
-
-	int camPosUniformLocation = glGetUniformLocation(shader.ID, "u_camPos");
-	glUniform3f(camPosUniformLocation, camera.Position.x, camera.Position.y, camera.Position.z);
 
 	camera.Matrix(shader, "u_camMatrix");
 }
@@ -714,6 +757,14 @@ void Scene::generatePathTracingUniforms(Shader& shader, Camera& camera) {
 
 	int seedColorLoc = glGetUniformLocation(shader.ID, "u_seed");
 	glUniform1ui(seedColorLoc, m_distrib(m_gen));
+
+	camera.Matrix(shader, "u_camMatrix");
+}
+
+void Scene::generateDepthUniforms(Shader& shader, Camera& camera) {
+
+	int camPosUniformLocation = glGetUniformLocation(shader.ID, "u_camPos");
+	glUniform3f(camPosUniformLocation, camera.Position.x, camera.Position.y, camera.Position.z);
 
 	camera.Matrix(shader, "u_camMatrix");
 }
@@ -770,6 +821,19 @@ void Scene::updateMeshHeaderSSBO() {
 
 }
 
+void Scene::updateBoundingBoxesSSBO() {
+
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, boundingBoxesSSBO);
+	glBufferSubData(
+		GL_SHADER_STORAGE_BUFFER,
+		0,
+		boundingBoxes.size() * sizeof(boundingBoxes[0]),
+		boundingBoxes.data()
+	);
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+
+}
+
 void Scene::generateGlobalVertices() {
 
 	globalVertices.resize(0);
@@ -780,6 +844,7 @@ void Scene::generateGlobalVertices() {
 		for (auto vertex : mesh->vertices) {
 
 			vertex.position = mesh->getModelMatrix() * vertex.position;
+			vertex.normal = normalize(mesh->getRotationMatrix() * mesh->getScaleMatrix() * vertex.normal);
 			vertex.color = glm::vec4(mesh->tint, 1.0f);
 			globalVertices.push_back(vertex);
 
@@ -855,6 +920,18 @@ void Scene::generateMeshHeader() {
 
 }
 
+void Scene::generateBoundingBoxes() {
+
+	boundingBoxes.resize(0);
+
+	for (Mesh* mesh : meshCollection) {
+
+		boundingBoxes.push_back(mesh->getBoundingBox());
+
+	}
+
+}
+
 void Scene::generateSSBOs(unsigned int width, unsigned int height) {
 
 	// GENERATE VERTEX SSBO
@@ -913,6 +990,20 @@ void Scene::generateSSBOs(unsigned int width, unsigned int height) {
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, meshHeaderSSBO);
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 
+	// GENERATE BOUNDING BOXES SSBO
+	glGenBuffers(1, &boundingBoxesSSBO);
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, boundingBoxesSSBO);
+
+	glBufferData(
+		GL_SHADER_STORAGE_BUFFER,
+		boundingBoxes.size() * sizeof(boundingBoxes[0]),
+		boundingBoxes.data(),
+		GL_STATIC_DRAW
+	);
+
+	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 5, boundingBoxesSSBO);
+	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+
 	// 2D-TEXTURE ARRAY
 	glGenTextures(1, &textureArray);
 
@@ -940,6 +1031,7 @@ void Scene::link() {
 	generateGlobalIndices();
 	generateMeshTextures();
 	generateMeshHeader();
+	generateBoundingBoxes();
 	generateSSBOs(textureWidth, textureHeight);
 
 	// COLOR NOISE
@@ -1054,10 +1146,13 @@ void ImguiWindow::drawImgui(double frameTime, unsigned int animationFrame, Scene
 		TableNextColumn();
 		BeginDisabled(previewAnimationPhase != RenderPhase::COMPLETE);
 		if (RadioButton("Disabled", &debugMode, static_cast<int>(DebugTypes::DISABLED))) currentSample = 0;
+		Spacing();
 		if (RadioButton("Albedo", &debugMode, static_cast<int>(DebugTypes::ALBEDO))) currentSample = 0;
 		if (RadioButton("Normal", &debugMode, static_cast<int>(DebugTypes::NORMAL))) currentSample = 0;
 		if (RadioButton("Roughness", &debugMode, static_cast<int>(DebugTypes::ROUGHNESS))) currentSample = 0;
 		if (RadioButton("Metallic", &debugMode, static_cast<int>(DebugTypes::METALLIC))) currentSample = 0;
+		Spacing();
+		if (RadioButton("VertexNormal", &debugMode, static_cast<int>(DebugTypes::VERTEX_NORMAL))) currentSample = 0;
 		EndDisabled();
 		Spacing();
 		Checkbox("Lambertian Shading", &debugLambertian);
@@ -1129,6 +1224,7 @@ void ImguiWindow::drawImgui(double frameTime, unsigned int animationFrame, Scene
 			scene->meshCollection.push_back(mesh);
 			scene->link();
 			importOBJname[0] = 0x00;
+
 		}
 		EndDisabled();
 
@@ -1277,7 +1373,7 @@ void ImguiWindow::drawImgui(double frameTime, unsigned int animationFrame, Scene
 			TableNextColumn();
 			{
 				PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.3f, 0.1f, 0.1f, 1.0f));
-				if (DragFloat("##pitch", &(highlightedMesh->rotation.x), 0.1f)) {
+				if (DragFloat("##pitch", &(highlightedMesh->rotation.x), glm::pi<float>() * 0.05f)) {
 					currentSample = 0;
 					scene->generateGlobalVertices();
 					scene->updateVertexSSBO();
@@ -1285,7 +1381,7 @@ void ImguiWindow::drawImgui(double frameTime, unsigned int animationFrame, Scene
 				PopStyleColor(1);
 				TableNextColumn();
 				PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.1f, 0.3f, 0.1f, 1.0f));
-				if (DragFloat("##yaw", &(highlightedMesh->rotation.y), 0.1f)) {
+				if (DragFloat("##yaw", &(highlightedMesh->rotation.y), glm::pi<float>() * 0.05f)) {
 					currentSample = 0;
 					scene->generateGlobalVertices();
 					scene->updateVertexSSBO();
@@ -1293,7 +1389,7 @@ void ImguiWindow::drawImgui(double frameTime, unsigned int animationFrame, Scene
 				PopStyleColor(1);
 				TableNextColumn();
 				PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.15f, 0.15f, 0.3f, 1.0f));
-				if (DragFloat("##roll", &(highlightedMesh->rotation.z), 0.1f)) {
+				if (DragFloat("##roll", &(highlightedMesh->rotation.z), glm::pi<float>() * 0.05f)) {
 					currentSample = 0;
 					scene->generateGlobalVertices();
 					scene->updateVertexSSBO();
@@ -1448,6 +1544,7 @@ void ImguiWindow::drawImgui(double frameTime, unsigned int animationFrame, Scene
 			TableNextColumn();
 			if (Button("Delete")) {
 				erase(scene->meshCollection, highlightedMesh);
+				this->highlightedMesh = -1;
 				scene->link();
 			}
 

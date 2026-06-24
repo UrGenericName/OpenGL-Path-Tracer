@@ -53,12 +53,13 @@ private:
 	Texture* colorNoise;
 	ImguiWindow imguiWindow;
 
-	GLuint vertexSSBO, indicesSSBO, meshTextureSSBO, meshHeaderSSBO, textureArray;
+	GLuint vertexSSBO, indicesSSBO, meshTextureSSBO, meshHeaderSSBO, textureArray, boundingBoxesSSBO;
 
 	vector<Vertex> globalVertices;
 	vector<GLuint> globalIndices;
 	vector<glm::vec4> meshTextures; // <albedoIndex, normalIndex, roughnessIndex, metallicIndex>
 	vector<glm::vec4> meshHeader;	// <indicesStartPointer, indicesSize, emissiveValue>
+	vector<BoundingBox> boundingBoxes;
 
 	set<string> texturePool;	// all the textures used in the scene
 
@@ -79,11 +80,13 @@ private:
 	void generateGlobalIndices();
 	void generateMeshTextures();
 	void generateMeshHeader();
+	void generateBoundingBoxes();
 
 	void updateVertexSSBO();
 	void updateIndicesSSBO();
 	void updateMeshTexturesSSBO();
 	void updateMeshHeaderSSBO();
+	void updateBoundingBoxesSSBO();
 
 	void generateSSBOs(unsigned int width, unsigned int height);
 

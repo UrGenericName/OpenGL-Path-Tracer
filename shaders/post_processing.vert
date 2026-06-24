@@ -12,6 +12,7 @@ out vec3 rayOrientation;
 
 uniform mat4 u_camMatrix;
 uniform mat4 u_modelMatrix;
+uniform mat4 u_modelMatrixNoTranslation;
 uniform vec3 u_camPos;
 
 void main()
@@ -20,7 +21,7 @@ void main()
 
 	color = aColor.xyz;
 	texCoord = aTexCoord;
-	geometricFaceNormal = aNormal.xyz;
+	geometricFaceNormal = normalize((u_modelMatrixNoTranslation * aNormal).xyz);
 	intersectionPoint = aPos.xyz;
 	rayOrientation = aPos.xyz - u_camPos;
 }

@@ -77,6 +77,23 @@ void Mesh::MeshSetup() {
 
 }
 
+BoundingBox Mesh::getBoundingBox() {
+
+	glm::vec3 max(-INFINITY);
+	glm::vec3 min(INFINITY);
+
+	for (auto vertex : vertices) {
+
+		for (int i = 0; i < 3; ++i) {
+			if (vertex.position[i] > max[i]) max[i] = vertex.position[i];
+			if (vertex.position[i] < min[i]) min[i] = vertex.position[i];
+		}
+
+	}
+
+	return BoundingBox{ glm::vec4(max, 0.0f), glm::vec4(min, 0.0f) };
+}
+
 void Mesh::DrawGizmo(Shader& shader, int axis) {
 
 	shader.Activate();
@@ -96,6 +113,9 @@ void Mesh::Draw(Shader& shader, GLuint currentMesh, std::vector<glm::vec4> meshT
 
 	shader.Activate();
 	VAO.Bind();
+
+	GLuint modelMatrixNoTranslationLoc = glGetUniformLocation(shader.ID, "u_modelMatrixNoTranslation");
+	glUniformMatrix4fv(modelMatrixNoTranslationLoc, 1, GL_FALSE, glm::value_ptr(getRotationMatrix() * getScaleMatrix()));
 
 	GLuint modelMatrixLoc = glGetUniformLocation(shader.ID, "u_modelMatrix");
 	glUniformMatrix4fv(modelMatrixLoc, 1, GL_FALSE, glm::value_ptr(getModelMatrix()));
@@ -215,7 +235,7 @@ bool Mesh::importObj(string fileName, glm::vec3 importColor) {
 
 				}
 
-				parsedNormals.push_back(glm::vec4(stof(x), -stof(y), stof(z), 1.0f));
+				parsedNormals.push_back(glm::vec4(stof(x), -stof(y), stof(z), 0.0f));
 				continue;
 			}
 
@@ -313,20 +333,28 @@ void Mesh::updateBuffers() {
 
 glm::mat4 Mesh::getModelMatrix() {
 
-	// TRANSLATION
+	return getTranslationMatrix() * getRotationMatrix() * getScaleMatrix();
+}
+
+glm::mat4 Mesh::getTranslationMatrix() {
+
 	glm::mat4 translationMatrix{
 		1.0f,		0.0f,		0.0f,		0.0f,
 		0.0f,		1.0f,		0.0f,		0.0f,
 		0.0f,		0.0f,		1.0f,		0.0f,
 		position.x,	position.y,	position.z,	1.0f
 	};
+	
+	return translationMatrix;
+}
 
-	// ROTATION
+glm::mat4 Mesh::getRotationMatrix() {
+
 	float cosTheta, sinTheta;
 
 	cosTheta = cos(rotation.x);
 	sinTheta = sin(rotation.x);
-	glm::mat4 rotationX {
+	glm::mat4 rotationX{
 		1.0f,	0.0f,		0.0f,		0.0f,
 		0.0f,	cosTheta,	sinTheta,	0.0f,
 		0.0f,	-sinTheta,	cosTheta,	0.0f,
@@ -353,7 +381,11 @@ glm::mat4 Mesh::getModelMatrix() {
 
 	glm::mat4 rotationMatrix{ rotationZ * rotationY * rotationX };
 
-	// SCALE
+	return rotationMatrix;
+}
+
+glm::mat4 Mesh::getScaleMatrix() {
+
 	glm::mat4 scaleMatrix{
 		scale.x,	0.0f,		0.0f,		0.0f,
 		0.0f,		scale.y,	0.0f,		0.0f,
@@ -361,6 +393,6 @@ glm::mat4 Mesh::getModelMatrix() {
 		0.0f,		0.0f,		0.0f,		1.0f
 	};
 
-	modelMatrix = translationMatrix * rotationMatrix * scaleMatrix;
-	return modelMatrix;
+	return scaleMatrix;
+
 }

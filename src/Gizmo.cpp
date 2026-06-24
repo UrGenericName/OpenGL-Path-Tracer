@@ -22,7 +22,16 @@ void Gizmo::setPos(glm::vec3 position) {
 
 }
 
-Gizmo::Selection Gizmo::getSelection(GLFWwindow* window, Camera& camera) {
+Gizmo::Selection Gizmo::getSelection(GLFWwindow* window, Camera& camera, bool visible) {
+
+	if (currentlyInUse) {
+		return lastSelection;
+	}
+
+	if (!visible) {
+		lastSelection = Selection::NONE;
+		return Selection::NONE;
+	}
 
 	glm::vec3 position = gizmoX->position;
 
@@ -30,7 +39,6 @@ Gizmo::Selection Gizmo::getSelection(GLFWwindow* window, Camera& camera) {
 	glfwGetCursorPos(window, &mouseX, &mouseY);
 	glm::vec2 mouseCoords(mouseX / camera.width, mouseY / camera.height);
 
-	const float axisLength = 2.0f;
 	glm::vec2 gizmoXCoords = screenCoordinatesFromPos(camera, glm::vec3(position.x + axisLength, position.y, position.z));
 	glm::vec2 gizmoYCoords = screenCoordinatesFromPos(camera, glm::vec3(position.x, position.y + axisLength, position.z));
 	glm::vec2 gizmoZCoords = screenCoordinatesFromPos(camera, glm::vec3(position.x, position.y, position.z + axisLength));
@@ -48,21 +56,71 @@ Gizmo::Selection Gizmo::getSelection(GLFWwindow* window, Camera& camera) {
 	if (distanceSelectionX < distanceSelectionY && distanceSelectionX < distanceSelectionZ) {
 
 		// X AXIS IS CLOSEST
+		lastSelection = Selection::X;
 		return Selection::X;
 
 	}
 	else if (distanceSelectionY < distanceSelectionX && distanceSelectionY < distanceSelectionZ) {
 
 		// Y AXIS IS CLOSEST
+		lastSelection = Selection::Y;
 		return Selection::Y;
 
 	}
 	else {
 
 		// Z AXIS IS CLOSEST
+		lastSelection = Selection::Z;
 		return Selection::Z;
 
 	}
+
+}
+
+glm::vec3 Gizmo::newPointFromMouseDrag(glm::vec2 mouseStart, glm::vec2 mouseNew, Selection axis, Camera& camera) {
+
+	// normalize mousePos vectors
+	mouseStart.x /= camera.width;
+	mouseNew.x /= camera.width;
+
+	mouseStart.y /= camera.height;
+	mouseNew.y /= camera.height;
+
+	glm::vec3 gizmoPosition = gizmoX->position;
+
+	// calculate the point for the gizmo axis selected
+	glm::vec3 gizmoSelectedCoords3D;
+	switch (axis) {
+		case Selection::X:
+			gizmoSelectedCoords3D = glm::vec3(gizmoPosition.x + axisLength, gizmoPosition.y, gizmoPosition.z);
+			break;
+
+		case Selection::Y:
+			gizmoSelectedCoords3D = glm::vec3(gizmoPosition.x, gizmoPosition.y + axisLength, gizmoPosition.z);
+			break;
+
+		case Selection::Z:
+			gizmoSelectedCoords3D = glm::vec3(gizmoPosition.x, gizmoPosition.y, gizmoPosition.z + axisLength);
+			break;
+	}
+
+	// calculate screen points for gizmo origin and selected gizmo
+	glm::vec2 gizmoOriginCoords2D = screenCoordinatesFromPos(camera, glm::vec3(gizmoPosition.x, gizmoPosition.y, gizmoPosition.z));
+	glm::vec2 gizmoSelectedCoords2D = screenCoordinatesFromPos(camera, gizmoSelectedCoords3D);
+
+	// using the difference between the first mousePos and new mousePos, find the new gizmo point
+	float origT, newT;
+	distanceToLine2D(mouseStart, gizmoOriginCoords2D, gizmoSelectedCoords2D, false, &origT);
+	distanceToLine2D(mouseNew, gizmoOriginCoords2D, gizmoSelectedCoords2D, false, &newT);
+
+	const glm::vec3 lineDir3D = (gizmoSelectedCoords3D - gizmoPosition);
+
+	const glm::vec3 prigPointT = lineDir3D * origT + gizmoPosition;
+	const glm::vec3 newPointT = lineDir3D * newT + gizmoPosition;
+
+	const glm::vec3 translation = (newPointT - prigPointT) * gizmoDragSensitivity;
+
+	return translation;
 
 }
 
