@@ -182,26 +182,25 @@ bool drawDebug(uint debugMode) {
 
 }
 
-bool intersectionBoundingBoxCamera(vec3 orig, vec3 dir, BoundingBox box) {
-    // 1. Calculate inverse direction
-    vec3 invD = 1.0 / dir;
+bool intersectionBoundingBox(vec3 orig, vec3 dir, BoundingBox box) {
+    // Prevent exact 0.0 to avoid NaN/Infinity issues during division
+    // sign(dir) ensures we preserve the direction of the ray (positive or negative)
+    vec3 safeDir = vec3(
+        abs(dir.x) < 0.000001 ? 0.000001 * sign(dir.x) : dir.x,
+        abs(dir.y) < 0.000001 ? 0.000001 * sign(dir.y) : dir.y,
+        abs(dir.z) < 0.000001 ? 0.000001 * sign(dir.z) : dir.z
+    );
 
-    // 2. Calculate entry and exit times for all axes relative to orig
+    vec3 invD = 1.0 / safeDir;
     vec3 t1 = (box.minBounds.xyz - orig) * invD;
     vec3 t2 = (box.maxBounds.xyz - orig) * invD;
-
-    // 3. Sort component-wise
+    
     vec3 tMinAxes = min(t1, t2);
     vec3 tMaxAxes = max(t1, t2);
-
-    // 4. Reduce to find global entry and exit parameters
-    // Keeping this calculation pure allows faster instruction execution
+    
     float tmin = max(tMinAxes.x, max(tMinAxes.y, tMinAxes.z));
     float tmax = min(tMaxAxes.x, min(tMaxAxes.y, tMaxAxes.z));
-
-    // 5. Valid hit condition:
-    // tmin <= tmax: The ray passes through the box volume
-    // tmax >= 0.0: The box is in front of the origin point (not behind it)
+    
     return (tmin <= tmax) && (tmax >= 0.0);
 }
 
@@ -303,7 +302,7 @@ void calculatePath(vec3 init_Intersection, vec3 init_Origin, vec3 init_FaceNorma
             uint meshCount = meshHeader.length();
             for (uint i = 0u; i < meshCount; ++i) {
                 
-                //if (!intersectionBoundingBoxCamera(ref_intersection, reflectionBounceDir, boundingBoxes[i])) continue;
+                //if (!intersectionBoundingBox(ref_intersection, reflectionBounceDir, boundingBoxes[i])) continue;
 
                 uint trigCount = uint(meshHeader[i].y) / 3u;
                 for (uint j = 0u; j < trigCount; ++j) {

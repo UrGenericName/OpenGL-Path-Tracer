@@ -296,8 +296,6 @@ void Scene::importScene(string fileName) {
 
 	BoundingBox temp = meshCollection[0]->getBoundingBox();
 
-	printf("Min: (%f, %f, %f)\n", temp.min.x, temp.min.y, temp.min.z);
-	printf("Max: (%f, %f, %f)\n", temp.max.x, temp.max.y, temp.max.z);
 }
 
 void Scene::exportScene(string fileName) {
