@@ -3,6 +3,15 @@
 #include "Mesh.h"
 #include <set>
 
+struct MeshHeader {
+
+	GLuint indicesStartPointer;
+	GLuint indicesSize;
+	float emissiveValue;
+
+};
+
+
 class SSBOcomponent {
 public:
 
@@ -28,8 +37,8 @@ public:
 
 	vector<Vertex> globalVertices;
 	vector<GLuint> globalIndices;
-	vector<glm::vec4> meshTextures; // <albedoIndex, normalIndex, roughnessIndex, metallicIndex>
-	vector<glm::vec4> meshHeader;	// <indicesStartPointer, indicesSize, emissiveValue>
+	vector<MeshTextures> meshTextures; // <albedoIndex, normalIndex, roughnessIndex, metallicIndex>
+	vector<MeshHeader> meshHeader;	// <indicesStartPointer, indicesSize, emissiveValue>
 	vector<BoundingBox> boundingBoxes;
 
 	set<string> texturePool;

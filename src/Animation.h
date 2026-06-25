@@ -31,22 +31,36 @@ namespace Animation {
 
 	void meshSpin(Mesh& mesh, unsigned int currentFrame) {
 
-		mesh.rotation.z += 0.05;
+		mesh.rotation.z += (3.14159265 * 2) / 60;
 
 	}
 
 
 	void meshLightHue(Mesh& mesh, unsigned int currentFrame) {
-		// 1. Calculate hue shift (0.0 to 360.0 degrees)
-		// Adjust the multiplier (1.0f) to speed up or slow down the shift
-		float hue = fmod(static_cast<float>(currentFrame) * 6.0f, 360.0f);
+		// 1. Store the starting hue exactly once on the very first frame.
+		// We use a static variable, but we key it by the mesh address so it works with multiple meshes.
+		static std::unordered_map<Mesh*, float> initialHues;
 
-		// 2. Define Saturation and Value (Brightness) at maximum (0.0 to 1.0)
+		if (currentFrame == 0) {
+			// Convert the starting tint to HSV and grab the initial hue angle
+			glm::vec3 hsvBase = glm::hsvColor(mesh.tint);
+			initialHues[&mesh] = hsvBase.x;
+		}
+
+		// 2. Get our base hue for this specific mesh (defaults to 0 if not found)
+		float initialHue = initialHues[&mesh];
+
+		// 3. Run your exact formula, adding the initial tint's hue as the starting offset
+		float hue = fmodf((static_cast<float>(currentFrame) * 6.0f) + initialHue, 360.0f);
+
+		// 4. Convert back to RGB and update the mesh
 		glm::vec3 hsv(hue, 1.0f, 1.0f);
-
-		// 3. Convert HSV to RGB and assign to mesh tint
 		mesh.tint = glm::rgbColor(hsv);
 
+		// Cleanup map when the animation loop completely resets
+		if (currentFrame == 0 && initialHues.size() > 100) {
+			initialHues.clear(); // Prevents memory leaks in long sessions with deleted meshes
+		}
 	}
 
 	// VECTORS

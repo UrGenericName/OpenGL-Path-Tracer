@@ -126,11 +126,12 @@ void SSBOcomponent::generateMeshTextures(vector<Mesh*>& meshCollection) {
 	// calculates the positional index for each mesh texture
 	for (Mesh* mesh : meshCollection) {
 
-		glm::vec4 texturePointers;
-		texturePointers.x = distance(texturePool.begin(), texturePool.find(mesh->material->albedo));
-		texturePointers.y = distance(texturePool.begin(), texturePool.find(mesh->material->normal));
-		texturePointers.z = distance(texturePool.begin(), texturePool.find(mesh->material->roughness));
-		texturePointers.w = distance(texturePool.begin(), texturePool.find(mesh->material->metallic));
+		MeshTextures texturePointers{
+			distance(texturePool.begin(), texturePool.find(mesh->material->albedo)),
+			distance(texturePool.begin(), texturePool.find(mesh->material->normal)),
+			distance(texturePool.begin(), texturePool.find(mesh->material->roughness)),
+			distance(texturePool.begin(), texturePool.find(mesh->material->metallic))
+		};
 
 		meshTextures.push_back(texturePointers);
 
@@ -146,7 +147,15 @@ void SSBOcomponent::generateMeshHeader(vector<Mesh*>& meshCollection) {
 	for (Mesh* mesh : meshCollection) {
 
 		// MESH-HEADER
-		meshHeader.push_back(glm::vec4(indexPointer, mesh->indices.size(), mesh->emissive, 0.0f));
+		MeshHeader temp{ 
+
+			static_cast<unsigned int>(indexPointer), 
+			static_cast<unsigned int>(mesh->indices.size()),
+			mesh->emissive
+
+		};
+
+		meshHeader.push_back(temp);
 
 		// Loop increment (used to convert local indices to global indices)
 		indexPointer += mesh->vertices.size();
@@ -159,9 +168,9 @@ void SSBOcomponent::generateBoundingBoxes(vector<Mesh*>& meshCollection) {
 
 	boundingBoxes.resize(0);
 
-	for (Mesh* mesh : meshCollection) {
+	for (int i = 0; i < meshCollection.size(); ++i) {
 
-		boundingBoxes.push_back(mesh->getBoundingBox());
+		boundingBoxes.push_back(meshCollection[i]->getBoundingBox());
 
 	}
 

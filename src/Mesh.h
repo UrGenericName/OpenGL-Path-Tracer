@@ -16,6 +16,15 @@ struct BoundingBox {
 
 };
 
+struct MeshTextures {
+
+	GLuint albedo;
+	GLuint normal;
+	GLuint roughness;
+	GLuint metallic;
+
+};
+
 class Mesh {
 public:
 
@@ -41,7 +50,7 @@ public:
 
 	BoundingBox getBoundingBox();
 	void DrawGizmo(Shader& shader, int axis);
-	void Draw(Shader& shader, GLuint currentMesh, std::vector<glm::vec4> meshHeader);
+	void Draw(Shader& shader, GLuint currentMesh, std::vector<MeshTextures> meshHeader);
 	bool importObj(string fileName, glm::vec3 importColor);	// imports an obj mesh (MUST BE TRIANGLATED BEFORE IMPORT)
 	void updateBuffers();
 

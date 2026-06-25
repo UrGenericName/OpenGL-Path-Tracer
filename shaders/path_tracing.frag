@@ -12,8 +12,22 @@ struct Vertex {
     vec4 color;
     vec4 normal;
     vec2 texUV;
-    vec2 _pad; // padding to match CPU
+    vec2 _pad;
 };
+
+struct MeshTextures {
+	uint albedo;
+	uint normal;
+	uint roughness;
+	uint metallic;
+};
+
+struct MeshHeader {
+	uint indicesStartPointer;
+	uint indicesSize;
+	float emissiveValue;
+};
+
 
 // LAYOUTS
 layout(std430, binding = 0) readonly buffer VertexBuffer {
@@ -25,11 +39,11 @@ layout(std430, binding = 1) readonly buffer IndexBuffer {
 };
 
 layout(std430, binding = 2) readonly buffer MeshTextureBuffer {
-    vec4 meshTextures[]; 
+    MeshTextures meshTextures[]; 
 };
 
 layout(std430, binding = 3) readonly buffer MeshHeaderBuffer {
-    vec4 meshHeader[];
+    MeshHeader meshHeader[];
 };
 
 layout(std430, binding = 4) coherent buffer highlightedMeshBuffer {
@@ -83,24 +97,58 @@ uniform vec3 u_camOrientation;
 #define MAX_BRIGHTNESS 1.0f
 #define MIN_BRIGHTNESS 0.0f
 
-#define MAX_ROUGHNESS 1.0f
-#define MIN_ROUGHNESS 0.0f
-
-#define EPSILON 0.000001
+#define EPSILON 0.00001
 #define FAR_PLANE 999999
+
+struct Barycentric {
+    float w;
+    float u;
+    float v;
+};
+
+struct HitInfo {
+
+    int mesh;
+    int trig;
+
+    vec3 v0;
+    vec3 v1;
+    vec3 v2;
+
+    float t;
+    Barycentric weights;
+
+    vec3 albedo;
+    vec3 normal;
+    float roughness;
+    float metallic;
+    float emissive;
+
+    vec3 intersectionPoint;
+    vec3 faceNormal;
+
+    vec2 texCoord;
+
+    vec3 reflectionDir;
+};
 
 // DECLERATIONS
 bool drawDebug(uint debugMode);
-void calculateSample(out vec4 outputColor);
-void randomizeNormal(uint seed, float roughness, inout vec3 normal);
-void calculatePath(vec3 init_Intersection, vec3 init_Origin, vec3 init_FaceNormal, out float totalBrightness, out vec3 totalReflectionColor, out uint bounceCount);
-void normalSpaceToWorldSpace(vec3 point, vec3 faceNormal, vec2 texCoord, vec3 inVector, out vec3 outVector);
-void calculateWorldSpaceTangentBitagent(vec3 point, vec3 faceNormal, vec2 texCoord, out vec3 tangent, out vec3 bitangent);
-bool intersect_triangle(vec3 orig, vec3 dir, vec3 vert0, vec3 vert1, vec3 vert2, out vec3 result);
+void calculate_sample(out vec4 outputColor);
+bool intersect_scene(vec3 origin, vec3 dir, out HitInfo hitInfo);
+void caluclate_normal_map_vector(in vec3 normalMap, out vec3 normalMapVector);
+void calculate_geometric_face_normal(in int mesh, in int trig, Barycentric weights, out vec3 result);
+void randomize_normal(in uint seed, in float roughness, inout vec3 normal);
+void calculatePath(vec3 init_Intersection, vec3 init_Origin, vec3 init_FaceNormal, out float totalBrightness, out vec3 totalReflectionColor, out float cosineFactor, out uint bounceCount);
+void normal_space_to_world_space(in vec3 normalMap, in vec3 geometricFaceNormal, out vec3 faceNormal);
+void calculateWorldSpaceTangentBitagent(vec3 faceNormal, out vec3 tangent, out vec3 bitangent);
+bool intersectionBoundingBox(vec3 orig, vec3 dir, BoundingBox box);
+bool intersect_triangle(vec3 orig, vec3 dir, vec3 vert0, vec3 vert1, vec3 vert2, out Barycentric weights, out float t);
 
 // GLOBAL VARIABLES
 const ivec2 pixelCoords = ivec2(gl_FragCoord.xy);
-const uint pixelSeed = (pixelCoords.x * 1664525u + pixelCoords.y * 1013904223u) ^ floatBitsToUint(intersectionPoint.x) ^ floatBitsToUint(texCoord.y) ^ (u_seed * 2246822519u);
+const uint pixelSeed = (pixelCoords.x * 1664525u + pixelCoords.y * 1013904223u) ^ floatBitsToUint(intersectionPoint.x) ^ floatBitsToUint(texCoord.y) ^ (u_seed * 2246822519u) - u_currentSample;
+const float normalMapScalingAdjustment = 255.0f / 254.0f;
 
 void main() {
 
@@ -111,7 +159,7 @@ void main() {
     if (u_emissive != 0.0f) return;
 
     vec4 sampleColor = vec4(0);
-    calculateSample(sampleColor);
+    calculate_sample(sampleColor);
 
     if (u_currentSample == 0) {
         FragColor = sampleColor;
@@ -182,259 +230,224 @@ bool drawDebug(uint debugMode) {
 
 }
 
-bool intersectionBoundingBox(vec3 orig, vec3 dir, BoundingBox box) {
-    // Prevent exact 0.0 to avoid NaN/Infinity issues during division
-    // sign(dir) ensures we preserve the direction of the ray (positive or negative)
-    vec3 safeDir = vec3(
-        abs(dir.x) < 0.000001 ? 0.000001 * sign(dir.x) : dir.x,
-        abs(dir.y) < 0.000001 ? 0.000001 * sign(dir.y) : dir.y,
-        abs(dir.z) < 0.000001 ? 0.000001 * sign(dir.z) : dir.z
-    );
+bool intersectionBoundingBox(vec3 orig, vec3 dir, BoundingBox box)
+{
+    vec3 invD = 1.0 / dir;
 
-    vec3 invD = 1.0 / safeDir;
     vec3 t1 = (box.minBounds.xyz - orig) * invD;
     vec3 t2 = (box.maxBounds.xyz - orig) * invD;
-    
+
     vec3 tMinAxes = min(t1, t2);
     vec3 tMaxAxes = max(t1, t2);
-    
+
     float tmin = max(tMinAxes.x, max(tMinAxes.y, tMinAxes.z));
     float tmax = min(tMaxAxes.x, min(tMaxAxes.y, tMaxAxes.z));
-    
-    return (tmin <= tmax) && (tmax >= 0.0);
+
+    return (tmin <= tmax) && (tmax >= 0.001);
 }
 
-void calculateSample(out vec4 outputColor) {
+void calculate_sample(out vec4 outputColor) {
 
-    // Normal Map Local Vector
+    HitInfo hitInfo;
+    hitInfo.intersectionPoint = intersectionPoint;
+    
+    // MAP FETCHING
+    vec3 albedoMap = textureLod(texturePool, vec3(texCoord.x, texCoord.y, u_albedo), 0.0f).rgb * vertices[indices[ uint(meshHeader[u_currentMesh].indicesStartPointer)]].color.rgb;
+    vec3 normalMap = textureLod(texturePool, vec3(texCoord.x, texCoord.y, u_normal), 0.0f).rgb * normalMapScalingAdjustment;
+    float roughnessMap = textureLod(texturePool, vec3(texCoord.x, texCoord.y, u_roughness), 0.0f).r;
+    float metallicMap = textureLod(texturePool, vec3(texCoord.x, texCoord.y, u_metallic), 0.0f).r;
+
+    // FACE NORMAL CALCULATIONS
     vec3 normalMapVector;
-    {
-        vec3 temp = texture(texturePool, vec3(texCoord, u_normal)).xyz;
-        normalMapVector = 2.0f * temp - 1.0f;
-        normalMapVector = normalize(normalMapVector);
+    caluclate_normal_map_vector(normalMap, normalMapVector);
+
+    randomize_normal(pixelSeed, roughnessMap, normalMapVector);
+
+    normal_space_to_world_space(normalize(geometricFaceNormal), normalMapVector, hitInfo.faceNormal);
+
+    // REFLECTION DIRECTION
+    hitInfo.reflectionDir = normalize(reflect((intersectionPoint - u_camPos), hitInfo.faceNormal));
+    float cosineFactor = max(0.0f, dot(hitInfo.faceNormal, hitInfo.reflectionDir));
+
+    outputColor = vec4(albedoMap, 1.0f);
+
+    float totalBrightness = 0.0f;
+
+    for (int i = 0; i < u_maxBounces; ++i) {
+        
+        vec3 intersectionPoint = hitInfo.intersectionPoint;
+        vec3 reflectionDir = hitInfo.reflectionDir;
+        if (intersect_scene(intersectionPoint, reflectionDir, hitInfo)) {
+
+            cosineFactor *= max(0.0f, dot(hitInfo.faceNormal, hitInfo.reflectionDir));
+            outputColor.xyz *= hitInfo.albedo;
+
+            if (hitInfo.emissive != 0.0f) {
+                totalBrightness = hitInfo.emissive;
+                break;
+            }
+
+        } else {
+            outputColor.xyz *= vec3(0.07f, 0.13f, 0.17f);
+            break;
+        }
     }
 
-    // Calculates face normal from normal map
-    vec3 faceNormal;
-    {
-        float roughnessValue = texture(texturePool, vec3(texCoord, u_roughness)).r;
-        uint localSeed = pixelSeed + uint(rayOrientation.x * rayOrientation.y * rayOrientation.z * 10000);    // generally random for each calculateSample call
-
-        randomizeNormal(localSeed, roughnessValue, normalMapVector);
-
-        normalSpaceToWorldSpace(intersectionPoint, normalize(geometricFaceNormal), texCoord, normalMapVector, faceNormal);
-        faceNormal = normalize(faceNormal);
-
-    }
-
-    // Calculate reflection
-    uint bounceCount;
-    float brightness;
-    vec3 accumulatedAlbedo;
-    {
-        calculatePath(intersectionPoint, u_camPos, faceNormal, brightness, accumulatedAlbedo, bounceCount);
-    }
-    
-    // Combine all texture maps to single color
-    vec3 albedoColor = texture(texturePool, vec3(texCoord, u_albedo)).rgb * color;
-    vec3 tint = vertices[ indices[ uint(meshHeader[u_currentMesh].x) ] ].color.xyz;
-    float roughnessValue = texture(texturePool, vec3(texCoord, u_roughness)).r;
-    
-    vec3 finalColor = (accumulatedAlbedo * albedoColor * tint * brightness);
-    //float finalBrightness = (totalBrightness * (MAX_BRIGHTNESS - MIN_BRIGHTNESS)) + MIN_BRIGHTNESS;
-    outputColor = vec4(finalColor, 1.0f);
+    outputColor.xyz *= totalBrightness * cosineFactor;
 
 }
 
-void randomizeNormal(uint seed, float roughness, inout vec3 normal) {
+bool intersect_scene(vec3 origin, vec3 dir, out HitInfo hitInfo) {
+    
+    bool hit = false;
+
+    float depth = FAR_PLANE;
+    for (int i_mesh = 0; i_mesh < meshHeader.length(); ++i_mesh) {
+        
+        //if (!intersectionBoundingBox(origin, dir, boundingBoxes[i_mesh])) continue;
+
+        uint i_mesh_indicesStartPointer = uint(meshHeader[i_mesh].indicesStartPointer);
+
+        for (int j_trig = 0; j_trig < (meshHeader[i_mesh].indicesSize / 3); ++j_trig) {
+            
+            vec3 v0 = vertices[indices[ i_mesh_indicesStartPointer + (j_trig * 3) + 0 ]].position.xyz;
+            vec3 v1 = vertices[indices[ i_mesh_indicesStartPointer + (j_trig * 3) + 1 ]].position.xyz;
+            vec3 v2 = vertices[indices[ i_mesh_indicesStartPointer + (j_trig * 3) + 2 ]].position.xyz;
+
+            float t;
+            Barycentric weights;
+            if (intersect_triangle(origin, dir, v0, v1, v2, weights, t)) {
+                
+                if (depth <= t) continue; 
+
+                depth = t;
+                hit = true;
+
+                // CACHCE USEFUL DATA
+                hitInfo.v0 = v0;
+                hitInfo.v1 = v1;
+                hitInfo.v2 = v2;
+
+                hitInfo.weights = weights;
+                hitInfo.mesh = i_mesh;
+                hitInfo.trig = j_trig;
+                hitInfo.t = t;
+
+            }
+        }
+    }
+
+    if (hit) {
+        
+        hitInfo.intersectionPoint = (hitInfo.v0 * hitInfo.weights.w) + (hitInfo.v1 * hitInfo.weights.u) + (hitInfo.v2 * hitInfo.weights.v);
+        
+        vec2 t0 = vertices[indices[ uint(meshHeader[hitInfo.mesh].indicesStartPointer) + (hitInfo.trig * 3) + 0 ]].texUV;
+        vec2 t1 = vertices[indices[ uint(meshHeader[hitInfo.mesh].indicesStartPointer) + (hitInfo.trig * 3) + 1 ]].texUV;
+        vec2 t2 = vertices[indices[ uint(meshHeader[hitInfo.mesh].indicesStartPointer) + (hitInfo.trig * 3) + 2 ]].texUV;
+
+        hitInfo.texCoord = (hitInfo.weights.w * t0) + (hitInfo.weights.u * t1) + (hitInfo.weights.v * t2);
+
+        // CACHE TEXTURES
+        hitInfo.albedo = textureLod(texturePool, vec3(hitInfo.texCoord.x, hitInfo.texCoord.y, meshTextures[hitInfo.mesh].albedo), 0.0f).rgb * vertices[indices[ uint(meshHeader[hitInfo.mesh].indicesStartPointer) + (hitInfo.trig * 3) + 0 ]].color.rgb;
+        hitInfo.normal = textureLod(texturePool, vec3(hitInfo.texCoord.x, hitInfo.texCoord.y, meshTextures[hitInfo.mesh].normal), 0.0f).rgb * normalMapScalingAdjustment;
+        hitInfo.roughness = textureLod(texturePool, vec3(hitInfo.texCoord.x, hitInfo.texCoord.y, meshTextures[hitInfo.mesh].roughness), 0.0f).r;
+        hitInfo.metallic = textureLod(texturePool, vec3(hitInfo.texCoord.x, hitInfo.texCoord.y, meshTextures[hitInfo.mesh].metallic), 0.0f).r;
+        hitInfo.emissive = meshHeader[hitInfo.mesh].emissiveValue;
+
+        // FACE NORMAL CALCULATIONS
+        vec3 geometricFaceNormal;
+        calculate_geometric_face_normal(hitInfo.mesh, hitInfo.trig, hitInfo.weights, geometricFaceNormal);
+
+        vec3 normalMapVector;
+        caluclate_normal_map_vector(hitInfo.normal, normalMapVector);
+
+        randomize_normal(pixelSeed + hitInfo.mesh, hitInfo.roughness, normalMapVector);
+
+        normal_space_to_world_space(normalize(geometricFaceNormal), normalMapVector, hitInfo.faceNormal);
+
+        // REFLECTION DIRECTION
+        hitInfo.reflectionDir = normalize(reflect(dir, hitInfo.faceNormal));
+
+        return true;
+
+    } else {
+        
+        return false;
+
+    }
+
+}
+
+void randomize_normal(in uint seed, in float roughness, inout vec3 normal) {
     
     if (u_debugUniversalRoughness) roughness = u_debugUniversalRoughnessAmount;
 
-    // clamp min and max
-    roughness = (roughness * (MAX_ROUGHNESS - MIN_ROUGHNESS)) + MIN_ROUGHNESS;
+    roughness = min(roughness, 1.0f);
 
     ivec2 dimensions = textureSize(colorNoise, 0);
     uint width = uint(dimensions.x);
     uint height = uint(dimensions.y);
-
-    seed %= (width * height);
-    uint y = seed / width;
-    uint x = seed - (y * width);
-
-    vec3 randomVector = texelFetch(colorNoise, ivec2(x, y), 0).rgb;
-    randomVector = 2.0f * randomVector - 1.0f;
+    
+    seed = seed % (width * height);
+    int x = int(seed % width);
+    int y = int(seed / width);
+    
+    vec3 randomVector = texelFetch(colorNoise, ivec2(x, y), 0).rgb * normalMapScalingAdjustment;
+    randomVector = randomVector * 2.0 - 1.0; 
     randomVector = normalize(randomVector);
 
-    normal = normalize( ((1 - roughness) * normal) + (roughness * randomVector) );
+    if (dot(randomVector, normal) < 0.0) {
+        randomVector = -randomVector;
+    }
+
+    normal = normalize(mix(normal, randomVector, roughness));
+}
+
+void caluclate_normal_map_vector(in vec3 normalMap, out vec3 normalMapVector) {
+
+    normalMapVector.x = 2.0f * normalMap.r - 1.0f;
+    normalMapVector.y = 2.0f * normalMap.g - 1.0f;
+    normalMapVector.z = 0.5f * normalMap.b;
+    normalMapVector = normalize(normalMapVector);
 
 }
 
-// Calculates render information for a single path (brightness, color, number of completed bounces)
-void calculatePath(vec3 init_Intersection, vec3 init_Origin, vec3 init_FaceNormal, out float brightness, out vec3 accumulatedAlbedo, out uint bounceCount) {
+void calculate_geometric_face_normal(in int mesh, in int trig, in Barycentric weights, out vec3 result) {
+    
+    uint mesh_indicesStartPointer = uint(meshHeader[mesh].indicesStartPointer);
 
-    vec3 ref_intersection = init_Intersection;
-    vec3 ref_origin = init_Origin;
-    vec3 ref_faceNormal = init_FaceNormal;
-
-    accumulatedAlbedo = vec3(1);
-
-    brightness = 0;
-    bounceCount = 0;
-    while (bounceCount < u_maxBounces) 
-    {
-
-        // Calculates reflection
-        float minFoundT = FAR_PLANE;        //
-        vec3 ref_v0, ref_v1, ref_v2;        //  data on the reflection found
-        vec2 ref_uv;                        //
-
-        uint ref_Mesh;                      // 
-        uint ref_Mesh_triangle;             //  data on the mesh that the ray reflected with
-        uint ref_Mesh_indexStartPointer;    // 
-
-        bool ref_Mesh_found = false;        //  whether we found a reflection or not
-
-        vec3 incidentRay = normalize(ref_intersection - ref_origin);
-        vec3 reflectionBounceDir = reflect(incidentRay, ref_faceNormal);
-
-        {
-
-            uint meshCount = meshHeader.length();
-            for (uint i = 0u; i < meshCount; ++i) {
-                
-                //if (!intersectionBoundingBox(ref_intersection, reflectionBounceDir, boundingBoxes[i])) continue;
-
-                uint trigCount = uint(meshHeader[i].y) / 3u;
-                for (uint j = 0u; j < trigCount; ++j) {
-
-                    uint indexStartPointer = uint(meshHeader[i].x);
-
-                    vec3 v0 = vertices[indexStartPointer + (3*j) + 0].position.xyz;
-                    vec3 v1 = vertices[indexStartPointer + (3*j) + 1].position.xyz;
-                    vec3 v2 = vertices[indexStartPointer + (3*j) + 2].position.xyz;
-
-                    vec3 result;
-                    if (!intersect_triangle(ref_intersection, reflectionBounceDir, v0, v1, v2, result)) continue;
-
-                    float t = result.x;
-                    if (t < minFoundT) {    // mesh is closest mesh found so far
-                    
-                        // update all reflection mesh data
-                        minFoundT = t;
-                        ref_uv = vec2(result.yz);
-
-                        ref_v0 = v0;
-                        ref_v1 = v1;
-                        ref_v2 = v2;
-
-                        ref_Mesh = i;
-                        ref_Mesh_triangle = j;
-                        ref_Mesh_indexStartPointer = indexStartPointer;
-                        ref_Mesh_found = true;
-
-                    }
-                }
-            }
-        }
-
-        // If mesh is found, take reflection mesh data and calculate color
-        if (ref_Mesh_found) {
-            
-            vec2 ref_t0 = vertices[ref_Mesh_indexStartPointer + (3 * ref_Mesh_triangle) + 0].texUV;
-            vec2 ref_t1 = vertices[ref_Mesh_indexStartPointer + (3 * ref_Mesh_triangle) + 1].texUV;
-            vec2 ref_t2 = vertices[ref_Mesh_indexStartPointer + (3 * ref_Mesh_triangle) + 2].texUV;
-                    
-            // grabs uv weights from moller-trumbore
-            float u = ref_uv.x; 
-            float v = ref_uv.y;
-            float w = 1.0f - u - v;
-            vec2 ref_uv = (w * ref_t0) + (u * ref_t1) + (v * ref_t2);   // applies weights
-
-            vec3 albedoColor = (texture(texturePool, vec3(ref_uv, meshTextures[ref_Mesh].x)) ).rgb;
-            vec3 tint = vertices[ indices[ uint(meshHeader[ref_Mesh].x) ] ].color.xyz;
-            float roughnessValue = texture(texturePool, vec3(ref_uv, u_roughness)).r;
-
-            accumulatedAlbedo *= albedoColor * tint;
-
-            // calculate new values for next iteration
-            ref_origin = ref_intersection;
-            ref_intersection = ref_intersection + ( minFoundT * reflectionBounceDir );
-            
-            vec3 ref_GeometricFaceNormal;
-            {
-                vec3 normal_v0 = vertices[ref_Mesh_indexStartPointer + (3 * ref_Mesh_triangle) + 0].normal.xyz;
-                vec3 normal_v1 = vertices[ref_Mesh_indexStartPointer + (3 * ref_Mesh_triangle) + 1].normal.xyz;
-                vec3 normal_v2 = vertices[ref_Mesh_indexStartPointer + (3 * ref_Mesh_triangle) + 2].normal.xyz;
-                ref_GeometricFaceNormal = (w * normal_v0) + (u * normal_v1) + (v * normal_v2);
-            }
-
-            vec3 ref_NormalMapVector;
-            {
-                uint ref_uv_normalMap = uint(meshTextures[ref_Mesh].y);
-                vec4 temp = texture(texturePool, vec3(ref_uv, ref_uv_normalMap));
-                ref_NormalMapVector.x = 2.0f * temp.x - 1.0f;
-                ref_NormalMapVector.y = 2.0f * temp.y - 1.0f;
-                ref_NormalMapVector.z = 2.0f * temp.z - 1.0f;
-                ref_NormalMapVector = normalize(ref_NormalMapVector);
-            }
-
-            randomizeNormal(pixelSeed, roughnessValue, ref_NormalMapVector);
-
-            normalSpaceToWorldSpace(ref_intersection, normalize(ref_GeometricFaceNormal), ref_uv, ref_NormalMapVector, ref_faceNormal);
-            ref_faceNormal = normalize(ref_faceNormal);
-
-            if (meshHeader[ref_Mesh].z != 0) {
-                brightness = meshHeader[ref_Mesh].z / (bounceCount + 1);
-            }
-
-            ++bounceCount;
-
-        } else {
-            break;  // ray didn't hit anything, so break out of loop
-        }
-    }
-
-    if (bounceCount == 0) accumulatedAlbedo = u_backgroundColor;
+    vec3 n0 = vertices[indices[mesh_indicesStartPointer + (trig * 3) + 0]].normal.xyz;
+    vec3 n1 = vertices[indices[mesh_indicesStartPointer + (trig * 3) + 1]].normal.xyz;
+    vec3 n2 = vertices[indices[mesh_indicesStartPointer + (trig * 3) + 2]].normal.xyz;
+    result = normalize((n0 * weights.w) + (n1 * weights.u) + (n2 * weights.v));
 
 }
 
 // Transforms normal map tangents into world space vectors
-void normalSpaceToWorldSpace(vec3 point, vec3 faceNormal, vec2 texCoord, vec3 inVector, out vec3 outVector) {
+void normal_space_to_world_space(in vec3 normalMap, in vec3 geometricFaceNormal, out vec3 faceNormal) {
 
     vec3 tangent;
     vec3 bitangent;
 
-    calculateWorldSpaceTangentBitagent(point, faceNormal, texCoord, tangent, bitangent);
+    calculateWorldSpaceTangentBitagent(normalMap, tangent, bitangent);
 
-    mat3 tangentToWorldSpaceMatrix = mat3(tangent, bitangent, faceNormal);
+    mat3 tangentToWorldSpaceMatrix = mat3(tangent, bitangent, normalMap);
 
-    outVector = normalize(tangentToWorldSpaceMatrix * inVector);
+    faceNormal = normalize(tangentToWorldSpaceMatrix * geometricFaceNormal);
 
 }
 
-// Finds world space tangent and bitangent using stable screen derivatives
-void calculateWorldSpaceTangentBitagent(vec3 point, vec3 faceNormal, vec2 texCoord, out vec3 tangent, out vec3 bitangent) {
-    vec3 pointDx = dFdx(point);
-    vec3 pointDy = dFdy(point);
+void calculateWorldSpaceTangentBitagent(vec3 faceNormal, out vec3 tangent, out vec3 bitangent) {
 
-    vec2 texCoordDx = dFdx(texCoord);
-    vec2 texCoordDy = dFdy(texCoord);
-
-    vec3 crossDx = cross(faceNormal, pointDx);
-    vec3 crossDy = cross(pointDy, faceNormal);
-
-    tangent = (crossDy * texCoordDx.x) + (crossDx * texCoordDy.x);
-    bitangent = (crossDy * texCoordDx.y) + (crossDx * texCoordDy.y);
-
-    float invmax = inversesqrt(max(dot(tangent, tangent), dot(bitangent, bitangent)));
-
-    tangent = tangent * invmax;
-    bitangent = bitangent * invmax;
+    vec3 helperAxis = (abs(faceNormal.x) > 0.9) ? vec3(0.0, 1.0, 0.0) : vec3(1.0, 0.0, 0.0);
+    
+    tangent = normalize(cross(faceNormal, helperAxis));
+    bitangent = normalize(cross(faceNormal, tangent));
 
 }
 
 // Implementation of the Möller-Trumbore ray-triangle intersection algorithm
-bool intersect_triangle(vec3 orig, vec3 dir, vec3 vert0, vec3 vert1, vec3 vert2, out vec3 result) {
+bool intersect_triangle(vec3 orig, vec3 dir, vec3 vert0, vec3 vert1, vec3 vert2, out Barycentric weights, out float outT) {
 
     const bool DOUBLE_SIDED_REFLECTION = false;
 
@@ -452,7 +465,7 @@ bool intersect_triangle(vec3 orig, vec3 dir, vec3 vert0, vec3 vert1, vec3 vert2,
     vec3 tvec = orig - vert0;
     float u = dot(tvec, pvec);
     if (u < 0.0f || u > det) return false;
-    
+
     vec3 qvec = cross(tvec, edge1);
     float v = dot(dir, qvec);
     if (v < 0.0f || (u + v) > det) return false;
@@ -467,8 +480,10 @@ bool intersect_triangle(vec3 orig, vec3 dir, vec3 vert0, vec3 vert1, vec3 vert2,
     const float MIN_T = 0.001;
     if (t <= MIN_T) return false;
 
-    result[0] = t;
-    result[1] = u;
-    result[2] = v;
+    outT = t;
+    weights.u = u;
+    weights.v = v;
+    weights.w = 1.0f - u - v;
+
     return true;
 }

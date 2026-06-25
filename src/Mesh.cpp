@@ -91,7 +91,7 @@ BoundingBox Mesh::getBoundingBox() {
 
 	}
 
-	return BoundingBox{ glm::vec4(max, 0.0f), glm::vec4(min, 0.0f) };
+	return BoundingBox{ glm::vec4(min, 0.0f), glm::vec4(max, 0.0f) };
 }
 
 void Mesh::DrawGizmo(Shader& shader, int axis) {
@@ -109,7 +109,7 @@ void Mesh::DrawGizmo(Shader& shader, int axis) {
 
 }
 
-void Mesh::Draw(Shader& shader, GLuint currentMesh, std::vector<glm::vec4> meshTextures) {
+void Mesh::Draw(Shader& shader, GLuint currentMesh, std::vector<MeshTextures> meshTextures) {
 
 	shader.Activate();
 	VAO.Bind();
@@ -125,16 +125,16 @@ void Mesh::Draw(Shader& shader, GLuint currentMesh, std::vector<glm::vec4> meshT
 
 	// Uniforms for the index location of each texture
 	GLuint albedoUniformLoc = glGetUniformLocation(shader.ID, "u_albedo");
-	glUniform1ui(albedoUniformLoc, meshTextures[currentMesh].x);
+	glUniform1ui(albedoUniformLoc, meshTextures[currentMesh].albedo);
 
 	GLuint normalUniformLoc = glGetUniformLocation(shader.ID, "u_normal");
-	glUniform1ui(normalUniformLoc, meshTextures[currentMesh].y);
+	glUniform1ui(normalUniformLoc, meshTextures[currentMesh].normal);
 
 	GLuint roughnessUniformLoc = glGetUniformLocation(shader.ID, "u_roughness");
-	glUniform1ui(roughnessUniformLoc, meshTextures[currentMesh].z);
+	glUniform1ui(roughnessUniformLoc, meshTextures[currentMesh].roughness);
 
 	GLuint metallicUniformLoc = glGetUniformLocation(shader.ID, "u_metallic");
-	glUniform1ui(metallicUniformLoc, meshTextures[currentMesh].w);
+	glUniform1ui(metallicUniformLoc, meshTextures[currentMesh].metallic);
 
 
 	// Other unfiorms

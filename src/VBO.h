@@ -3,7 +3,7 @@
 #include <glm/glm.hpp>
 #include <glad/glad.h>
 
-struct alignas(16) Vertex {
+struct Vertex {
 
 	glm::vec4 position;
 	glm::vec4 color;

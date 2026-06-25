@@ -8,7 +8,7 @@
 #include <backends/imgui_impl_glfw.h>
 #include <filesystem>
 
-#define MAX_BOUNCES 256
+#define MAX_BOUNCES 16
 #define MAX_SAMPLES 5096
 
 class Scene;	// Foward Deceleration
@@ -68,7 +68,7 @@ public:
 	RenderPhase imageRenderPhase = RenderPhase::COMPLETE;
 	RenderPhase videoRenderPhase = RenderPhase::COMPLETE;
 	RenderPhase previewAnimationPhase = RenderPhase::COMPLETE;
-	int totalAnimationFrames = 128;
+	int totalAnimationFrames = 60;
 
 	// WINDOW
 	bool pause = false;

@@ -303,7 +303,10 @@ void Scene::exportScene(string fileName) {
 	string timeStamp = format("{:%Y-%m-%d_%H-%M-%S}", local_time);
 
 	filesystem::create_directories("scenes/backups/");
+	std::ofstream createDirectoryTempA("scenes/backups/" + timeStamp + "_backup_" + fileName); createDirectoryTempA.close();
 	filesystem::path destination = string("scenes/backups/" + timeStamp + "_backup_" + fileName);
+
+	std::ofstream createDirectoryTempB("scenes/" + fileName); createDirectoryTempB.close();
 	filesystem::path source = string("scenes/" + fileName);
 	filesystem::copy_file(source, destination, filesystem::copy_options::overwrite_existing);
 
@@ -379,7 +382,7 @@ void Scene::Draw(GLFWwindow* window) {
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		Draw_DepthPrepass(*depthPrepassShader);
-		Draw_PathTracingPass(*pathTracingShader);
+		if (imguiWindow.currentSample != imguiWindow.maxSamples) Draw_PathTracingPass(*pathTracingShader);
 		Draw_PostProcessingPass(*postProcessingShader, window);
 
 	}
