@@ -69,6 +69,10 @@ void Texture::Delete() {
 void Texture::loadTextureArray(GLuint textureArrayID, std::vector<std::string>& textures, int width, int height) {
 
 	int maxTextureCount = textures.size();
+
+	glDeleteTextures(1, &textureArrayID);	// deallocate first
+
+	glGenTextures(1, &textureArrayID);
 	glBindTexture(GL_TEXTURE_2D_ARRAY, textureArrayID);
 	glTexStorage3D(GL_TEXTURE_2D_ARRAY, 1, GL_RGB8, width, height, maxTextureCount);
 
@@ -96,6 +100,7 @@ void Texture::loadTextureArray(GLuint textureArrayID, std::vector<std::string>& 
 	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
-	glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D_ARRAY, textureArrayID);
 
 }

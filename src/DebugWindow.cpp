@@ -32,14 +32,14 @@ void DebugWindow::drawImgui(Scene& scene) {
 	ImGui_ImplGlfw_NewFrame();
 	NewFrame();
 
+	scene.debugSettings.usingDebugWindow = GetIO().WantCaptureMouse;
+
 	if (IsKeyPressed(ImGuiKey_Tab)) {
 		scene.debugSettings.drawWindow = !scene.debugSettings.drawWindow;
 		scene.debugSettings.currentSample = 0;
 	}
 
 	if (!scene.debugSettings.drawWindow) { EndFrame();  return; }
-
-	scene.debugSettings.usingDebugWindow = GetIO().WantCaptureMouse;
 
 
 	// DRAW WINDOW
@@ -54,6 +54,7 @@ void DebugWindow::drawImgui(Scene& scene) {
 	drawSceneSettingsTab(scene);
 	drawCameraSettingsTab(scene);
 	drawMeshSettingsTab(scene);
+	drawMeshMaterialsTab(scene);
 	drawMiscTab(scene);
 
 	End();
@@ -337,6 +338,10 @@ void DebugWindow::drawMeshSettingsTab(Scene& scene) {
 			TableSetupColumn("   Z");
 			TableHeadersRow();
 
+
+
+
+
 			TableNextRow();
 			TableNextColumn();
 			Text("Position");
@@ -345,6 +350,8 @@ void DebugWindow::drawMeshSettingsTab(Scene& scene) {
 				PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.3f, 0.1f, 0.1f, 1.0f));
 				if (DragFloat("##posX", &(highlightedMesh->position.x), 0.5f)) {
 					scene.debugSettings.currentSample = 0;
+					scene.SSBOcomponent.generateBoundingBoxes(scene.meshCollection);
+					scene.SSBOcomponent.updateBoundingBoxesSSBO();
 					scene.SSBOcomponent.generateGlobalVertices(scene.meshCollection);
 					scene.SSBOcomponent.updateVertexSSBO();
 				}
@@ -353,6 +360,8 @@ void DebugWindow::drawMeshSettingsTab(Scene& scene) {
 				PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.1f, 0.3f, 0.1f, 1.0f));
 				if (DragFloat("##posY", &(highlightedMesh->position.y), 0.5f)) {
 					scene.debugSettings.currentSample = 0;
+					scene.SSBOcomponent.generateBoundingBoxes(scene.meshCollection);
+					scene.SSBOcomponent.updateBoundingBoxesSSBO();
 					scene.SSBOcomponent.generateGlobalVertices(scene.meshCollection);
 					scene.SSBOcomponent.updateVertexSSBO();
 				}
@@ -361,6 +370,8 @@ void DebugWindow::drawMeshSettingsTab(Scene& scene) {
 				PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.15f, 0.15f, 0.3f, 1.0f));
 				if (DragFloat("##posZ", &(highlightedMesh->position.z), 0.5f)) {
 					scene.debugSettings.currentSample = 0;
+					scene.SSBOcomponent.generateBoundingBoxes(scene.meshCollection);
+					scene.SSBOcomponent.updateBoundingBoxesSSBO();
 					scene.SSBOcomponent.generateGlobalVertices(scene.meshCollection);
 					scene.SSBOcomponent.updateVertexSSBO();
 				}
@@ -369,10 +380,16 @@ void DebugWindow::drawMeshSettingsTab(Scene& scene) {
 				if (Button("Reset##positon")) {
 					scene.debugSettings.currentSample = 0;
 					highlightedMesh->position = glm::vec3(0.0f);
+					scene.SSBOcomponent.generateBoundingBoxes(scene.meshCollection);
+					scene.SSBOcomponent.updateBoundingBoxesSSBO();
 					scene.SSBOcomponent.generateGlobalVertices(scene.meshCollection);
 					scene.SSBOcomponent.updateVertexSSBO();
 				}
 			}
+
+
+
+
 
 			TableNextRow();
 			TableNextColumn();
@@ -382,6 +399,8 @@ void DebugWindow::drawMeshSettingsTab(Scene& scene) {
 				PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.3f, 0.1f, 0.1f, 1.0f));
 				if (DragFloat("##pitch", &(highlightedMesh->rotation.x), glm::pi<float>() * 0.05f)) {
 					scene.debugSettings.currentSample = 0;
+					scene.SSBOcomponent.generateBoundingBoxes(scene.meshCollection);
+					scene.SSBOcomponent.updateBoundingBoxesSSBO();
 					scene.SSBOcomponent.generateGlobalVertices(scene.meshCollection);
 					scene.SSBOcomponent.updateVertexSSBO();
 				}
@@ -390,6 +409,8 @@ void DebugWindow::drawMeshSettingsTab(Scene& scene) {
 				PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.1f, 0.3f, 0.1f, 1.0f));
 				if (DragFloat("##yaw", &(highlightedMesh->rotation.y), glm::pi<float>() * 0.05f)) {
 					scene.debugSettings.currentSample = 0;
+					scene.SSBOcomponent.generateBoundingBoxes(scene.meshCollection);
+					scene.SSBOcomponent.updateBoundingBoxesSSBO();
 					scene.SSBOcomponent.generateGlobalVertices(scene.meshCollection);
 					scene.SSBOcomponent.updateVertexSSBO();
 				}
@@ -398,6 +419,8 @@ void DebugWindow::drawMeshSettingsTab(Scene& scene) {
 				PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.15f, 0.15f, 0.3f, 1.0f));
 				if (DragFloat("##roll", &(highlightedMesh->rotation.z), glm::pi<float>() * 0.05f)) {
 					scene.debugSettings.currentSample = 0;
+					scene.SSBOcomponent.generateBoundingBoxes(scene.meshCollection);
+					scene.SSBOcomponent.updateBoundingBoxesSSBO();
 					scene.SSBOcomponent.generateGlobalVertices(scene.meshCollection);
 					scene.SSBOcomponent.updateVertexSSBO();
 				}
@@ -406,10 +429,16 @@ void DebugWindow::drawMeshSettingsTab(Scene& scene) {
 				if (Button("Reset##rotation")) {
 					highlightedMesh->rotation = glm::vec3(0.0f);
 					scene.debugSettings.currentSample = 0;
+					scene.SSBOcomponent.generateBoundingBoxes(scene.meshCollection);
+					scene.SSBOcomponent.updateBoundingBoxesSSBO();
 					scene.SSBOcomponent.generateGlobalVertices(scene.meshCollection);
 					scene.SSBOcomponent.updateVertexSSBO();
 				}
 			}
+
+
+
+
 
 			TableNextRow();
 			TableNextColumn();
@@ -419,6 +448,8 @@ void DebugWindow::drawMeshSettingsTab(Scene& scene) {
 				PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.3f, 0.1f, 0.1f, 1.0f));
 				if (DragFloat("##scaleX", &(highlightedMesh->scale.x), 0.1f)) {
 					scene.debugSettings.currentSample = 0;
+					scene.SSBOcomponent.generateBoundingBoxes(scene.meshCollection);
+					scene.SSBOcomponent.updateBoundingBoxesSSBO();
 					scene.SSBOcomponent.generateGlobalVertices(scene.meshCollection);
 					scene.SSBOcomponent.updateVertexSSBO();
 				}
@@ -427,6 +458,8 @@ void DebugWindow::drawMeshSettingsTab(Scene& scene) {
 				PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.1f, 0.3f, 0.1f, 1.0f));
 				if (DragFloat("##scaleY", &(highlightedMesh->scale.y), 0.1f)) {
 					scene.debugSettings.currentSample = 0;
+					scene.SSBOcomponent.generateBoundingBoxes(scene.meshCollection);
+					scene.SSBOcomponent.updateBoundingBoxesSSBO();
 					scene.SSBOcomponent.generateGlobalVertices(scene.meshCollection);
 					scene.SSBOcomponent.updateVertexSSBO();
 				}
@@ -435,6 +468,8 @@ void DebugWindow::drawMeshSettingsTab(Scene& scene) {
 				PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.15f, 0.15f, 0.3f, 1.0f));
 				if (DragFloat("##scaleZ", &(highlightedMesh->scale.z), 0.1f)) {
 					scene.debugSettings.currentSample = 0;
+					scene.SSBOcomponent.generateBoundingBoxes(scene.meshCollection);
+					scene.SSBOcomponent.updateBoundingBoxesSSBO();
 					scene.SSBOcomponent.generateGlobalVertices(scene.meshCollection);
 					scene.SSBOcomponent.updateVertexSSBO();
 				}
@@ -443,10 +478,16 @@ void DebugWindow::drawMeshSettingsTab(Scene& scene) {
 				if (Button("Reset##scale")) {
 					highlightedMesh->scale = glm::vec3(1.0f);
 					scene.debugSettings.currentSample = 0;
+					scene.SSBOcomponent.generateBoundingBoxes(scene.meshCollection);
+					scene.SSBOcomponent.updateBoundingBoxesSSBO();
 					scene.SSBOcomponent.generateGlobalVertices(scene.meshCollection);
 					scene.SSBOcomponent.updateVertexSSBO();
 				}
 			}
+
+			
+
+
 
 			TableNextRow();
 			TableNextColumn();
@@ -492,6 +533,10 @@ void DebugWindow::drawMeshSettingsTab(Scene& scene) {
 				}
 			}
 
+
+
+
+
 			TableNextRow();
 			TableNextColumn();
 			Text("Emission");
@@ -501,6 +546,10 @@ void DebugWindow::drawMeshSettingsTab(Scene& scene) {
 				scene.SSBOcomponent.generateMeshHeader(scene.meshCollection);
 				scene.SSBOcomponent.updateMeshHeaderSSBO();
 			}
+
+
+
+
 
 			TableNextRow();
 			TableNextColumn();
@@ -547,6 +596,10 @@ void DebugWindow::drawMeshSettingsTab(Scene& scene) {
 				EndCombo();
 			}
 
+
+
+
+
 			TableNextRow();
 			TableNextColumn();
 			if (Button("Delete")) {
@@ -557,6 +610,129 @@ void DebugWindow::drawMeshSettingsTab(Scene& scene) {
 
 			EndTable();
 
+		}
+
+	}
+
+}
+
+void DebugWindow::drawMeshMaterialsTab(Scene& scene) {
+
+	const ImVec4 validPathColor(0.1f, 0.3f, 0.1f, 1.0f);
+	const ImVec4 invalidPathColor(0.15f, 0.15f, 0.15f, 1.0f);
+
+	Mesh* highlightedMesh = (scene.debugSettings.highlightedMeshIndex == -1) ? nullptr : scene.meshCollection[scene.debugSettings.highlightedMeshIndex];
+
+	if (highlightedMesh != nullptr) {
+
+		if (BeginTable("ShaderLayoutTable", 2)) {
+
+			TableSetupColumn("Mesh Material Settings");
+			TableSetupColumn("");
+			TableHeadersRow();
+
+			TableNextRow();
+			TableNextColumn();
+
+			std::filesystem::path filePath;
+			bool isImportValid;
+
+			filePath = string(scene.debugSettings.albedo);
+			isImportValid = (std::filesystem::exists(filePath) && filePath.extension().string() == ".png");
+			PushStyleColor(ImGuiCol_FrameBg, (isImportValid ? validPathColor : invalidPathColor));
+			PushItemWidth(-1.0f);
+			InputTextWithHint("##importAlbedo", DEFAULT_ALBEDO, scene.debugSettings.albedo, IM_ARRAYSIZE(scene.debugSettings.albedo));
+			PopItemWidth();
+			PopStyleColor(1);
+			TableNextColumn();
+
+			BeginDisabled(!isImportValid);
+			if (Button("Apply Albedo")) {
+
+				highlightedMesh->material->albedo = scene.debugSettings.albedo;
+				scene.SSBOcomponent.generateMeshTextures(scene.meshCollection);
+				scene.SSBOcomponent.updateMeshTexturesSSBO();
+				scene.SSBOcomponent.generateAndUpdateTextureArray(scene.meshCollection, scene.textureWidth, scene.textureHeight);
+				scene.debugSettings.albedo[0] = 0x00;
+
+			}
+			EndDisabled();
+
+			TableNextRow();
+			TableNextColumn();
+
+			filePath = string(scene.debugSettings.normal);
+			isImportValid = (std::filesystem::exists(filePath) && filePath.extension().string() == ".png");
+			PushStyleColor(ImGuiCol_FrameBg, (isImportValid ? validPathColor : invalidPathColor));
+			PushItemWidth(-1.0f);
+			InputTextWithHint("##importNormal", DEFAULT_NORMAL, scene.debugSettings.normal, IM_ARRAYSIZE(scene.debugSettings.normal));
+			PopItemWidth();
+			PopStyleColor(1);
+			TableNextColumn();
+
+			BeginDisabled(!isImportValid);
+			if (Button("Apply Normal")) {
+
+				highlightedMesh->material->normal = scene.debugSettings.normal;
+				scene.SSBOcomponent.generateMeshTextures(scene.meshCollection);
+				scene.SSBOcomponent.updateMeshTexturesSSBO();
+				scene.SSBOcomponent.generateAndUpdateTextureArray(scene.meshCollection, scene.textureWidth, scene.textureHeight);
+				scene.debugSettings.normal[0] = 0x00;
+
+			}
+			EndDisabled();
+
+			TableNextRow();
+			TableNextColumn();
+
+			filePath = string(scene.debugSettings.roughness);
+			isImportValid = (std::filesystem::exists(filePath) && filePath.extension().string() == ".png");
+			PushStyleColor(ImGuiCol_FrameBg, (isImportValid ? validPathColor : invalidPathColor));
+			PushItemWidth(-1.0f);
+			InputTextWithHint("##importRoughness", DEFAULT_ROUGHNESS, scene.debugSettings.roughness, IM_ARRAYSIZE(scene.debugSettings.roughness));
+			PopItemWidth();
+			PopStyleColor(1);
+			TableNextColumn();
+
+			BeginDisabled(!isImportValid);
+			if (Button("Apply Roughness")) {
+
+				highlightedMesh->material->roughness = scene.debugSettings.roughness;
+				scene.SSBOcomponent.generateMeshTextures(scene.meshCollection);
+				scene.SSBOcomponent.updateMeshTexturesSSBO();
+				scene.SSBOcomponent.generateAndUpdateTextureArray(scene.meshCollection, scene.textureWidth, scene.textureHeight);
+				scene.debugSettings.roughness[0] = 0x00;
+
+			}
+			EndDisabled();
+
+			TableNextRow();
+			TableNextColumn();
+
+			filePath = string(scene.debugSettings.metallic);
+			isImportValid = (std::filesystem::exists(filePath) && filePath.extension().string() == ".png");
+			PushStyleColor(ImGuiCol_FrameBg, (isImportValid ? validPathColor : invalidPathColor));
+			PushItemWidth(-1.0f);
+			InputTextWithHint("##importMetallic", DEFAULT_METALLIC, scene.debugSettings.metallic, IM_ARRAYSIZE(scene.debugSettings.metallic));
+			PopItemWidth();
+			PopStyleColor(1);
+			TableNextColumn();
+
+			BeginDisabled(!isImportValid);
+			if (Button("Apply Metallic")) {
+
+				highlightedMesh->material->metallic = scene.debugSettings.metallic;
+				scene.SSBOcomponent.generateMeshTextures(scene.meshCollection);
+				scene.SSBOcomponent.updateMeshTexturesSSBO();
+				scene.SSBOcomponent.generateAndUpdateTextureArray(scene.meshCollection, scene.textureWidth, scene.textureHeight);
+				scene.debugSettings.metallic[0] = 0x00;
+
+			}
+			EndDisabled();
+
+			TableNextColumn();
+
+			EndTable();
 		}
 
 	}

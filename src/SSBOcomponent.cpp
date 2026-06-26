@@ -176,7 +176,14 @@ void SSBOcomponent::generateBoundingBoxes(vector<Mesh*>& meshCollection) {
 
 }
 
-void SSBOcomponent::generateSSBOs(unsigned int texture_width, unsigned int texture_height) {
+void SSBOcomponent::generateAndUpdateTextureArray(vector<Mesh*>& meshCollection, unsigned int texture_width, unsigned int texture_height) {
+
+	vector<string> texturePoolVector(texturePool.begin(), texturePool.end());
+	Texture::loadTextureArray(textureArray, texturePoolVector, texture_width, texture_height);
+
+}
+
+void SSBOcomponent::generateSSBOs(vector<Mesh*>& meshCollection, unsigned int texture_width, unsigned int texture_height) {
 
 	// GENERATE VERTEX SSBO
 	glGenBuffers(1, &vertexSSBO);
@@ -249,15 +256,7 @@ void SSBOcomponent::generateSSBOs(unsigned int texture_width, unsigned int textu
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 
 	// 2D-TEXTURE ARRAY
-	glGenTextures(1, &textureArray);
-
-	GLuint maxTextureCount = texturePool.size();
-
-	vector<string> texturePoolVector(texturePool.begin(), texturePool.end());
-	Texture::loadTextureArray(textureArray, texturePoolVector, texture_width, texture_height);
-
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D_ARRAY, textureArray);
+	generateAndUpdateTextureArray(meshCollection, texture_width, texture_height);
 
 }
 

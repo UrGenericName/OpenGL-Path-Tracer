@@ -1,0 +1,76 @@
+// FORMAT:
+// 	 fileName
+// 	 position
+// 	 rotation
+// 	 scale
+// 	 albedo
+// 	 normal
+// 	 roughness
+// 	 metallic
+// 	 tint
+// 	 emissive
+
+{
+	models/subway/left_wall.obj,
+	0.000000, 0.000000, 0.000000,
+	0.000000, 0.000000, 0.000000,
+	1.000000, 1.000000, 1.000000,
+	textures/subway/old_ceramic_tile/Old_Ceramic_Tiles_vhqjefn_1K_BaseColor.png,
+	textures/subway/old_ceramic_tile/Old_Ceramic_Tiles_vhqjefn_1K_Normal.png,
+	textures/subway/old_ceramic_tile/Old_Ceramic_Tiles_vhqjefn_1K_Roughness.png,
+	textures/subway/old_ceramic_tile/Old_Ceramic_Tiles_vhqjefn_1K_Roughness.png,
+	1.000000, 1.000000, 1.000000,
+	0.000000
+},
+
+{
+	models/subway/stairs.obj,
+	0.000000, 0.000000, 0.000000,
+	0.000000, 0.000000, 0.000000,
+	1.000000, 1.000000, 1.000000,
+	textures/subway/old_ceramic_tile/Old_Ceramic_Tiles_vhqjefn_1K_BaseColor.png,
+	textures/subway/old_ceramic_tile/Old_Ceramic_Tiles_vhqjefn_1K_Normal.png,
+	textures/subway/old_ceramic_tile/Old_Ceramic_Tiles_vhqjefn_1K_Roughness.png,
+	textures/subway/old_ceramic_tile/Old_Ceramic_Tiles_vhqjefn_1K_Roughness.png,
+	1.000000, 1.000000, 1.000000,
+	0.000000
+},
+
+{
+	models/subway/right_wall.obj,
+	0.000000, 0.000000, 0.000000,
+	0.000000, 0.000000, 0.000000,
+	1.000000, 1.000000, 1.000000,
+	textures/subway/old_ceramic_tile/Old_Ceramic_Tiles_vhqjefn_1K_BaseColor.png,
+	textures/subway/old_ceramic_tile/Old_Ceramic_Tiles_vhqjefn_1K_Normal.png,
+	textures/subway/old_ceramic_tile/Old_Ceramic_Tiles_vhqjefn_1K_Roughness.png,
+	textures/subway/old_ceramic_tile/Old_Ceramic_Tiles_vhqjefn_1K_Roughness.png,
+	1.000000, 1.000000, 1.000000,
+	0.000000
+},
+
+{
+	models/subway/ceiling.obj,
+	0.000000, 0.000000, 0.000000,
+	0.000000, 0.000000, 0.000000,
+	1.000000, 1.000000, 1.000000,
+	textures/subway/old_ceramic_tile/Old_Ceramic_Tiles_vhqjefn_1K_BaseColor.png,
+	textures/subway/old_ceramic_tile/Old_Ceramic_Tiles_vhqjefn_1K_Normal.png,
+	textures/subway/old_ceramic_tile/Old_Ceramic_Tiles_vhqjefn_1K_Roughness.png,
+	textures/subway/old_ceramic_tile/Old_Ceramic_Tiles_vhqjefn_1K_Roughness.png,
+	1.000000, 1.000000, 1.000000,
+	0.000000
+},
+
+{
+	models/subway/light.obj,
+	0.000000, 0.000000, 0.000000,
+	0.000000, 0.000000, 0.000000,
+	1.000000, 1.000000, 1.000000,
+	textures/subway/old_ceramic_tile/Old_Ceramic_Tiles_vhqjefn_1K_BaseColor.png,
+	textures/subway/old_ceramic_tile/Old_Ceramic_Tiles_vhqjefn_1K_Normal.png,
+	textures/subway/old_ceramic_tile/Old_Ceramic_Tiles_vhqjefn_1K_Roughness.png,
+	textures/subway/old_ceramic_tile/Old_Ceramic_Tiles_vhqjefn_1K_Roughness.png,
+	1.000000, 1.000000, 1.000000,
+	370.967987
+}

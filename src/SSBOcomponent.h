@@ -29,7 +29,9 @@ public:
 	void generateMeshHeader(vector<Mesh*>& meshCollection);
 	void generateBoundingBoxes(vector<Mesh*>& meshCollection);
 
-	void generateSSBOs(unsigned int texture_width, unsigned int texture_height);
+	void generateAndUpdateTextureArray(vector<Mesh*>& meshCollection, unsigned int texture_width, unsigned int texture_height);
+
+	void generateSSBOs(vector<Mesh*>& meshCollection, unsigned int texture_width, unsigned int texture_height);
 
 	void deleteSSBOs();
 

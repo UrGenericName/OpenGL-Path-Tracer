@@ -34,6 +34,7 @@ private:
 	void drawSceneSettingsTab(Scene& scene);
 	void drawCameraSettingsTab(Scene& scene);
 	void drawMeshSettingsTab(Scene& scene);
+	void drawMeshMaterialsTab(Scene& scene);
 	void drawMiscTab(Scene& scene);
 
 	ImVec2 windowSize;

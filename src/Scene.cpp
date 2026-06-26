@@ -359,9 +359,6 @@ void Scene::exportScene(string fileName) {
 
 void Scene::Draw(GLFWwindow* window) {
 
-	SSBOcomponent.generateBoundingBoxes(meshCollection);
-	SSBOcomponent.updateBoundingBoxesSSBO();
-
 	auto start = chrono::high_resolution_clock::now();
 
 	if (debugSettings.videoRenderPhase == DebugSettings::RenderPhase::COMPLETE && debugSettings.usingDebugWindow == false) this->Inputs(window);
@@ -421,7 +418,7 @@ void Scene::link() {
 	SSBOcomponent.generateMeshHeader(meshCollection);
 	SSBOcomponent.generateBoundingBoxes(meshCollection);
 
-	SSBOcomponent.generateSSBOs(textureWidth, textureHeight);
+	SSBOcomponent.generateSSBOs(meshCollection, textureWidth, textureHeight);
 
 	shaderPipelineComponent.depthPrepassShader = new Shader("shaders/z_prepass.vert", "shaders/z_prepass.frag");
 	shaderPipelineComponent.pathTracingShader = new Shader("shaders/path_tracing.vert", "shaders/path_tracing.frag");

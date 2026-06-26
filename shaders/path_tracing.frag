@@ -307,7 +307,7 @@ bool intersect_scene(vec3 origin, vec3 dir, out HitInfo hitInfo) {
     float depth = FAR_PLANE;
     for (int i_mesh = 0; i_mesh < meshHeader.length(); ++i_mesh) {
         
-        //if (!intersectionBoundingBox(origin, dir, boundingBoxes[i_mesh])) continue;
+        if (!intersectionBoundingBox(origin, dir, boundingBoxes[i_mesh])) continue;
 
         uint i_mesh_indicesStartPointer = uint(meshHeader[i_mesh].indicesStartPointer);
 

@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Material.h"
+
 class DebugSettings {
 public:
 
@@ -45,6 +47,12 @@ public:
 	inline static char importName[128] = "scene.txt";
 	inline static char exportName[128] = "";
 	inline static char importOBJname[128] = "";
+
+	// MATERIALS
+	inline static char albedo[128] = "";
+	inline static char normal[128] = "";
+	inline static char roughness[128] = "";
+	inline static char metallic[128] = "";
 
 	// RENDER
 	RenderPhase imageRenderPhase = RenderPhase::COMPLETE;
