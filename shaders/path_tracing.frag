@@ -140,10 +140,9 @@ bool intersect_scene(vec3 origin, vec3 dir, out HitInfo hitInfo);
 void caluclate_normal_map_vector(in vec3 normalMap, out vec3 normalMapVector);
 void calculate_geometric_face_normal(in int mesh, in int trig, Barycentric weights, out vec3 result);
 void randomize_normal(in uint seed, in float roughness, inout vec3 normal);
-void calculatePath(vec3 init_Intersection, vec3 init_Origin, vec3 init_FaceNormal, out float totalBrightness, out vec3 totalReflectionColor, out float cosineFactor, out uint bounceCount);
 void normal_space_to_world_space(in vec3 normalMap, in vec3 geometricFaceNormal, out vec3 faceNormal);
-void calculateWorldSpaceTangentBitagent(vec3 faceNormal, out vec3 tangent, out vec3 bitangent);
-bool intersectionBoundingBox(vec3 orig, vec3 dir, BoundingBox box);
+void calculate_world_space_tangent_bitangent(vec3 faceNormal, out vec3 tangent, out vec3 bitangent);
+bool intersect_bounding_box(vec3 orig, vec3 dir, BoundingBox box);
 bool intersect_triangle(vec3 orig, vec3 dir, vec3 vert0, vec3 vert1, vec3 vert2, out Barycentric weights, out float t);
 
 // GLOBAL VARIABLES
@@ -233,22 +232,6 @@ bool drawDebug(uint debugMode) {
 
 }
 
-bool intersectionBoundingBox(vec3 orig, vec3 dir, BoundingBox box)
-{
-    vec3 invD = 1.0 / dir;
-
-    vec3 t1 = (box.minBounds.xyz - orig) * invD;
-    vec3 t2 = (box.maxBounds.xyz - orig) * invD;
-
-    vec3 tMinAxes = min(t1, t2);
-    vec3 tMaxAxes = max(t1, t2);
-
-    float tmin = max(tMinAxes.x, max(tMinAxes.y, tMinAxes.z));
-    float tmax = min(tMaxAxes.x, min(tMaxAxes.y, tMaxAxes.z));
-
-    return (tmin <= tmax) && (tmax >= 0.001);
-}
-
 void calculate_sample(out vec4 outputColor) {
 
     HitInfo hitInfo;
@@ -307,7 +290,7 @@ bool intersect_scene(vec3 origin, vec3 dir, out HitInfo hitInfo) {
     float depth = FAR_PLANE;
     for (int i_mesh = 0; i_mesh < meshHeader.length(); ++i_mesh) {
         
-        if (!intersectionBoundingBox(origin, dir, boundingBoxes[i_mesh])) continue;
+        if (!intersect_bounding_box(origin, dir, boundingBoxes[i_mesh])) continue;
 
         uint i_mesh_indicesStartPointer = uint(meshHeader[i_mesh].indicesStartPointer);
 
@@ -432,7 +415,7 @@ void normal_space_to_world_space(in vec3 normalMap, in vec3 geometricFaceNormal,
     vec3 tangent;
     vec3 bitangent;
 
-    calculateWorldSpaceTangentBitagent(normalMap, tangent, bitangent);
+    calculate_world_space_tangent_bitangent(normalMap, tangent, bitangent);
 
     mat3 tangentToWorldSpaceMatrix = mat3(tangent, bitangent, normalMap);
 
@@ -440,13 +423,29 @@ void normal_space_to_world_space(in vec3 normalMap, in vec3 geometricFaceNormal,
 
 }
 
-void calculateWorldSpaceTangentBitagent(vec3 faceNormal, out vec3 tangent, out vec3 bitangent) {
+void calculate_world_space_tangent_bitangent(vec3 faceNormal, out vec3 tangent, out vec3 bitangent) {
 
     vec3 helperAxis = (abs(faceNormal.x) > 0.9) ? vec3(0.0, 1.0, 0.0) : vec3(1.0, 0.0, 0.0);
     
     tangent = normalize(cross(faceNormal, helperAxis));
     bitangent = normalize(cross(faceNormal, tangent));
 
+}
+
+bool intersect_bounding_box(vec3 orig, vec3 dir, BoundingBox box)
+{
+    vec3 invD = 1.0 / dir;
+
+    vec3 t1 = (box.minBounds.xyz - orig) * invD;
+    vec3 t2 = (box.maxBounds.xyz - orig) * invD;
+
+    vec3 tMinAxes = min(t1, t2);
+    vec3 tMaxAxes = max(t1, t2);
+
+    float tmin = max(tMinAxes.x, max(tMinAxes.y, tMinAxes.z));
+    float tmax = min(tMaxAxes.x, min(tMaxAxes.y, tMaxAxes.z));
+
+    return (tmin <= tmax) && (tmax >= 0.001);
 }
 
 // Implementation of the Möller-Trumbore ray-triangle intersection algorithm

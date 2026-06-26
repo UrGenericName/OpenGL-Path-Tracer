@@ -69,7 +69,7 @@ void Scene::Inputs(GLFWwindow* window) {
 		camera.Position += camera.speed * camera.Up;
 		debugSettings.currentSample = 0;
 	}
-	if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) {
+	if (shaderPipelineComponent.gizmo.currentlyInUse == false && glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) {
 		camera.Position += camera.speed * -camera.Up;
 		debugSettings.currentSample = 0;
 	}
@@ -138,6 +138,8 @@ void Scene::Inputs(GLFWwindow* window) {
 		glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
 
 		shaderPipelineComponent.gizmo.currentlyInUse = true;
+		static glm::vec3 origPos = meshCollection[debugSettings.highlightedMeshIndex]->position;
+		static glm::vec3 gizmoPointDifference(0.0f);
 		static glm::vec2 origMouse;
 
 		// only executes on first click
@@ -153,14 +155,24 @@ void Scene::Inputs(GLFWwindow* window) {
 
 		}
 
+
+
 		// fetch current mouse pos
 		double mouseX, mouseY;
 		glfwGetCursorPos(window, &mouseX, &mouseY);
 		glm::vec2 currentMouse(mouseX, mouseY);
 
 		// move highlighted mesh 
-		glm::vec3 gizmoPointDifference = shaderPipelineComponent.gizmo.newPointFromMouseDrag(origMouse, currentMouse, shaderPipelineComponent.gizmo.getSelection(window, camera, debugSettings.highlightedMeshIndex != -1), camera);
-		meshCollection[debugSettings.highlightedMeshIndex]->position += gizmoPointDifference;
+		gizmoPointDifference += shaderPipelineComponent.gizmo.newPointFromMouseDrag(origMouse, currentMouse, shaderPipelineComponent.gizmo.getSelection(window, camera, debugSettings.highlightedMeshIndex != -1), camera);
+		
+		// snap to local grid when ctrl is pressed
+		if (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) {
+			meshCollection[debugSettings.highlightedMeshIndex]->position = origPos + round(gizmoPointDifference);
+		} else {
+			meshCollection[debugSettings.highlightedMeshIndex]->position = origPos + gizmoPointDifference;
+		}
+
+
 
 		// if gizmo has moved, update buffers
 		if (gizmoPointDifference != glm::vec3(0.0f)) {

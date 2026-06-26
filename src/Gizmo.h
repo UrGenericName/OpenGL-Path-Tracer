@@ -15,7 +15,7 @@ public:
 	};
 
 	bool currentlyInUse = false;
-	float gizmoDragSensitivity = 9.0f;
+	float gizmoDragSensitivity = 20.0f;
 
 	Gizmo();
 
