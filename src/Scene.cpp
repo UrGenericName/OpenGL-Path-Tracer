@@ -1,8 +1,9 @@
 #pragma once
 
 #include "Scene.h"
-#include "Animation.h"
 
+#include "Animation.h"
+#include <iostream>
 #include <chrono>
 #include <fstream>
 #include <filesystem>

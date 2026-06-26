@@ -82,7 +82,9 @@ BoundingBox Mesh::getBoundingBox() {
 	glm::vec3 max(-INFINITY);
 	glm::vec3 min(INFINITY);
 
-	for (const auto& vertex : vertices) {
+	for (auto vertex : vertices) {
+
+		vertex.position = getModelMatrix() * vertex.position;
 
 		for (int i = 0; i < 3; ++i) {
 			if (vertex.position[i] > max[i]) max[i] = vertex.position[i];

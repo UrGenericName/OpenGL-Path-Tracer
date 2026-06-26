@@ -30,7 +30,7 @@
 	1.000000, 1.000000, 1.000000,
 	textures/core/default/albedo_default.png,
 	textures/core/default/normal_default.png,
-	textures/metal_roughness.png,
+	textures/core/default/roughness_default.png,
 	textures/core/default/metallic_default.png,
 	1.000000, 1.000000, 1.000000,
 	0.000000
