@@ -78,6 +78,7 @@ uniform ivec2 u_debugMousePos;
 uniform bool u_debugMouseLeftClick;
 
 uniform uint u_maxBounces;  
+uniform uint u_maxSamples;
 uniform uint u_currentSample;
 
 uniform uint u_albedo;
@@ -153,6 +154,8 @@ const float normalMapScalingAdjustment = 255.0f / 254.0f;
 void main() {
 
     if (u_debugMouseLeftClick && u_debugMousePos == pixelCoords) highlightedMesh = u_currentMesh;
+
+    if (u_currentSample == u_maxSamples) return;
 
     if (drawDebug(u_debugMode)) return;
 

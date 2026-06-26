@@ -173,6 +173,7 @@
     <ClCompile Include="src\RenderComponent.h" />
     <ClCompile Include="src\Scene.cpp" />
     <ClCompile Include="src\shaderClass.cpp" />
+    <ClCompile Include="src\ShaderPipelineComponent.cpp" />
     <ClCompile Include="src\SSBOcomponent.cpp" />
     <ClCompile Include="src\stb.cpp" />
     <ClCompile Include="src\Texture.cpp" />
@@ -195,6 +196,7 @@
       <FileType>CppCode</FileType>
     </ClCompile>
     <ClInclude Include="src\Animation.h" />
+    <ClInclude Include="src\DebugSettings.h" />
     <ClInclude Include="src\FBO.h" />
     <ClInclude Include="src\Gizmo.h" />
     <ClInclude Include="src\ImguiWindow.h" />
@@ -212,6 +214,7 @@
     <ClInclude Include="src\Mesh.h" />
     <ClInclude Include="src\Scene.h" />
     <ClInclude Include="src\shaderClass.h" />
+    <ClInclude Include="src\ShaderPipelineComponent.h" />
     <ClInclude Include="src\SSBOcomponent.h" />
     <ClInclude Include="src\Texture.h" />
     <ClInclude Include="src\VAO.h" />

@@ -24,48 +24,39 @@ Scene::~Scene() {
 		delete mesh;
 	}
 
-	depthPrepassShader->Delete();
-	pathTracingShader->Delete();
-	postProcessingShader->Delete();
-
-	frameBuffer->Delete();
-	accumulationBuffer->Delete();
-
-	colorNoise->Delete();
-
 }
 
 void Scene::Inputs(GLFWwindow* window) {
 
 	// HIGHLIGHT MESH
-	if ((gizmo.getSelection(window, camera, imguiWindow.highlightedMesh != -1) == Gizmo::Selection::NONE) && !ImGui::GetIO().WantCaptureMouse && glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
+	if ((shaderPipelineComponent.gizmo.getSelection(window, camera, debugSettings.highlightedMeshIndex != -1) == Gizmo::Selection::NONE) && !ImGui::GetIO().WantCaptureMouse && glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
 
-		imguiWindow.mouseLeftClick = true;
-		imguiWindow.highlightedMesh = -1;
-		glfwGetCursorPos(window, &imguiWindow.mouseX, &imguiWindow.mouseY);
+		debugSettings.mouseLeftClick = true;
+		debugSettings.highlightedMeshIndex = -1;
+		glfwGetCursorPos(window, &debugSettings.mouseX, &debugSettings.mouseY);
 
 	}
 	else if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_RELEASE) {
-		imguiWindow.mouseLeftClick = false;
+		debugSettings.mouseLeftClick = false;
 	}	// MOVEMENT (w, a, s, d)
 	if (!ImGui::GetIO().WantCaptureMouse && glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
 		camera.Position += camera.speed * camera.Orientation;	// move position foward from orientation
-		imguiWindow.currentSample = 0;
+		debugSettings.currentSample = 0;
 	}
 
 	if (!ImGui::GetIO().WantCaptureMouse && glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
 		camera.Position += camera.speed * -glm::normalize(glm::cross(camera.Orientation, camera.Up)); // find the left vector from orientation and add to position
-		imguiWindow.currentSample = 0;
+		debugSettings.currentSample = 0;
 	}
 
 	if (!ImGui::GetIO().WantCaptureMouse && glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
 		camera.Position += camera.speed * -camera.Orientation;	// move position backward from orientation
-		imguiWindow.currentSample = 0;
+		debugSettings.currentSample = 0;
 	}
 
 	if (!ImGui::GetIO().WantCaptureMouse && glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
 		camera.Position += camera.speed * glm::normalize(glm::cross(camera.Orientation, camera.Up));	// find the right vector from orientation and add to position
-		imguiWindow.currentSample = 0;
+		debugSettings.currentSample = 0;
 	}
 
 
@@ -73,11 +64,11 @@ void Scene::Inputs(GLFWwindow* window) {
 	// UP & DOWN (space, ctrl)
 	if (!ImGui::GetIO().WantCaptureMouse && glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
 		camera.Position += camera.speed * camera.Up;
-		imguiWindow.currentSample = 0;
+		debugSettings.currentSample = 0;
 	}
 	if (!ImGui::GetIO().WantCaptureMouse && glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) {
 		camera.Position += camera.speed * -camera.Up;
-		imguiWindow.currentSample = 0;
+		debugSettings.currentSample = 0;
 	}
 
 	// MOUSE MOVEMENT
@@ -108,7 +99,7 @@ void Scene::Inputs(GLFWwindow* window) {
 		camera.Orientation = glm::rotate(camera.Orientation, glm::radians(-rotY), camera.Up);
 
 		glfwSetCursorPos(window, (float(camera.width) / 2), (float(camera.height) / 2));
-		imguiWindow.currentSample = 0;
+		debugSettings.currentSample = 0;
 
 	}
 	else if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_RELEASE) {
@@ -139,11 +130,11 @@ void Scene::Inputs(GLFWwindow* window) {
 
 	// MOVE GIZMO
 	static bool gizmoFirstClick = true;
-	if (!ImGui::GetIO().WantCaptureMouse && gizmo.getSelection(window, camera, imguiWindow.highlightedMesh != -1) != Gizmo::Selection::NONE && glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
+	if (!ImGui::GetIO().WantCaptureMouse && shaderPipelineComponent.gizmo.getSelection(window, camera, debugSettings.highlightedMeshIndex != -1) != Gizmo::Selection::NONE && glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
 
 		glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
 
-		gizmo.currentlyInUse = true;
+		shaderPipelineComponent.gizmo.currentlyInUse = true;
 		static glm::vec2 origMouse;
 
 		// only executes on first click
@@ -165,12 +156,12 @@ void Scene::Inputs(GLFWwindow* window) {
 		glm::vec2 currentMouse(mouseX, mouseY);
 
 		// move highlighted mesh 
-		glm::vec3 gizmoPointDifference = gizmo.newPointFromMouseDrag(origMouse, currentMouse, gizmo.getSelection(window, camera, imguiWindow.highlightedMesh != -1), camera);
-		meshCollection[imguiWindow.highlightedMesh]->position += gizmoPointDifference;
+		glm::vec3 gizmoPointDifference = shaderPipelineComponent.gizmo.newPointFromMouseDrag(origMouse, currentMouse, shaderPipelineComponent.gizmo.getSelection(window, camera, debugSettings.highlightedMeshIndex != -1), camera);
+		meshCollection[debugSettings.highlightedMeshIndex]->position += gizmoPointDifference;
 
 		// if gizmo has moved, update buffers
 		if (gizmoPointDifference != glm::vec3(0.0f)) {
-			imguiWindow.currentSample = 0;
+			debugSettings.currentSample = 0;
 			SSBOcomponent.generateGlobalVertices(meshCollection);
 			SSBOcomponent.updateVertexSSBO();
 		}
@@ -181,7 +172,7 @@ void Scene::Inputs(GLFWwindow* window) {
 	}
 	else if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_RELEASE) {
 		glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-		gizmo.currentlyInUse = false;
+		shaderPipelineComponent.gizmo.currentlyInUse = false;
 		gizmoFirstClick = true;
 	}
 
@@ -287,7 +278,7 @@ void Scene::importScene(string fileName) {
 	}
 
 	file.close();
-	imguiWindow.currentSample = 0;
+	debugSettings.currentSample = 0;
 
 	link();
 
@@ -371,19 +362,20 @@ void Scene::Draw(GLFWwindow* window) {
 
 	auto start = chrono::high_resolution_clock::now();
 
-	if (imguiWindow.videoRenderPhase == ImguiWindow::RenderPhase::COMPLETE) this->Inputs(window);
+	if (debugSettings.videoRenderPhase == DebugSettings::RenderPhase::COMPLETE) this->Inputs(window);
 	camera.updateMatrix();
 
-	if (!imguiWindow.pause) {
+	if (!debugSettings.pause) {
 
 		// CLEAR BACKGROUND
 		glViewport(0, 0, camera.width, camera.height);
 		glClearColor(backgroundColor.x, backgroundColor.y, backgroundColor.z, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		Draw_DepthPrepass(*depthPrepassShader);
-		if (imguiWindow.currentSample != imguiWindow.maxSamples) Draw_PathTracingPass(*pathTracingShader);
-		Draw_PostProcessingPass(*postProcessingShader, window);
+		shaderPipelineComponent.Draw_DepthPrepass(camera, meshCollection, SSBOcomponent.meshTextures, debugSettings);
+		shaderPipelineComponent.Draw_PathTracingPass(camera, meshCollection, SSBOcomponent.meshTextures, debugSettings);
+		shaderPipelineComponent.Draw_PostProcessingPass(camera, meshCollection, SSBOcomponent.meshTextures, window, debugSettings);
+
 
 	}
 
@@ -393,17 +385,17 @@ void Scene::Draw(GLFWwindow* window) {
 	double frameTime = ms_double.count();
 
 	// HIGHLIGHT MESH
-	Mesh* highlightedMesh = (imguiWindow.highlightedMesh == -1) ? nullptr : meshCollection[imguiWindow.highlightedMesh];
+	Mesh* highlightedMesh = (debugSettings.highlightedMeshIndex== -1) ? nullptr : meshCollection[debugSettings.highlightedMeshIndex];
 	imguiWindow.drawImgui(frameTime, RenderComponent.sceneAnimationFrame, this, highlightedMesh);
 
 	// SCREENSHOT
-	RenderComponent.handleQueuedImageRender(imguiWindow, camera);
-	RenderComponent.handleQueuedVideoRender(imguiWindow, camera, SSBOcomponent, meshCollection);
+	RenderComponent.handleQueuedImageRender(debugSettings, camera);
+	RenderComponent.handleQueuedVideoRender(debugSettings, camera, SSBOcomponent, meshCollection);
 
 	// ANIMATION PREVIEW
-	RenderComponent.handleQueuedAnimationPreview(imguiWindow, camera, SSBOcomponent, meshCollection);
+	RenderComponent.handleQueuedAnimationPreview(debugSettings, camera, SSBOcomponent, meshCollection);
 
-	if (imguiWindow.currentSample != imguiWindow.maxSamples) ++imguiWindow.currentSample;
+	if (debugSettings.currentSample != debugSettings.maxSamples) ++debugSettings.currentSample;
 
 	// WINDOW NAME
 	setWindowTitle(window, frameTime);
@@ -413,174 +405,15 @@ void Scene::Draw(GLFWwindow* window) {
 void Scene::setWindowTitle(GLFWwindow* window, double frameTime) {
 
 	string windowName =
-		"Samples: " + to_string(imguiWindow.currentSample) + "/" + to_string(imguiWindow.maxSamples) + "\t" +
+		"Samples: " + to_string(debugSettings.currentSample) + "/" + to_string(debugSettings.maxSamples) + "\t" +
 		"FPS: " + (to_string(static_cast<int>(1000 / frameTime)) + "      ").substr(0, 6) + "\t" +
-		"Animation Frame: " + to_string(RenderComponent.sceneAnimationFrame) + "/" + to_string(imguiWindow.totalAnimationFrames);
+		"Animation Frame: " + to_string(RenderComponent.sceneAnimationFrame) + "/" + to_string(debugSettings.totalAnimationFrames);
 
 	glfwSetWindowTitle(window, windowName.c_str());
 
 }
 
-void Scene::Draw_DepthPrepass(Shader& Depth_shader) {
-
-	Depth_shader.Activate();
-	generateDepthUniforms(Depth_shader, camera);
-
-	// SET-UP SHADER PROGRAM TO WRITE ONLY DEPTH
-	glEnable(GL_DEPTH_TEST);
-	glDepthFunc(GL_LESS);
-	glDepthMask(GL_TRUE);
-	glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
-	glClear(GL_DEPTH_BUFFER_BIT);
-
-	// DRAW MESHES
-	for (size_t i = 0; i < meshCollection.size(); ++i) {
-		meshCollection[i]->Draw(Depth_shader, i, SSBOcomponent.meshTextures);
-	}
-
-}
-
-void Scene::Draw_PathTracingPass(Shader& PathTracing_shader) {
-
-	// UPDATE HIGHLIGHT BUFFER WITH IMGUI WINDOW (basically sets it to -1 incase the shader doesn't pass anything)
-	glBindBuffer(GL_SHADER_STORAGE_BUFFER, highlightedMeshBuffer);
-	glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, sizeof(GLuint), &imguiWindow.highlightedMesh);
-	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
-
-	PathTracing_shader.Activate();
-	generatePathTracingUniforms(PathTracing_shader, camera);
-
-	// RE-ALLOW COLOR WRITING BUT DISABLE DEPTH WRITING
-	glEnable(GL_DEPTH_TEST);
-	glDepthFunc(GL_EQUAL);
-	glDepthMask(GL_FALSE);
-	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-
-	// FRAME BUFFER
-	frameBuffer->Bind();
-	glActiveTexture(GL_TEXTURE2);
-	glBindTexture(GL_TEXTURE_2D, frameBuffer->texture->ID);
-	frameBuffer->Unbind();
-
-	// DRAW MESHES
-	for (size_t i = 0; i < meshCollection.size(); ++i) {
-		meshCollection[i]->Draw(PathTracing_shader, i, SSBOcomponent.meshTextures);
-	}
-
-	// SEND HIGHLIGHT BUFFER INFORMATION TO IMGUI WINDOW
-	glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
-	glBindBuffer(GL_SHADER_STORAGE_BUFFER, highlightedMeshBuffer);
-	glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, sizeof(GLuint), &imguiWindow.highlightedMesh);
-
-}
-
-void Scene::Draw_PostProcessingPass(Shader& PostProcessing_shader, GLFWwindow* window) {
-
-	if (imguiWindow.highlightedMesh != -1) {
-
-		Mesh* highlightedMesh = meshCollection[imguiWindow.highlightedMesh];
-		gizmo.setPos(highlightedMesh->position);
-
-	}
-
-	PostProcessing_shader.Activate();
-	generatePostProcessingUniforms(PostProcessing_shader, camera, window);
-	
-	// RE-USE SAME DEPTH
-	glEnable(GL_DEPTH_TEST);
-	glDepthFunc(GL_LEQUAL);
-	glDepthMask(GL_FALSE);
-	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
-
-	// FRAME BUFFER
-	frameBuffer->Bind();
-	glActiveTexture(GL_TEXTURE2);
-	glBindTexture(GL_TEXTURE_2D, frameBuffer->texture->ID);
-	frameBuffer->Unbind();
-
-	// DRAW MESHES
-	for (size_t i = 0; i < meshCollection.size(); ++i) {
-		meshCollection[i]->Draw(PostProcessing_shader, i, SSBOcomponent.meshTextures);
-	}
-
-	if (imguiWindow.highlightedMesh != -1) {
-
-		glDisable(GL_DEPTH_TEST);
-		gizmo.Draw(PostProcessing_shader);
-
-	}
-
-}
-
-void Scene::generatePostProcessingUniforms(Shader& shader, Camera& camera, GLFWwindow* window) {
-
-	int gizmoSelectionLoc = glGetUniformLocation(shader.ID, "u_gizmoSelection");
-	glUniform1i(gizmoSelectionLoc, static_cast<int>(gizmo.getSelection(window, camera, imguiWindow.highlightedMesh != -1)));
-
-	int debugHighlightedMeshLoc = glGetUniformLocation(shader.ID, "u_debugHighlightedMesh");
-	glUniform1i(debugHighlightedMeshLoc, static_cast<int>(imguiWindow.highlightedMesh));
-
-	int debugMinBrightnessLoc = glGetUniformLocation(shader.ID, "u_debugMinBrightness");
-	glUniform1f(debugMinBrightnessLoc, imguiWindow.minBrightness);
-
-	int debugMaxBrightnessLoc = glGetUniformLocation(shader.ID, "u_debugMaxBrightness");
-	glUniform1f(debugMaxBrightnessLoc, imguiWindow.maxBrightness);
-
-	camera.Matrix(shader, "u_camMatrix");
-}
-
-void Scene::generatePathTracingUniforms(Shader& shader, Camera& camera) {
-
-	GLint mousePos[2] = { imguiWindow.mouseX, camera.height - imguiWindow.mouseY };
-	int debugMousePosLoc = glGetUniformLocation(shader.ID, "u_debugMousePos");
-	glUniform2iv(debugMousePosLoc, 1, mousePos);
-
-	int debugMouseLeftClick = glGetUniformLocation(shader.ID, "u_debugMouseLeftClick");
-	glUniform1i(debugMouseLeftClick, imguiWindow.mouseLeftClick);
-
-	int camPosUniformLocation = glGetUniformLocation(shader.ID, "u_camPos");
-	glUniform3f(camPosUniformLocation, camera.Position.x, camera.Position.y, camera.Position.z);
-
-	int camOrientationUniformLocation = glGetUniformLocation(shader.ID, "u_camOrientation");
-	glUniform3f(camOrientationUniformLocation, camera.Orientation.x, camera.Orientation.y, camera.Orientation.z);
-
-	int debugModeLoc = glGetUniformLocation(shader.ID, "u_debugMode");
-	glUniform1ui(debugModeLoc, static_cast<unsigned int> (imguiWindow.debugMode));
-
-	int debugLambertianLoc = glGetUniformLocation(shader.ID, "u_debugLambertian");
-	glUniform1i(debugLambertianLoc, imguiWindow.debugLambertian);
-
-	int debugUniversalRoughnessLoc = glGetUniformLocation(shader.ID, "u_debugUniversalRoughness");
-	glUniform1i(debugUniversalRoughnessLoc, imguiWindow.debugUniversalRoughness);
-
-	int debugUniversalRoughnessAmountLoc = glGetUniformLocation(shader.ID, "u_debugUniversalRoughnessAmount");
-	glUniform1f(debugUniversalRoughnessAmountLoc, imguiWindow.debugUniversalRoughnessAmount);
-
-	int frameLoc = glGetUniformLocation(shader.ID, "u_currentSample");
-	glUniform1ui(frameLoc, imguiWindow.currentSample);
-
-	int maxBouncesLoc = glGetUniformLocation(shader.ID, "u_maxBounces");
-	glUniform1ui(maxBouncesLoc, static_cast<unsigned int>(imguiWindow.maxBounces));
-
-	int seedColorLoc = glGetUniformLocation(shader.ID, "u_seed");
-	glUniform1ui(seedColorLoc, m_distrib(m_gen));
-
-	camera.Matrix(shader, "u_camMatrix");
-}
-
-void Scene::generateDepthUniforms(Shader& shader, Camera& camera) {
-
-	int camPosUniformLocation = glGetUniformLocation(shader.ID, "u_camPos");
-	glUniform3f(camPosUniformLocation, camera.Position.x, camera.Position.y, camera.Position.z);
-
-	camera.Matrix(shader, "u_camMatrix");
-}
-
 void Scene::link() {
-
-	depthPrepassShader = new Shader("shaders/z_prepass.vert", "shaders/z_prepass.frag");
-	pathTracingShader = new Shader("shaders/path_tracing.vert", "shaders/path_tracing.frag");
-	postProcessingShader = new Shader("shaders/post_processing.vert", "shaders/post_processing.frag");
 
 	SSBOcomponent.deleteSSBOs();
 
@@ -592,29 +425,10 @@ void Scene::link() {
 
 	SSBOcomponent.generateSSBOs(textureWidth, textureHeight);
 
-	// COLOR NOISE
-	colorNoise = new Texture(COLOR_NOISE);
-	glActiveTexture(GL_TEXTURE1);
-	colorNoise->Bind();
-
-	// UNIFORMS (only those that need to be initalized once)
-	int backgroundColorLoc = glGetUniformLocation(pathTracingShader->ID, "u_backgroundColor");
-	glUniform3f(backgroundColorLoc, backgroundColor.x, backgroundColor.y, backgroundColor.z);
-
-	// FRAME BUFFER
-	frameBuffer = new FBO{ camera.width, camera.height, GL_TEXTURE2 };
-	glBindImageTexture(2, frameBuffer->texture->ID, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F);
-
-	// ACCUMULATION BUFFER
-	accumulationBuffer = new FBO{ camera.width, camera.height, GL_TEXTURE3 };
-	glBindImageTexture(3, accumulationBuffer->texture->ID, 0, GL_FALSE, 0, GL_READ_WRITE, GL_RGBA32F);
-
-	// HIGHLIGHTED MESH BUFFER
-	glGenBuffers(1, &highlightedMeshBuffer);
-	glBindBuffer(GL_SHADER_STORAGE_BUFFER, highlightedMeshBuffer);
-	glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(GLuint), &imguiWindow.highlightedMesh, GL_DYNAMIC_COPY);
-	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 4, highlightedMeshBuffer);
-	glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+	shaderPipelineComponent.depthPrepassShader = new Shader("shaders/z_prepass.vert", "shaders/z_prepass.frag");
+	shaderPipelineComponent.pathTracingShader = new Shader("shaders/path_tracing.vert", "shaders/path_tracing.frag");
+	shaderPipelineComponent.postProcessingShader = new Shader("shaders/post_processing.vert", "shaders/post_processing.frag");
+	shaderPipelineComponent.link(debugSettings, camera, backgroundColor);
 
 }
 
@@ -632,17 +446,17 @@ void ImguiWindow::drawImgui(double frameTime, unsigned int animationFrame, Scene
 	ImGui_ImplGlfw_NewFrame();
 	NewFrame();
 
-	if (IsKeyPressed(ImGuiKey_F)) {
-		drawWindow = !drawWindow;
-		currentSample = 0;
+	if (IsKeyPressed(ImGuiKey_F) && !GetIO().WantCaptureMouse) {
+		scene->debugSettings.drawWindow = !scene->debugSettings.drawWindow;
+		scene->debugSettings.currentSample = 0;
 	}
 
-	if (!drawWindow) { EndFrame();  return; }
+	if (!scene->debugSettings.drawWindow) { EndFrame();  return; }
 
 	Begin("Debug");
 	Separator();
 
-	Text("Samples: %d/%d\t\tFT(ms): %.3f\t\tFPS: %d", currentSample, maxSamples, frameTime, static_cast<int>(1000 / frameTime));
+	Text("Samples: %d/%d\t\tFT(ms): %.3f\t\tFPS: %d", scene->debugSettings.currentSample, scene->debugSettings.maxSamples, frameTime, static_cast<int>(1000 / frameTime));
 
 	if (BeginTable("ShaderLayoutTable", 2)) {
 
@@ -652,39 +466,39 @@ void ImguiWindow::drawImgui(double frameTime, unsigned int animationFrame, Scene
 
 		TableNextRow();
 
-		BeginDisabled(previewAnimationPhase != RenderPhase::COMPLETE);
+		BeginDisabled(scene->debugSettings.previewAnimationPhase != DebugSettings::RenderPhase::COMPLETE);
 
 		// RENDER
 		TableNextColumn();
-		BeginDisabled(imageRenderPhase != RenderPhase::COMPLETE);
+		BeginDisabled(scene->debugSettings.imageRenderPhase != DebugSettings::RenderPhase::COMPLETE);
 		if (Button("Render Image")) {
-			imageRenderPhase = RenderPhase::WAITING;
+			scene->debugSettings.imageRenderPhase = DebugSettings::RenderPhase::WAITING;
 		}
 		EndDisabled();
-		BeginDisabled(videoRenderPhase != RenderPhase::COMPLETE);
+		BeginDisabled(scene->debugSettings.videoRenderPhase != DebugSettings::RenderPhase::COMPLETE);
 		SameLine();
 		if (Button("Render Video")) {
-			videoRenderPhase = RenderPhase::WAITING;
+			scene->debugSettings.videoRenderPhase = DebugSettings::RenderPhase::WAITING;
 			scene->RenderComponent.sceneAnimationFrame = 0;
 		}
 
-		SliderInt("Frames", &totalAnimationFrames, 1, 1000);
+		SliderInt("Frames", &scene->debugSettings.totalAnimationFrames, 1, 1000);
 		EndDisabled();
 
 		if (Button("Preview")) {
-			previewAnimationPhase = RenderPhase::WAITING;
-			debugMode = static_cast<int>(DebugTypes::ALBEDO);
+			scene->debugSettings.previewAnimationPhase = DebugSettings::RenderPhase::WAITING;
+			scene->debugSettings.debugMode = static_cast<int>(DebugSettings::DebugTypes::ALBEDO);
 		}
 		SameLine();
-		Text("Frame: %d/%d", animationFrame, totalAnimationFrames);
+		Text("Frame: %d/%d", animationFrame, scene->debugSettings.totalAnimationFrames);
 
 		// RENDER SETTINGS
 		TableNextColumn();
-		if (SliderInt("Bounces", &maxBounces, 1, MAX_BOUNCES)) currentSample = 0;
-		if (SliderInt("Samples", &maxSamples, 1, MAX_SAMPLES)) currentSample = 0;
-		if (Button("Clear Samples")) currentSample = 0;
+		if (SliderInt("Bounces", &scene->debugSettings.maxBounces, 1, MAX_BOUNCES)) scene->debugSettings.currentSample = 0;
+		if (SliderInt("Samples", &scene->debugSettings.maxSamples, 1, MAX_SAMPLES)) scene->debugSettings.currentSample = 0;
+		if (Button("Clear Samples")) scene->debugSettings.currentSample = 0;
 		Spacing();
-		if (Button("Pause")) pause = !pause;
+		if (Button("Pause")) scene->debugSettings.pause = !scene->debugSettings.pause;
 
 		EndDisabled();
 
@@ -702,23 +516,23 @@ void ImguiWindow::drawImgui(double frameTime, unsigned int animationFrame, Scene
 
 		// RENDER VISUALIZATION
 		TableNextColumn();
-		BeginDisabled(previewAnimationPhase != RenderPhase::COMPLETE);
-		if (RadioButton("Disabled", &debugMode, static_cast<int>(DebugTypes::DISABLED))) currentSample = 0;
+		BeginDisabled(scene->debugSettings.previewAnimationPhase != DebugSettings::RenderPhase::COMPLETE);
+		if (RadioButton("Disabled", &scene->debugSettings.debugMode, static_cast<int>(DebugSettings::DebugTypes::DISABLED))) scene->debugSettings.currentSample = 0;
 		Spacing();
-		if (RadioButton("Albedo", &debugMode, static_cast<int>(DebugTypes::ALBEDO))) currentSample = 0;
-		if (RadioButton("Normal", &debugMode, static_cast<int>(DebugTypes::NORMAL))) currentSample = 0;
-		if (RadioButton("Roughness", &debugMode, static_cast<int>(DebugTypes::ROUGHNESS))) currentSample = 0;
-		if (RadioButton("Metallic", &debugMode, static_cast<int>(DebugTypes::METALLIC))) currentSample = 0;
+		if (RadioButton("Albedo", &scene->debugSettings.debugMode, static_cast<int>(DebugSettings::DebugTypes::ALBEDO))) scene->debugSettings.currentSample = 0;
+		if (RadioButton("Normal", &scene->debugSettings.debugMode, static_cast<int>(DebugSettings::DebugTypes::NORMAL))) scene->debugSettings.currentSample = 0;
+		if (RadioButton("Roughness", &scene->debugSettings.debugMode, static_cast<int>(DebugSettings::DebugTypes::ROUGHNESS))) scene->debugSettings.currentSample = 0;
+		if (RadioButton("Metallic", &scene->debugSettings.debugMode, static_cast<int>(DebugSettings::DebugTypes::METALLIC))) scene->debugSettings.currentSample = 0;
 		Spacing();
-		if (RadioButton("VertexNormal", &debugMode, static_cast<int>(DebugTypes::VERTEX_NORMAL))) currentSample = 0;
+		if (RadioButton("VertexNormal", &scene->debugSettings.debugMode, static_cast<int>(DebugSettings::DebugTypes::VERTEX_NORMAL))) scene->debugSettings.currentSample = 0;
 		EndDisabled();
 		Spacing();
-		Checkbox("Lambertian Shading", &debugLambertian);
+		Checkbox("Lambertian Shading", &scene->debugSettings.debugLambertian);
 
 		// POST PROCESSING
 		TableNextColumn();
-		SliderFloat("Min Brightness", &minBrightness, 0.0f, maxBrightness - 0.001f);
-		SliderFloat("Max Brightness", &maxBrightness, minBrightness + 0.001f, 1.0f);
+		SliderFloat("Min Brightness", &scene->debugSettings.minBrightness, 0.0f, scene->debugSettings.maxBrightness - 0.001f);
+		SliderFloat("Max Brightness", &scene->debugSettings.maxBrightness, scene->debugSettings.minBrightness + 0.001f, 1.0f);
 
 		EndTable();
 	}
@@ -735,42 +549,42 @@ void ImguiWindow::drawImgui(double frameTime, unsigned int animationFrame, Scene
 
 		TableNextColumn();
 
-		filePath = "scenes/" + string(importName);
+		filePath = "scenes/" + string(scene->debugSettings.importName);
 		bool isImportValid = (std::filesystem::exists(filePath) && filePath.extension().string() == SCENE_FILE_EXTENSION);
 		PushStyleColor(ImGuiCol_FrameBg, (isImportValid ? validPathColor : invalidPathColor));
-		InputTextWithHint("##importFileName", "scene.txt", importName, IM_ARRAYSIZE(importName));
+		InputTextWithHint("##importFileName", "scene.txt", scene->debugSettings.importName, IM_ARRAYSIZE(scene->debugSettings.importName));
 		PopStyleColor(1);
 		TableNextColumn();
 
-		filePath = "scenes/" + string(exportName);
+		filePath = "scenes/" + string(scene->debugSettings.exportName);
 		bool isExportValid = (filePath.extension().string() == SCENE_FILE_EXTENSION);
 		PushStyleColor(ImGuiCol_FrameBg, (isExportValid ? validPathColor : invalidPathColor));
-		InputTextWithHint("##exportFileName", "scene.txt", exportName, IM_ARRAYSIZE(exportName));
+		InputTextWithHint("##exportFileName", "scene.txt", scene->debugSettings.exportName, IM_ARRAYSIZE(scene->debugSettings.exportName));
 		PopStyleColor(1);
 		TableNextColumn();
 
-		filePath = importOBJname;
+		filePath = scene->debugSettings.importOBJname;
 		bool isOBJValid = (std::filesystem::exists(filePath) && filePath.extension().string() == ".obj");
 		PushStyleColor(ImGuiCol_FrameBg, (isOBJValid ? validPathColor : invalidPathColor));
-		InputTextWithHint("##importOBJName", "models/cube.obj", importOBJname, IM_ARRAYSIZE(importOBJname));
+		InputTextWithHint("##importOBJName", "models/cube.obj", scene->debugSettings.importOBJname, IM_ARRAYSIZE(scene->debugSettings.importOBJname));
 		PopStyleColor(1);
 
 		TableNextRow();
 		TableNextColumn();
 		BeginDisabled(!isImportValid);
 		if (Button("Import Scene")) {
-			scene->importScene(importName);
+			scene->importScene(scene->debugSettings.importName);
 			scene->link();
-			strcpy(exportName, importName);
-			importName[0] = 0x00;
+			strcpy(scene->debugSettings.exportName, scene->debugSettings.importName);
+			scene->debugSettings.importName[0] = 0x00;
 		}
 		EndDisabled();
 
 		TableNextColumn();
 		BeginDisabled(!isExportValid);
 		if (Button("Export Scene")) {
-			scene->exportScene(exportName);
-			exportName[0] = 0x00;
+			scene->exportScene(scene->debugSettings.exportName);
+			scene->debugSettings.exportName[0] = 0x00;
 		}
 		EndDisabled();
 
@@ -778,10 +592,10 @@ void ImguiWindow::drawImgui(double frameTime, unsigned int animationFrame, Scene
 		BeginDisabled(!isOBJValid);
 		if (Button("Import OBJ")) {
 
-			Mesh* mesh = new Mesh(importOBJname);
+			Mesh* mesh = new Mesh(scene->debugSettings.importOBJname);
 			scene->meshCollection.push_back(mesh);
 			scene->link();
-			importOBJname[0] = 0x00;
+			scene->debugSettings.importOBJname[0] = 0x00;
 
 		}
 		EndDisabled();
@@ -804,15 +618,15 @@ void ImguiWindow::drawImgui(double frameTime, unsigned int animationFrame, Scene
 		TableNextColumn();
 		{
 			PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.3f, 0.1f, 0.1f, 1.0f));
-			if (DragFloat("##posX", &(scene->camera.Position.x), 0.5f)) currentSample = 0;
+			if (DragFloat("##posX", &(scene->camera.Position.x), 0.5f)) scene->debugSettings.currentSample = 0;
 			PopStyleColor(1);
 			TableNextColumn();
 			PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.1f, 0.3f, 0.1f, 1.0f));
-			if (DragFloat("##posY", &(scene->camera.Position.y), 0.5f)) currentSample = 0;
+			if (DragFloat("##posY", &(scene->camera.Position.y), 0.5f)) scene->debugSettings.currentSample = 0;
 			PopStyleColor(1);
 			TableNextColumn();
 			PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.15f, 0.15f, 0.3f, 1.0f));
-			if (DragFloat("##posZ", &(scene->camera.Position.z), 0.5f)) currentSample = 0;
+			if (DragFloat("##posZ", &(scene->camera.Position.z), 0.5f)) scene->debugSettings.currentSample = 0;
 			PopStyleColor(1);
 			TableNextColumn();
 			if (Button("Reset##positon")) scene->camera.Position = glm::vec3(0.0f);
@@ -868,11 +682,11 @@ void ImguiWindow::drawImgui(double frameTime, unsigned int animationFrame, Scene
 		Text("Settings");
 		TableNextColumn();
 
-		if (SliderFloat("FOV", &(scene->camera.FOVdeg), 0.0f, 90.0f)) currentSample = 0;
+		if (SliderFloat("FOV", &(scene->camera.FOVdeg), 0.0f, 90.0f)) scene->debugSettings.currentSample = 0;
 		TableNextColumn();
-		if (SliderFloat("Near Plane", &(scene->camera.nearPlane), 0.0f, scene->camera.farPlane)) currentSample = 0;
+		if (SliderFloat("Near Plane", &(scene->camera.nearPlane), 0.0f, scene->camera.farPlane)) scene->debugSettings.currentSample = 0;
 		TableNextColumn();
-		if (SliderFloat("Far Plane", &(scene->camera.farPlane), scene->camera.nearPlane, 10000.0f)) currentSample = 0;
+		if (SliderFloat("Far Plane", &(scene->camera.farPlane), scene->camera.nearPlane, 10000.0f)) scene->debugSettings.currentSample = 0;
 
 		EndTable();
 	}
@@ -895,7 +709,7 @@ void ImguiWindow::drawImgui(double frameTime, unsigned int animationFrame, Scene
 			{
 				PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.3f, 0.1f, 0.1f, 1.0f));
 				if (DragFloat("##posX", &(highlightedMesh->position.x), 0.5f)) {
-					currentSample = 0;
+					scene->debugSettings.currentSample = 0;
 					scene->SSBOcomponent.generateGlobalVertices(scene->meshCollection);
 					scene->SSBOcomponent.updateVertexSSBO();
 				}
@@ -903,7 +717,7 @@ void ImguiWindow::drawImgui(double frameTime, unsigned int animationFrame, Scene
 				TableNextColumn();
 				PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.1f, 0.3f, 0.1f, 1.0f));
 				if (DragFloat("##posY", &(highlightedMesh->position.y), 0.5f)) {
-					currentSample = 0;
+					scene->debugSettings.currentSample = 0;
 					scene->SSBOcomponent.generateGlobalVertices(scene->meshCollection);
 					scene->SSBOcomponent.updateVertexSSBO();
 				}
@@ -911,14 +725,14 @@ void ImguiWindow::drawImgui(double frameTime, unsigned int animationFrame, Scene
 				TableNextColumn();
 				PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.15f, 0.15f, 0.3f, 1.0f));
 				if (DragFloat("##posZ", &(highlightedMesh->position.z), 0.5f)) {
-					currentSample = 0;
+					scene->debugSettings.currentSample = 0;
 					scene->SSBOcomponent.generateGlobalVertices(scene->meshCollection);
 					scene->SSBOcomponent.updateVertexSSBO();
 				}
 				PopStyleColor(1);
 				TableNextColumn();
 				if (Button("Reset##positon")) {
-					currentSample = 0;
+					scene->debugSettings.currentSample = 0;
 					highlightedMesh->position = glm::vec3(0.0f);
 					scene->SSBOcomponent.generateGlobalVertices(scene->meshCollection);
 					scene->SSBOcomponent.updateVertexSSBO();
@@ -932,7 +746,7 @@ void ImguiWindow::drawImgui(double frameTime, unsigned int animationFrame, Scene
 			{
 				PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.3f, 0.1f, 0.1f, 1.0f));
 				if (DragFloat("##pitch", &(highlightedMesh->rotation.x), glm::pi<float>() * 0.05f)) {
-					currentSample = 0;
+					scene->debugSettings.currentSample = 0;
 					scene->SSBOcomponent.generateGlobalVertices(scene->meshCollection);
 					scene->SSBOcomponent.updateVertexSSBO();
 				}
@@ -940,7 +754,7 @@ void ImguiWindow::drawImgui(double frameTime, unsigned int animationFrame, Scene
 				TableNextColumn();
 				PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.1f, 0.3f, 0.1f, 1.0f));
 				if (DragFloat("##yaw", &(highlightedMesh->rotation.y), glm::pi<float>() * 0.05f)) {
-					currentSample = 0;
+					scene->debugSettings.currentSample = 0;
 					scene->SSBOcomponent.generateGlobalVertices(scene->meshCollection);
 					scene->SSBOcomponent.updateVertexSSBO();
 				}
@@ -948,7 +762,7 @@ void ImguiWindow::drawImgui(double frameTime, unsigned int animationFrame, Scene
 				TableNextColumn();
 				PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.15f, 0.15f, 0.3f, 1.0f));
 				if (DragFloat("##roll", &(highlightedMesh->rotation.z), glm::pi<float>() * 0.05f)) {
-					currentSample = 0;
+					scene->debugSettings.currentSample = 0;
 					scene->SSBOcomponent.generateGlobalVertices(scene->meshCollection);
 					scene->SSBOcomponent.updateVertexSSBO();
 				}
@@ -956,7 +770,7 @@ void ImguiWindow::drawImgui(double frameTime, unsigned int animationFrame, Scene
 				TableNextColumn();
 				if (Button("Reset##rotation")) {
 					highlightedMesh->rotation = glm::vec3(0.0f); 
-					currentSample = 0;
+					scene->debugSettings.currentSample = 0;
 					scene->SSBOcomponent.generateGlobalVertices(scene->meshCollection);
 					scene->SSBOcomponent.updateVertexSSBO();
 				}
@@ -969,7 +783,7 @@ void ImguiWindow::drawImgui(double frameTime, unsigned int animationFrame, Scene
 			{
 				PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.3f, 0.1f, 0.1f, 1.0f));
 				if (DragFloat("##scaleX", &(highlightedMesh->scale.x), 0.1f)) {
-					currentSample = 0;
+					scene->debugSettings.currentSample = 0;
 					scene->SSBOcomponent.generateGlobalVertices(scene->meshCollection);
 					scene->SSBOcomponent.updateVertexSSBO();
 				}
@@ -977,7 +791,7 @@ void ImguiWindow::drawImgui(double frameTime, unsigned int animationFrame, Scene
 				TableNextColumn();
 				PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.1f, 0.3f, 0.1f, 1.0f));
 				if (DragFloat("##scaleY", &(highlightedMesh->scale.y), 0.1f)) {
-					currentSample = 0;
+					scene->debugSettings.currentSample = 0;
 					scene->SSBOcomponent.generateGlobalVertices(scene->meshCollection);
 					scene->SSBOcomponent.updateVertexSSBO();
 				}
@@ -985,7 +799,7 @@ void ImguiWindow::drawImgui(double frameTime, unsigned int animationFrame, Scene
 				TableNextColumn();
 				PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.15f, 0.15f, 0.3f, 1.0f));
 				if (DragFloat("##scaleZ", &(highlightedMesh->scale.z), 0.1f)) {
-					currentSample = 0;
+					scene->debugSettings.currentSample = 0;
 					scene->SSBOcomponent.generateGlobalVertices(scene->meshCollection);
 					scene->SSBOcomponent.updateVertexSSBO();
 				}
@@ -993,7 +807,7 @@ void ImguiWindow::drawImgui(double frameTime, unsigned int animationFrame, Scene
 				TableNextColumn();
 				if (Button("Reset##scale")) {
 					highlightedMesh->scale = glm::vec3(1.0f); 
-					currentSample = 0;
+					scene->debugSettings.currentSample = 0;
 					scene->SSBOcomponent.generateGlobalVertices(scene->meshCollection);
 					scene->SSBOcomponent.updateVertexSSBO();
 				}
@@ -1006,7 +820,7 @@ void ImguiWindow::drawImgui(double frameTime, unsigned int animationFrame, Scene
 			{
 				PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.3f, 0.1f, 0.1f, 1.0f));
 				if (SliderFloat("##tintR", &(highlightedMesh->tint.x), 0.0f, 1.0f)) {
-					currentSample = 0;
+					scene->debugSettings.currentSample = 0;
 					scene->SSBOcomponent.generateGlobalVertices(scene->meshCollection);
 					scene->SSBOcomponent.updateVertexSSBO();
 					for (Mesh* mesh : scene->meshCollection) {
@@ -1017,7 +831,7 @@ void ImguiWindow::drawImgui(double frameTime, unsigned int animationFrame, Scene
 				TableNextColumn();
 				PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.1f, 0.3f, 0.1f, 1.0f));
 				if (SliderFloat("##tintG", &(highlightedMesh->tint.y), 0.0f, 1.0f)) {
-					currentSample = 0;
+					scene->debugSettings.currentSample = 0;
 					scene->SSBOcomponent.generateGlobalVertices(scene->meshCollection);
 					scene->SSBOcomponent.updateVertexSSBO();
 					for (Mesh* mesh : scene->meshCollection) {
@@ -1028,7 +842,7 @@ void ImguiWindow::drawImgui(double frameTime, unsigned int animationFrame, Scene
 				TableNextColumn();
 				PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.15f, 0.15f, 0.3f, 1.0f));
 				if (SliderFloat("##tintB", &(highlightedMesh->tint.z), 0.0f, 1.0f)) {
-					currentSample = 0;
+					scene->debugSettings.currentSample = 0;
 					scene->SSBOcomponent.generateGlobalVertices(scene->meshCollection);
 					scene->SSBOcomponent.updateVertexSSBO();
 					for (Mesh* mesh : scene->meshCollection) {
@@ -1038,7 +852,7 @@ void ImguiWindow::drawImgui(double frameTime, unsigned int animationFrame, Scene
 				PopStyleColor(1);
 				TableNextColumn();
 				if (Button("Reset##tint")) {
-					currentSample = 0;
+					scene->debugSettings.currentSample = 0;
 					highlightedMesh->tint = glm::vec3(1.0f);
 				}
 			}
@@ -1048,7 +862,7 @@ void ImguiWindow::drawImgui(double frameTime, unsigned int animationFrame, Scene
 			Text("Emission");
 			TableNextColumn();
 			if (SliderFloat("##emission", &(highlightedMesh->emissive), 0.0f, 500.0f)) {
-				currentSample = 0;
+				scene->debugSettings.currentSample = 0;
 				scene->SSBOcomponent.generateMeshHeader(scene->meshCollection);
 				scene->SSBOcomponent.updateMeshHeaderSSBO();
 			}
@@ -1102,7 +916,7 @@ void ImguiWindow::drawImgui(double frameTime, unsigned int animationFrame, Scene
 			TableNextColumn();
 			if (Button("Delete")) {
 				erase(scene->meshCollection, highlightedMesh);
-				this->highlightedMesh = -1;
+				scene->debugSettings.highlightedMeshIndex = -1;
 				scene->link();
 			}
 
@@ -1121,16 +935,16 @@ void ImguiWindow::drawImgui(double frameTime, unsigned int animationFrame, Scene
 		TableNextRow();
 
 		TableNextColumn();
-		BeginDisabled(!debugUniversalRoughness);
-		if (SliderFloat("Roughness", &debugUniversalRoughnessAmount, 0, 1)) currentSample = 0;
+		BeginDisabled(!scene->debugSettings.debugUniversalRoughness);
+		if (SliderFloat("Roughness", &scene->debugSettings.debugUniversalRoughnessAmount, 0, 1)) scene->debugSettings.currentSample = 0;
 		EndDisabled();
 
 		TableNextRow();
 
 		TableNextColumn();
-		if (Checkbox("Universal Roughness", &debugUniversalRoughness)) currentSample = 0;
+		if (Checkbox("Universal Roughness", &scene->debugSettings.debugUniversalRoughness)) scene->debugSettings.currentSample = 0;
 		TableNextColumn();
-		if (Button("Pause")) pause = !pause;
+		if (Button("Pause")) scene->debugSettings.pause = !scene->debugSettings.pause;
 
 
 		TableNextColumn();
@@ -1139,8 +953,8 @@ void ImguiWindow::drawImgui(double frameTime, unsigned int animationFrame, Scene
 	}
 
 	// clear samples if window is moved or resized
-	if (windowSize.x != GetWindowSize().x || windowSize.y != GetWindowSize().y) currentSample = 0;
-	if (windowPosition.x != GetWindowPos().x || windowPosition.y != GetWindowPos().y) currentSample = 0;
+	if (windowSize.x != GetWindowSize().x || windowSize.y != GetWindowSize().y) scene->debugSettings.currentSample = 0;
+	if (windowPosition.x != GetWindowPos().x || windowPosition.y != GetWindowPos().y) scene->debugSettings.currentSample = 0;
 
 	windowSize = GetWindowSize();
 	windowPosition = GetWindowPos();

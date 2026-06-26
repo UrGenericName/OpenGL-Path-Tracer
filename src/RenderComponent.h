@@ -9,13 +9,13 @@ public:
 
 	unsigned int sceneAnimationFrame = 0;
 
-	void handleQueuedAnimationPreview(ImguiWindow& imguiWindow, Camera& camera, SSBOcomponent& SSBOcomponent, vector<Mesh*>& meshCollection);
-	void handleQueuedVideoRender(ImguiWindow& imguiWindow, Camera& camera, SSBOcomponent& SSBOcomponent, vector<Mesh*>& meshCollection);
-	void handleQueuedImageRender(ImguiWindow& imguiWindow, Camera& camera);
+	void handleQueuedAnimationPreview(DebugSettings& debugSettings, Camera& camera, SSBOcomponent& SSBOcomponent, vector<Mesh*>& meshCollection);
+	void handleQueuedVideoRender(DebugSettings& debugSettings, Camera& camera, SSBOcomponent& SSBOcomponent, vector<Mesh*>& meshCollection);
+	void handleQueuedImageRender(DebugSettings& debugSettings, Camera& camera);
 	void renderImage(std::string fileName, Camera& camera);
 
 private:
 
-	void AnimateComponents(ImguiWindow& imguiWindow, Camera& camera, SSBOcomponent& SSBOcomponent, vector<Mesh*>& meshCollection, unsigned int currentFrame);
+	void AnimateComponents(DebugSettings& debugSettings, Camera& camera, SSBOcomponent& SSBOcomponent, vector<Mesh*>& meshCollection, unsigned int currentFrame);
 
 };

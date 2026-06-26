@@ -9,7 +9,7 @@
 
 using namespace std;
 
-void RenderComponent::AnimateComponents(ImguiWindow& imguiWindow, Camera& camera, SSBOcomponent& SSBOcomponent, vector<Mesh*>& meshCollection, unsigned int currentFrame) {
+void RenderComponent::AnimateComponents(DebugSettings& debugSettings, Camera& camera, SSBOcomponent& SSBOcomponent, vector<Mesh*>& meshCollection, unsigned int currentFrame) {
 
 	// CAMERA ANIMATION
 	if (camera.animation != nullptr) camera.animation(camera, currentFrame);
@@ -27,19 +27,19 @@ void RenderComponent::AnimateComponents(ImguiWindow& imguiWindow, Camera& camera
 
 	}
 
-	imguiWindow.currentSample = 0;
+	debugSettings.currentSample = 0;
 
 	SSBOcomponent.generateGlobalVertices(meshCollection);
 	SSBOcomponent.updateVertexSSBO();
 
 }
 
-void RenderComponent::handleQueuedAnimationPreview(ImguiWindow& imguiWindow, Camera& camera, SSBOcomponent& SSBOcomponent, vector<Mesh*>& meshCollection) {
+void RenderComponent::handleQueuedAnimationPreview(DebugSettings& debugSettings, Camera& camera, SSBOcomponent& SSBOcomponent, vector<Mesh*>& meshCollection) {
 
 	static vector<Mesh*> meshCollectionDeepCopy;
 	static Camera cameraCopy(camera);
 
-	if (imguiWindow.previewAnimationPhase == ImguiWindow::RenderPhase::WAITING) {
+	if (debugSettings.previewAnimationPhase == DebugSettings::RenderPhase::WAITING) {
 
 		// save previous mesh data before animating
 		for (auto mesh : meshCollection) {
@@ -47,16 +47,16 @@ void RenderComponent::handleQueuedAnimationPreview(ImguiWindow& imguiWindow, Cam
 		}
 
 		// First frame
-		AnimateComponents(imguiWindow, camera, SSBOcomponent, meshCollection, sceneAnimationFrame);
+		AnimateComponents(debugSettings, camera, SSBOcomponent, meshCollection, sceneAnimationFrame);
 
-		imguiWindow.previewAnimationPhase = ImguiWindow::RenderPhase::RENDERING;
+		debugSettings.previewAnimationPhase = DebugSettings::RenderPhase::RENDERING;
 
 	}
-	else if (imguiWindow.previewAnimationPhase == ImguiWindow::RenderPhase::RENDERING) {
+	else if (debugSettings.previewAnimationPhase == DebugSettings::RenderPhase::RENDERING) {
 
-		AnimateComponents(imguiWindow, camera, SSBOcomponent, meshCollection, ++sceneAnimationFrame);
+		AnimateComponents(debugSettings, camera, SSBOcomponent, meshCollection, ++sceneAnimationFrame);
 
-		if (sceneAnimationFrame == imguiWindow.totalAnimationFrames) {
+		if (sceneAnimationFrame == debugSettings.totalAnimationFrames) {
 
 			// Reset mesh collection back to deep copy
 			for (auto mesh : meshCollection) delete mesh;
@@ -69,14 +69,14 @@ void RenderComponent::handleQueuedAnimationPreview(ImguiWindow& imguiWindow, Cam
 			if (camera.animation != nullptr) camera = cameraCopy;
 
 			sceneAnimationFrame = 0;
-			imguiWindow.previewAnimationPhase = ImguiWindow::RenderPhase::COMPLETE;
+			debugSettings.previewAnimationPhase = DebugSettings::RenderPhase::COMPLETE;
 		}
 
 	}
 
 }
 
-void RenderComponent::handleQueuedVideoRender(ImguiWindow& imguiWindow, Camera& camera, SSBOcomponent& SSBOcomponent, vector<Mesh*>& meshCollection) {
+void RenderComponent::handleQueuedVideoRender(DebugSettings& debugSettings, Camera& camera, SSBOcomponent& SSBOcomponent, vector<Mesh*>& meshCollection) {
 
 	static int lastHighlightedMeshValue;
 	static bool lastDrawWindowValue;
@@ -86,15 +86,15 @@ void RenderComponent::handleQueuedVideoRender(ImguiWindow& imguiWindow, Camera& 
 	static vector<Mesh*> meshCollectionDeepCopy;
 	static Camera cameraCopy(camera);
 
-	if (imguiWindow.videoRenderPhase == ImguiWindow::RenderPhase::WAITING) {
+	if (debugSettings.videoRenderPhase == DebugSettings::RenderPhase::WAITING) {
 
 		// save previous mesh data before animating
 		for (auto mesh : meshCollection) {
 			meshCollectionDeepCopy.push_back(new Mesh(*mesh));
 		}
 
-		lastDrawWindowValue = imguiWindow.drawWindow;
-		lastHighlightedMeshValue = imguiWindow.highlightedMesh;
+		lastDrawWindowValue = debugSettings.drawWindow;
+		lastHighlightedMeshValue = debugSettings.highlightedMeshIndex;
 
 		auto now = chrono::system_clock::now();
 		auto local_time = chrono::current_zone()->to_local(now);
@@ -103,25 +103,25 @@ void RenderComponent::handleQueuedVideoRender(ImguiWindow& imguiWindow, Camera& 
 		filesystem::create_directories("output/video_" + timeStamp + "/");
 		string fileName = "video_" + timeStamp + "/" + to_string(sceneAnimationFrame) + ".png";
 
-		imguiWindow.drawWindow = false;
-		imguiWindow.highlightedMesh = -1;
+		debugSettings.drawWindow = false;
+		debugSettings.highlightedMeshIndex = -1;
 
 		// First frame
-		AnimateComponents(imguiWindow, camera, SSBOcomponent, meshCollection, sceneAnimationFrame);
+		AnimateComponents(debugSettings, camera, SSBOcomponent, meshCollection, sceneAnimationFrame);
 
-		imguiWindow.videoRenderPhase = ImguiWindow::RenderPhase::RENDERING;
+		debugSettings.videoRenderPhase = DebugSettings::RenderPhase::RENDERING;
 
 	}
-	else if (imguiWindow.videoRenderPhase == ImguiWindow::RenderPhase::RENDERING) {
+	else if (debugSettings.videoRenderPhase == DebugSettings::RenderPhase::RENDERING) {
 
-		if (imguiWindow.currentSample == imguiWindow.maxSamples) {
+		if (debugSettings.currentSample == debugSettings.maxSamples) {
 
 			string fileName = "video_" + timeStamp + "/" + to_string(sceneAnimationFrame) + ".png";
 
-			AnimateComponents(imguiWindow, camera, SSBOcomponent, meshCollection, ++sceneAnimationFrame);
+			AnimateComponents(debugSettings, camera, SSBOcomponent, meshCollection, ++sceneAnimationFrame);
 			renderImage(fileName, camera);
 
-			if (sceneAnimationFrame == (imguiWindow.totalAnimationFrames + 1)) {
+			if (sceneAnimationFrame == (debugSettings.totalAnimationFrames + 1)) {
 
 				// Reset mesh collection back to deep copy
 				for (auto mesh : meshCollection) delete mesh;
@@ -134,9 +134,9 @@ void RenderComponent::handleQueuedVideoRender(ImguiWindow& imguiWindow, Camera& 
 				if (camera.animation != nullptr) camera = cameraCopy;
 
 				sceneAnimationFrame = 0;
-				imguiWindow.drawWindow = lastDrawWindowValue;
-				imguiWindow.highlightedMesh = lastHighlightedMeshValue;
-				imguiWindow.videoRenderPhase = ImguiWindow::RenderPhase::COMPLETE;
+				debugSettings.drawWindow = lastDrawWindowValue;
+				debugSettings.highlightedMeshIndex = lastHighlightedMeshValue;
+				debugSettings.videoRenderPhase = DebugSettings::RenderPhase::COMPLETE;
 			}
 
 		}
@@ -144,24 +144,24 @@ void RenderComponent::handleQueuedVideoRender(ImguiWindow& imguiWindow, Camera& 
 
 }
 
-void RenderComponent::handleQueuedImageRender(ImguiWindow& imguiWindow, Camera& camera) {
+void RenderComponent::handleQueuedImageRender(DebugSettings& debugSettings, Camera& camera) {
 
 	static int lastHighlightedMeshValue;
 	static bool lastDrawWindowValue;
 
-	if (imguiWindow.imageRenderPhase == ImguiWindow::RenderPhase::WAITING) {
+	if (debugSettings.imageRenderPhase == DebugSettings::RenderPhase::WAITING) {
 
-		lastDrawWindowValue = imguiWindow.drawWindow;
-		lastHighlightedMeshValue = imguiWindow.highlightedMesh;
+		lastDrawWindowValue = debugSettings.drawWindow;
+		lastHighlightedMeshValue = debugSettings.highlightedMeshIndex;
 
-		imguiWindow.drawWindow = false;
-		imguiWindow.highlightedMesh = -1;
-		imguiWindow.imageRenderPhase = ImguiWindow::RenderPhase::RENDERING;
+		debugSettings.drawWindow = false;
+		debugSettings.highlightedMeshIndex = -1;
+		debugSettings.imageRenderPhase = DebugSettings::RenderPhase::RENDERING;
 
 	}
-	else if (imguiWindow.imageRenderPhase == ImguiWindow::RenderPhase::RENDERING) {
+	else if (debugSettings.imageRenderPhase == DebugSettings::RenderPhase::RENDERING) {
 
-		if (imguiWindow.currentSample == imguiWindow.maxSamples) {
+		if (debugSettings.currentSample == debugSettings.maxSamples) {
 
 			auto now = chrono::system_clock::now();
 			auto local_time = chrono::current_zone()->to_local(now);
@@ -170,10 +170,10 @@ void RenderComponent::handleQueuedImageRender(ImguiWindow& imguiWindow, Camera& 
 
 			renderImage(fileName, camera);
 
-			imguiWindow.drawWindow = lastDrawWindowValue;
-			imguiWindow.highlightedMesh = lastHighlightedMeshValue;
+			debugSettings.drawWindow = lastDrawWindowValue;
+			debugSettings.highlightedMeshIndex = lastHighlightedMeshValue;
 
-			imguiWindow.imageRenderPhase = ImguiWindow::RenderPhase::COMPLETE;
+			debugSettings.imageRenderPhase = DebugSettings::RenderPhase::COMPLETE;
 
 		}
 
