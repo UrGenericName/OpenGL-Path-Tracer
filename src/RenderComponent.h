@@ -1,13 +1,14 @@
 #pragma once
 
 #include <string>
-#include "ImguiWindow.h"
+#include "DebugSettings.h"
+#include "SSBOcomponent.h"
 #include "Camera.h"
 
 class RenderComponent {
 public:
 
-	unsigned int sceneAnimationFrame = 0;
+	unsigned int animationFrame = 0;
 
 	void handleQueuedAnimationPreview(DebugSettings& debugSettings, Camera& camera, SSBOcomponent& SSBOcomponent, vector<Mesh*>& meshCollection);
 	void handleQueuedVideoRender(DebugSettings& debugSettings, Camera& camera, SSBOcomponent& SSBOcomponent, vector<Mesh*>& meshCollection);

@@ -3,6 +3,12 @@
 #include "RenderComponent.h"
 
 #include "SSBOcomponent.h"
+#include "Mesh.h"
+#include <vector>
+#include <backends/imgui_impl_opengl3.h>
+#include <backends/imgui_impl_glfw.h>
+#include <filesystem>
+#include "Animation.h"
 
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb_image_write.h"
@@ -47,16 +53,16 @@ void RenderComponent::handleQueuedAnimationPreview(DebugSettings& debugSettings,
 		}
 
 		// First frame
-		AnimateComponents(debugSettings, camera, SSBOcomponent, meshCollection, sceneAnimationFrame);
+		AnimateComponents(debugSettings, camera, SSBOcomponent, meshCollection, animationFrame);
 
 		debugSettings.previewAnimationPhase = DebugSettings::RenderPhase::RENDERING;
 
 	}
 	else if (debugSettings.previewAnimationPhase == DebugSettings::RenderPhase::RENDERING) {
 
-		AnimateComponents(debugSettings, camera, SSBOcomponent, meshCollection, ++sceneAnimationFrame);
+		AnimateComponents(debugSettings, camera, SSBOcomponent, meshCollection, ++animationFrame);
 
-		if (sceneAnimationFrame == debugSettings.totalAnimationFrames) {
+		if (animationFrame == debugSettings.totalAnimationFrames) {
 
 			// Reset mesh collection back to deep copy
 			for (auto mesh : meshCollection) delete mesh;
@@ -68,7 +74,7 @@ void RenderComponent::handleQueuedAnimationPreview(DebugSettings& debugSettings,
 
 			if (camera.animation != nullptr) camera = cameraCopy;
 
-			sceneAnimationFrame = 0;
+			animationFrame = 0;
 			debugSettings.previewAnimationPhase = DebugSettings::RenderPhase::COMPLETE;
 		}
 
@@ -101,13 +107,13 @@ void RenderComponent::handleQueuedVideoRender(DebugSettings& debugSettings, Came
 		timeStamp = format("{:%Y-%m-%d_%H-%M-%S}", local_time);
 
 		filesystem::create_directories("output/video_" + timeStamp + "/");
-		string fileName = "video_" + timeStamp + "/" + to_string(sceneAnimationFrame) + ".png";
+		string fileName = "video_" + timeStamp + "/" + to_string(animationFrame) + ".png";
 
 		debugSettings.drawWindow = false;
 		debugSettings.highlightedMeshIndex = -1;
 
 		// First frame
-		AnimateComponents(debugSettings, camera, SSBOcomponent, meshCollection, sceneAnimationFrame);
+		AnimateComponents(debugSettings, camera, SSBOcomponent, meshCollection, animationFrame);
 
 		debugSettings.videoRenderPhase = DebugSettings::RenderPhase::RENDERING;
 
@@ -116,12 +122,12 @@ void RenderComponent::handleQueuedVideoRender(DebugSettings& debugSettings, Came
 
 		if (debugSettings.currentSample == debugSettings.maxSamples) {
 
-			string fileName = "video_" + timeStamp + "/" + to_string(sceneAnimationFrame) + ".png";
+			string fileName = "video_" + timeStamp + "/" + to_string(animationFrame) + ".png";
 
-			AnimateComponents(debugSettings, camera, SSBOcomponent, meshCollection, ++sceneAnimationFrame);
+			AnimateComponents(debugSettings, camera, SSBOcomponent, meshCollection, ++animationFrame);
 			renderImage(fileName, camera);
 
-			if (sceneAnimationFrame == (debugSettings.totalAnimationFrames + 1)) {
+			if (animationFrame == (debugSettings.totalAnimationFrames + 1)) {
 
 				// Reset mesh collection back to deep copy
 				for (auto mesh : meshCollection) delete mesh;
@@ -133,7 +139,7 @@ void RenderComponent::handleQueuedVideoRender(DebugSettings& debugSettings, Came
 
 				if (camera.animation != nullptr) camera = cameraCopy;
 
-				sceneAnimationFrame = 0;
+				animationFrame = 0;
 				debugSettings.drawWindow = lastDrawWindowValue;
 				debugSettings.highlightedMeshIndex = lastHighlightedMeshValue;
 				debugSettings.videoRenderPhase = DebugSettings::RenderPhase::COMPLETE;

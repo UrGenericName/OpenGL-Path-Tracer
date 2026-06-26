@@ -93,7 +93,7 @@
     <ClCompile Include="imgui\backends\imgui_impl_opengl3.cpp">
       <Filter>imgui\backends</Filter>
     </ClCompile>
-    <ClCompile Include="src\ImguiWindow.cpp">
+    <ClCompile Include="src\DebugWindow.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\FBO.cpp">
@@ -103,6 +103,18 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\SSBOcomponent.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\RenderComponent.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\RenderComponent.h">
+      <Filter>Header Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ShaderPipelineComponent.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Animation.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -210,7 +222,7 @@
     <ClInclude Include="imgui\backends\imgui_impl_opengl3_loader.h">
       <Filter>imgui\backends</Filter>
     </ClInclude>
-    <ClInclude Include="src\ImguiWindow.h">
+    <ClInclude Include="src\DebugWindow.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\FBO.h">
@@ -223,6 +235,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\SSBOcomponent.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\DebugSettings.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ShaderPipelineComponent.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

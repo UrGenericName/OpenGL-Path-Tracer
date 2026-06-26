@@ -1,6 +1,9 @@
 #pragma once
 #include <iostream>
 
+#define GLM_ENABLE_EXPERIMENTAL
+
+#include "DebugWindow.h"
 #include "Scene.h"
 
 #define WIDTH 1200
@@ -12,12 +15,11 @@ void configOpenGL(GLFWwindow* window);
 int main() {
 
 	GLFWwindow* window{ initGLFW() };
-	ImguiWindow::initImgui(window);
+	DebugWindow debugWindow{ window };
 	configOpenGL(window);
 
 
 	Camera camera(WIDTH, HEIGHT, glm::vec3(0.0f, -12.0f, 4.5f));
-
 	Scene scene(camera, 256, 256);
 	scene.link();
 
@@ -25,21 +27,15 @@ int main() {
 	{
 
 		scene.Draw(window);
+		debugWindow.drawImgui(scene);
 
 		glfwSwapBuffers(window);
-
-		// Responds to actions like window resizing, minimizing, etc
 		glfwPollEvents();
 
 	}
 
-	// Destroys the window
 	glfwDestroyWindow(window);
 	glfwTerminate();
-
-	ImGui_ImplOpenGL3_Shutdown();
-	ImGui_ImplGlfw_Shutdown();
-	ImGui::DestroyContext();
 
 	return 0;
 }

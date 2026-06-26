@@ -14,6 +14,14 @@ public:
 
 	};
 
+	enum class RenderPhase {
+
+		WAITING,
+		RENDERING,
+		COMPLETE
+
+	};
+
 	// DEBUG
 	int debugMode = static_cast<int>(DebugTypes::DISABLED);
 	bool debugLambertian = true;
@@ -38,14 +46,6 @@ public:
 	inline static char exportName[128] = "";
 	inline static char importOBJname[128] = "";
 
-	enum class RenderPhase {
-
-		WAITING,
-		RENDERING,
-		COMPLETE
-
-	};
-
 	// RENDER
 	RenderPhase imageRenderPhase = RenderPhase::COMPLETE;
 	RenderPhase videoRenderPhase = RenderPhase::COMPLETE;
@@ -54,6 +54,7 @@ public:
 
 	// WINDOW
 	bool pause = false;
+	bool usingDebugWindow = false;
 	bool drawWindow = true;
 
 };

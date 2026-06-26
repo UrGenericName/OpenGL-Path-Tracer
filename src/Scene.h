@@ -2,7 +2,6 @@
 
 #include <vector>
 #include <string>
-#include "ImguiWindow.h"
 #include "Mesh.h"
 #include "Camera.h"
 #include "SSBOcomponent.h"
@@ -17,8 +16,6 @@ public:
 
 	DebugSettings debugSettings;
 
-	friend ImguiWindow;
-
 	Camera& camera;
 
 	unsigned int textureWidth;
@@ -28,13 +25,14 @@ public:
 	glm::vec3 backgroundColor = { 0.07f, 0.13f, 0.17f };
 
 	SSBOcomponent SSBOcomponent;
-	RenderComponent RenderComponent;
+	RenderComponent renderComponent;
 	ShaderPipelineComponent shaderPipelineComponent;
 
 	Scene(Camera& i_camera, unsigned int width = 256, unsigned int height = 256);
 	Scene(Camera& i_camera, string fileName, unsigned int width = 256, unsigned int height = 256);
 	~Scene();
 
+	double getFrameTime();
 	void importScene(string fileName);
 	void exportScene(string fileName);
 	void Draw(GLFWwindow* window);
@@ -42,10 +40,9 @@ public:
 
 private:
 
-	ImguiWindow imguiWindow;
+	double frameTime;
 
 	void Inputs(GLFWwindow* window);
-
 	void setWindowTitle(GLFWwindow* window, double frameTime);
 
 };
