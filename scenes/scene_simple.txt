@@ -1,0 +1,102 @@
+// FORMAT:
+// 	 fileName
+// 	 position
+// 	 rotation
+// 	 scale
+// 	 albedo
+// 	 normal
+// 	 roughness
+// 	 metallic
+// 	 tint
+// 	 emissive
+
+{
+	models/room/white_walls.obj,
+	0.000000, 0.000000, 0.000000,
+	0.000000, 0.000000, 0.000000,
+	1.000000, 1.000000, 1.000000,
+	textures/core/default/albedo_default.png,
+	textures/core/default/normal_default.png,
+	textures/core/default/roughness_default.png,
+	textures/core/default/metallic_default.png,
+	1.000000, 1.000000, 1.000000,
+	0.000000
+},
+
+{
+	models/room/light.obj,
+	0.000000, 0.000000, 0.000000,
+	0.000000, 0.000000, 0.000000,
+	1.000000, 1.000000, 1.000000,
+	textures/core/default/albedo_default.png,
+	textures/core/default/normal_default.png,
+	textures/core/default/roughness_default.png,
+	textures/core/default/metallic_default.png,
+	1.000000, 1.000000, 1.000000,
+	10.000000
+},
+
+{
+	models/room/red_wall.obj,
+	0.000000, 0.000000, 0.000000,
+	0.000000, 0.000000, 0.000000,
+	1.000000, 1.000000, 1.000000,
+	textures/core/default/albedo_default.png,
+	textures/core/default/normal_default.png,
+	textures/core/default/roughness_default.png,
+	textures/core/default/metallic_default.png,
+	1.000000, 0.000000, 0.000000,
+	0.000000
+},
+
+{
+	models/room/green_wall.obj,
+	0.000000, 0.000000, 0.000000,
+	0.000000, 0.000000, 0.000000,
+	1.000000, 1.000000, 1.000000,
+	textures/core/default/albedo_default.png,
+	textures/core/default/normal_default.png,
+	textures/core/default/roughness_default.png,
+	textures/core/default/metallic_default.png,
+	0.000000, 1.000000, 0.000000,
+	0.000000
+},
+
+{
+	models/room/mirror.obj,
+	2.540225, 7.042081, -0.331034,
+	-0.157000, 0.000000, -0.314000,
+	1.100000, 1.000000, 1.100000,
+	textures/core/default/albedo_default.png,
+	textures/core/default/normal_default.png,
+	textures/core/default/metallic_default.png,
+	textures/core/default/metallic_default.png,
+	1.000000, 1.000000, 1.000000,
+	0.000000
+},
+
+{
+	models/room/mirror_frame.obj,
+	2.562850, 7.080301, 0.000000,
+	-0.157000, 0.000000, -0.314000,
+	1.000000, 1.000000, 1.000000,
+	textures/core/default/albedo_default.png,
+	textures/core/default/normal_default.png,
+	textures/core/default/roughness_default.png,
+	textures/core/default/metallic_default.png,
+	1.000000, 1.000000, 1.000000,
+	0.000000
+},
+
+{
+	models/cube.obj,
+	-0.030856, 3.590816, 1.293665,
+	0.000000, 0.000000, -0.314000,
+	1.300000, 1.300000, 1.300000,
+	textures/core/default/albedo_default.png,
+	textures/core/default/normal_default.png,
+	textures/core/default/roughness_default.png,
+	textures/core/default/metallic_default.png,
+	1.000000, 0.800000, 0.333000,
+	0.000000
+}
