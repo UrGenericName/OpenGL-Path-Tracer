@@ -81,6 +81,12 @@ void ShaderPipelineComponent::generatePathTracingUniforms(Shader& shader, Camera
 	int debugUniversalRoughnessAmountLoc = glGetUniformLocation(shader.ID, "u_debugUniversalRoughnessAmount");
 	glUniform1f(debugUniversalRoughnessAmountLoc, debugSettings.debugUniversalRoughnessAmount);
 
+	int debugUniversalMetallicLoc = glGetUniformLocation(shader.ID, "u_debugUniversalMetallic");
+	glUniform1i(debugUniversalMetallicLoc, debugSettings.debugUniversalMetallic);
+
+	int debugUniversalMetallicAmountLoc = glGetUniformLocation(shader.ID, "u_debugUniversalMetallicAmount");
+	glUniform1f(debugUniversalMetallicAmountLoc, debugSettings.debugUniversalMetallicAmount);
+
 	int maxSamplesLoc = glGetUniformLocation(shader.ID, "u_maxSamples");
 	glUniform1ui(maxSamplesLoc, debugSettings.maxSamples);
 

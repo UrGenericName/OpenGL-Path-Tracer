@@ -74,6 +74,8 @@ uniform uint u_debugMode;
 uniform bool u_debugLambertian;
 uniform bool u_debugUniversalRoughness;
 uniform float u_debugUniversalRoughnessAmount;
+uniform bool u_debugUniversalMetallic;
+uniform float u_debugUniversalMetallicAmount;
 uniform ivec2 u_debugMousePos;
 uniform bool u_debugMouseLeftClick;
 
@@ -137,21 +139,23 @@ struct HitInfo {
 bool drawDebug(uint debugMode);
 void calculate_sample(out vec4 outputColor);
 bool intersect_scene(vec3 origin, vec3 dir, out HitInfo hitInfo);
-void caluclate_normal_map_vector(in vec3 normalMap, out vec3 normalMapVector);
+void calculate_normal_map_vector(in vec3 normalMap, out vec3 normalMapVector);
 void calculate_geometric_face_normal(in int mesh, in int trig, Barycentric weights, out vec3 result);
 
-void calculate_diffuse_direction(in uint seed, in vec3 faceNormal, out vec3 reflectionDir);
-void calculate_specular_direction(in uint seed, in float roughness, in vec3 faceNormal, in vec3 incomingDir, out vec3 reflectionDir);
+void reflection_BSDF(in vec3 faceNormal, in float roughness, in float metallic, in vec3 incomingRayDir, out vec3 outgoingRayDir);
+void specular_reflection(in vec3 faceNormal, in float roughness, in vec3 incomingRayDir, out vec3 outgoingRayDir);
+void diffuse_reflection(in vec3 faceNormal, out vec3 outgoingRayDir);
+vec3 randomUnitVector();
 
-void randomize_normal(in uint seed, in float roughness, inout vec3 normal);
-void normal_space_to_world_space(in vec3 geometricFaceNormal, in vec3 normalMap, out vec3 faceNormal);
+void randomize_normal(in float roughness, inout vec3 normal);
+void normal_space_to_world_space(in vec3 geometricFaceNormal, in vec3 normalMap, out vec3 worldSpaceNormal) ;
 void calculate_world_space_tangent_bitangent(vec3 faceNormal, out vec3 tangent, out vec3 bitangent);
 bool intersect_bounding_box(vec3 orig, vec3 dir, BoundingBox box);
 bool intersect_triangle(vec3 orig, vec3 dir, vec3 vert0, vec3 vert1, vec3 vert2, out Barycentric weights, out float t);
 
 // GLOBAL VARIABLES
 const ivec2 pixelCoords = ivec2(gl_FragCoord.xy);
-const uint pixelSeed = (pixelCoords.x * 1664525u + pixelCoords.y * 1013904223u) ^ floatBitsToUint(intersectionPoint.x) ^ floatBitsToUint(texCoord.y) ^ (u_seed * 2246822519u) - u_currentSample;
+uint pixelSeed = (pixelCoords.x * 1664525u + pixelCoords.y * 1013904223u) ^ floatBitsToUint(intersectionPoint.x) ^ floatBitsToUint(texCoord.y) ^ (u_seed * 2246822519u) - (u_currentSample^2);
 const float normalMapScalingAdjustment = 255.0f / 254.0f;
 
 void main() {
@@ -249,14 +253,12 @@ void calculate_sample(out vec4 outputColor) {
 
     // FACE NORMAL CALCULATIONS
     vec3 normalMapVector;
-    caluclate_normal_map_vector(normalMap, normalMapVector);
-
+    calculate_normal_map_vector(normalMap, normalMapVector);
     normal_space_to_world_space(normalize(geometricFaceNormal), normalMapVector, hitInfo.faceNormal);
 
     // REFLECTION DIRECTION
-    vec3 incomingDir = normalize(intersectionPoint - u_camPos);
-    calculate_specular_direction(pixelSeed,roughnessMap, hitInfo.faceNormal, incomingDir, hitInfo.reflectionDir);
-    //calculate_diffuse_direction(pixelSeed, hitInfo.faceNormal, hitInfo.reflectionDir);
+    vec3 incomingRay = (intersectionPoint - u_camPos);
+    reflection_BSDF(hitInfo.faceNormal, roughnessMap, metallicMap, incomingRay, hitInfo.reflectionDir);
 
     float cosineFactor = max(0.0f, dot(hitInfo.faceNormal, hitInfo.reflectionDir));
 
@@ -350,13 +352,14 @@ bool intersect_scene(vec3 origin, vec3 dir, out HitInfo hitInfo) {
         calculate_geometric_face_normal(hitInfo.mesh, hitInfo.trig, hitInfo.weights, geometricFaceNormal);
 
         vec3 normalMapVector;
-        caluclate_normal_map_vector(hitInfo.normal, normalMapVector);
-
+        calculate_normal_map_vector(hitInfo.normal, normalMapVector);
         normal_space_to_world_space(normalize(geometricFaceNormal), normalMapVector, hitInfo.faceNormal);
 
         // REFLECTION DIRECTION
-        calculate_specular_direction(pixelSeed, hitInfo.roughness, hitInfo.faceNormal, dir, hitInfo.reflectionDir);
-        //calculate_diffuse_direction(pixelSeed, hitInfo.faceNormal, hitInfo.reflectionDir);
+        reflection_BSDF(hitInfo.faceNormal, hitInfo.roughness, hitInfo.metallic, dir, hitInfo.reflectionDir);
+
+
+        specular_reflection(hitInfo.faceNormal, hitInfo.roughness, dir, hitInfo.reflectionDir);
 
         return true;
 
@@ -368,95 +371,75 @@ bool intersect_scene(vec3 origin, vec3 dir, out HitInfo hitInfo) {
 
 }
 
-void calculate_diffuse_direction(in uint seed, in vec3 faceNormal, out vec3 reflectionDir) {
+void reflection_BSDF(in vec3 faceNormal, in float roughness, in float metallic, in vec3 incomingRayDir, out vec3 outgoingRayDir) {
+    
+        if (u_debugUniversalMetallic) metallic = u_debugUniversalMetallicAmount;
+
+        float p_specular = mix(0.04f, 1.0f, metallic);
+
+        if (randomUnitVector().z < p_specular) {
+
+            specular_reflection(faceNormal, roughness, incomingRayDir, outgoingRayDir);
+
+        } else {
+
+            diffuse_reflection(faceNormal, outgoingRayDir);
+
+        }
+}
+
+void specular_reflection(in vec3 faceNormal, in float roughness, in vec3 incomingRayDir, out vec3 outgoingRayDir) {
+    
+    if (u_debugUniversalRoughness) roughness = u_debugUniversalRoughnessAmount; 
+
+    do {
+
+        vec3 randomVector = randomUnitVector();
+        if (randomVector.z <= 0) randomVector.z = -randomVector.z; // ensure it's within the top hemisphere
+
+        randomVector = normalize(mix(vec3(0.0f, 0.0f, 1.0f), randomVector, roughness));
+
+        normal_space_to_world_space(faceNormal, randomVector, outgoingRayDir);
+
+    } while(dot(outgoingRayDir, faceNormal) <= 0.0f);
+
+}
+
+void diffuse_reflection(in vec3 faceNormal, out vec3 outgoingRayDir) {
+    
+    vec3 randomVector = randomUnitVector();
+    if (randomVector.z <= 0) randomVector.z = -randomVector.z; // ensure it's within the top hemisphere
+
+    normal_space_to_world_space(faceNormal, randomVector, outgoingRayDir);
+
+}
+
+vec3 randomUnitVector() {
+    
     ivec2 dimensions = textureSize(colorNoise, 0);
     uint width = uint(dimensions.x);
     uint height = uint(dimensions.y);
     
-    // Your exact seed indexing logic
-    seed = seed % (width * height);
+    uint seed = (pixelSeed++) % (width * height);
     int x = int(seed % width);
     int y = int(seed / width);
     
-    // Grab the RGB noise pixel
-    vec3 noisePixel = texelFetch(colorNoise, ivec2(x, y), 0).rgb;
+    vec3 randomColor = (texelFetch(colorNoise, ivec2(x, y), 0).rgb + texelFetch(colorNoise, ivec2(y, x), 0).rgb) / 2.0f;
+
+    float cosTheta = 1.0 - 2.0 * randomColor.x;
+    float sinTheta = sqrt(max(0.0, 1.0 - cosTheta * cosTheta));
     
-    float r1 = noisePixel.r; 
-    float r2 = noisePixel.g; 
-
-    // This converts the 0-1 texture range into a 360-degree circle (0 to 2PI)
-    float phi = 2.0 * 3.14159265359 * r1;
+    float phi = 2.0 * 3.14159265359 * randomColor.y;
     
-    // Standard cosine-weighted hemisphere math
-    float cosTheta = sqrt(1.0 - r2); 
-    float sinTheta = sqrt(r2);
-
-    // Build local vector
-    vec3 localRay;
-    localRay.x = cos(phi) * sinTheta;
-    localRay.y = sin(phi) * sinTheta;
-    localRay.z = cosTheta;
-
-    // Pass straight to your transformation module
-    normal_space_to_world_space(localRay, faceNormal, reflectionDir);
-}
-
-void calculate_specular_direction(in uint seed, in float roughness, in vec3 faceNormal, in vec3 incomingDir, out vec3 reflectionDir) {
-    
-    if (u_debugUniversalRoughness) roughness = u_debugUniversalRoughnessAmount;
-
-    roughness = min(roughness, 1.0f);
-
-    ivec2 dimensions = textureSize(colorNoise, 0);
-    uint width = uint(dimensions.x);
-    uint height = uint(dimensions.y);
-    
-    seed = seed % (width * height);
-    int x = int(seed % width);
-    int y = int(seed / width);
-    
-    vec3 randomNormalMapVector = texelFetch(colorNoise, ivec2(x, y), 0).rgb * normalMapScalingAdjustment;
-    randomNormalMapVector = randomNormalMapVector * 2.0 - 1.0; 
-    randomNormalMapVector = normalize(randomNormalMapVector);
-    
-    vec3 randomNormal;
-    normal_space_to_world_space(faceNormal, randomNormalMapVector, randomNormal);
-
-    if (dot(randomNormal, faceNormal) < 0.0) {
-        randomNormal = -randomNormal;
-    }
-
-    vec3 microfacetNormal = normalize(mix(faceNormal, randomNormal, roughness));
-    reflectionDir = reflect(incomingDir, microfacetNormal);
+    return vec3(
+        sinTheta * cos(phi),
+        sinTheta * sin(phi),
+        cosTheta
+    );
 
 }
 
-void randomize_normal(in uint seed, in float roughness, inout vec3 normal) {
-    
-    if (u_debugUniversalRoughness) roughness = u_debugUniversalRoughnessAmount;
-
-    roughness = min(roughness, 1.0f);
-
-    ivec2 dimensions = textureSize(colorNoise, 0);
-    uint width = uint(dimensions.x);
-    uint height = uint(dimensions.y);
-    
-    seed = seed % (width * height);
-    int x = int(seed % width);
-    int y = int(seed / width);
-    
-    vec3 randomVector = texelFetch(colorNoise, ivec2(x, y), 0).rgb * normalMapScalingAdjustment;
-    randomVector = randomVector * 2.0 - 1.0; 
-    randomVector = normalize(randomVector);
-
-    if (dot(randomVector, normal) < 0.0) {
-        randomVector = -randomVector;
-    }
-
-    normal = normalize(mix(normal, randomVector, roughness));
-}
-
-void caluclate_normal_map_vector(in vec3 normalMap, out vec3 normalMapVector) {
+void calculate_normal_map_vector(in vec3 normalMap, out vec3 normalMapVector) {
 
     normalMapVector.x = 2.0f * normalMap.r - 1.0f;
     normalMapVector.y = 2.0f * normalMap.g - 1.0f;
@@ -477,7 +460,7 @@ void calculate_geometric_face_normal(in int mesh, in int trig, in Barycentric we
 }
 
 // Transforms normal map tangents into world space vectors
-void normal_space_to_world_space(in vec3 geometricFaceNormal, in vec3 normalMap, out vec3 faceNormal) {
+void normal_space_to_world_space(in vec3 geometricFaceNormal, in vec3 normalMap, out vec3 worldSpaceNormal) {
 
     vec3 tangent;
     vec3 bitangent;
@@ -486,7 +469,7 @@ void normal_space_to_world_space(in vec3 geometricFaceNormal, in vec3 normalMap,
 
     mat3 tangentToWorldSpaceMatrix = mat3(tangent, bitangent, geometricFaceNormal);
 
-    faceNormal = normalize(tangentToWorldSpaceMatrix * normalMap);
+    worldSpaceNormal = normalize(tangentToWorldSpaceMatrix * normalMap);
 
 }
 
