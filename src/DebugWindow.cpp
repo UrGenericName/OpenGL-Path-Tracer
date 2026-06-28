@@ -759,7 +759,19 @@ void DebugWindow::drawMiscTab(Scene& scene) {
 		TableNextColumn();
 		if (Checkbox("Universal Roughness", &scene.debugSettings.debugUniversalRoughness)) scene.debugSettings.currentSample = 0;
 		TableNextColumn();
-		if (Button("Pause")) scene.debugSettings.pause = !scene.debugSettings.pause;
+
+		TableNextRow();
+
+		TableNextColumn();
+		BeginDisabled(!scene.debugSettings.debugUniversalMetallic);
+		if (SliderFloat("Metallic", &scene.debugSettings.debugUniversalMetallicAmount, 0, 1)) scene.debugSettings.currentSample = 0;
+		EndDisabled();
+
+		TableNextRow();
+
+		TableNextColumn();
+		if (Checkbox("Universal Metallic", &scene.debugSettings.debugUniversalMetallic)) scene.debugSettings.currentSample = 0;
+		TableNextColumn();
 
 
 		TableNextColumn();

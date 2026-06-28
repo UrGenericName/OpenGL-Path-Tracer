@@ -29,6 +29,8 @@ public:
 	bool debugLambertian = true;
 	bool debugUniversalRoughness = false;
 	float debugUniversalRoughnessAmount = 1.0f;
+	bool debugUniversalMetallic = false;
+	float debugUniversalMetallicAmount = 1.0f;
 
 	// PATH-TRACING
 	int maxBounces = 8;

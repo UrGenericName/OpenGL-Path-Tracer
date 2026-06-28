@@ -74,6 +74,8 @@ uniform uint u_debugMode;
 uniform bool u_debugLambertian;
 uniform bool u_debugUniversalRoughness;
 uniform float u_debugUniversalRoughnessAmount;
+uniform bool u_debugUniversalMetallic;
+uniform float u_debugUniversalMetallicAmount;
 uniform ivec2 u_debugMousePos;
 uniform bool u_debugMouseLeftClick;
 
@@ -153,7 +155,7 @@ bool intersect_triangle(vec3 orig, vec3 dir, vec3 vert0, vec3 vert1, vec3 vert2,
 
 // GLOBAL VARIABLES
 const ivec2 pixelCoords = ivec2(gl_FragCoord.xy);
-uint pixelSeed = (pixelCoords.x * 1664525u + pixelCoords.y * 1013904223u) ^ floatBitsToUint(intersectionPoint.x) ^ floatBitsToUint(texCoord.y) ^ (u_seed * 2246822519u) - u_currentSample;
+uint pixelSeed = (pixelCoords.x * 1664525u + pixelCoords.y * 1013904223u) ^ floatBitsToUint(intersectionPoint.x) ^ floatBitsToUint(texCoord.y) ^ (u_seed * 2246822519u) - (u_currentSample^2);
 const float normalMapScalingAdjustment = 255.0f / 254.0f;
 
 void main() {
@@ -371,6 +373,8 @@ bool intersect_scene(vec3 origin, vec3 dir, out HitInfo hitInfo) {
 
 void reflection_BSDF(in vec3 faceNormal, in float roughness, in float metallic, in vec3 incomingRayDir, out vec3 outgoingRayDir) {
     
+        if (u_debugUniversalMetallic) metallic = u_debugUniversalMetallicAmount;
+
         float p_specular = mix(0.04f, 1.0f, metallic);
 
         if (randomUnitVector().z < p_specular) {
@@ -420,8 +424,8 @@ vec3 randomUnitVector() {
     int x = int(seed % width);
     int y = int(seed / width);
     
-    vec3 randomColor = texelFetch(colorNoise, ivec2(x, y), 0).rgb;
-    
+    vec3 randomColor = (texelFetch(colorNoise, ivec2(x, y), 0).rgb + texelFetch(colorNoise, ivec2(y, x), 0).rgb) / 2.0f;
+
     float cosTheta = 1.0 - 2.0 * randomColor.x;
     float sinTheta = sqrt(max(0.0, 1.0 - cosTheta * cosTheta));
     
