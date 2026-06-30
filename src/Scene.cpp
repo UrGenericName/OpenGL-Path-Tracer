@@ -147,8 +147,9 @@ void Scene::Inputs(GLFWwindow* window) {
 
 			double mouseX, mouseY;
 			glfwGetCursorPos(window, &mouseX, &mouseY);
+			origPos = meshCollection[debugSettings.highlightedMeshIndex]->position;
 			origMouse = glm::vec2(mouseX, mouseY);
-
+			gizmoPointDifference = glm::vec3(0.0f);
 			gizmoFirstClick = false;
 
 			return;
@@ -303,18 +304,21 @@ void Scene::importScene(string fileName) {
 
 void Scene::exportScene(string fileName) {
 
-	// Back up file
-	auto now = chrono::system_clock::now();
-	auto local_time = chrono::current_zone()->to_local(now);
-	string timeStamp = format("{:%Y-%m-%d_%H-%M-%S}", local_time);
+    auto now = chrono::system_clock::now();
+    auto local_time = chrono::current_zone()->to_local(now);
+    string timeStamp = format("{:%Y-%m-%d_%H-%M-%S}", local_time);
 
-	filesystem::create_directories("scenes/backups/");
-	std::ofstream createDirectoryTempA("scenes/backups/" + timeStamp + "_backup_" + fileName); createDirectoryTempA.close();
-	filesystem::path destination = string("scenes/backups/" + timeStamp + "_backup_" + fileName);
+    // 2. Ensure the backup directory exists
+    filesystem::create_directories("scenes/backups/");
 
-	std::ofstream createDirectoryTempB("scenes/" + fileName); createDirectoryTempB.close();
-	filesystem::path source = string("scenes/" + fileName);
-	filesystem::copy_file(source, destination, filesystem::copy_options::overwrite_existing);
+    // 3. Define clean paths
+    filesystem::path source = "scenes/" + fileName;
+    filesystem::path destination = "scenes/backups/" + timeStamp + "_backup_" + fileName;
+
+    // 4. Copy the existing data directly
+    if (filesystem::exists(source)) {
+        filesystem::copy_file(source, destination, filesystem::copy_options::overwrite_existing);
+    }
 
 	ofstream file("scenes/" + fileName);
 

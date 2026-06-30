@@ -20,7 +20,7 @@ int main() {
 
 
 	Camera camera(WIDTH, HEIGHT, glm::vec3(0.0f, -12.0f, 4.5f));
-	Scene scene(camera, 256, 256);
+	Scene scene(camera, 4096, 4096);
 	scene.link();
 
 	while (!glfwWindowShouldClose(window))

@@ -22,7 +22,7 @@ public:
 	unsigned int textureHeight;
 
 	vector<Mesh*> meshCollection;
-	glm::vec3 backgroundColor = { 0.07f, 0.13f, 0.17f };
+	glm::vec3 backgroundColor = { 0.17f, 0.17f, 0.17f };
 
 	SSBOcomponent SSBOcomponent;
 	RenderComponent renderComponent;

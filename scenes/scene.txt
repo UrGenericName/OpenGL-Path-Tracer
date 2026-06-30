@@ -17,7 +17,7 @@
 	1.000000, 1.000000, 1.000000,
 	textures/core/default/albedo_default.png,
 	textures/core/default/normal_default.png,
-	textures/roughness_c.png,
+	textures/room/monkey_roughness.png,
 	textures/core/default/metallic_default.png,
 	1.000000, 0.800000, 0.371000,
 	0.000000
@@ -58,7 +58,7 @@
 	textures/core/default/normal_default.png,
 	textures/core/default/roughness_default.png,
 	textures/core/default/metallic_default.png,
-	1.000000, 0.000000, 0.000000,
+	1.000000, 0.345000, 0.345000,
 	0.000000
 },
 
@@ -71,13 +71,13 @@
 	textures/core/default/normal_default.png,
 	textures/core/default/roughness_default.png,
 	textures/core/default/metallic_default.png,
-	0.000000, 1.000000, 0.000000,
+	0.448000, 1.000000, 0.448000,
 	0.000000
 },
 
 {
 	models/room/mirror.obj,
-	2.540225, 7.042081, -0.331034,
+	2.540225, 7.011277, -0.331034,
 	-0.157000, 0.000000, -0.314000,
 	1.100000, 1.000000, 1.100000,
 	textures/core/default/albedo_default.png,
@@ -96,6 +96,32 @@
 	textures/core/default/albedo_default.png,
 	textures/core/default/normal_default.png,
 	textures/core/default/roughness_default.png,
+	textures/core/default/metallic_default.png,
+	0.269000, 0.269000, 0.290000,
+	0.000000
+},
+
+{
+	models/room/mirror_frame.obj,
+	-3.650357, 3.015195, 0.000000,
+	0.000000, 0.000000, 1.571000,
+	1.000000, 1.000000, 1.000000,
+	textures/core/default/albedo_default.png,
+	textures/core/default/normal_default.png,
+	textures/core/default/roughness_default.png,
+	textures/core/default/metallic_default.png,
+	0.276000, 0.276000, 0.276000,
+	0.000000
+},
+
+{
+	models/room/mirror.obj,
+	-3.652764, 3.107824, -0.349416,
+	0.000000, 0.000000, 1.570000,
+	1.100000, 1.100000, 1.100000,
+	textures/core/default/albedo_default.png,
+	textures/core/default/normal_default.png,
+	textures/core/default/metallic_default.png,
 	textures/core/default/metallic_default.png,
 	1.000000, 1.000000, 1.000000,
 	0.000000

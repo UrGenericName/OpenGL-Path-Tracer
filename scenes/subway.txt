@@ -11,40 +11,14 @@
 // 	 emissive
 
 {
-	models/subway/left_wall.obj,
+	models/subway/floor.obj,
 	0.000000, 0.000000, 0.000000,
 	0.000000, 0.000000, 0.000000,
 	1.000000, 1.000000, 1.000000,
-	textures/subway/old_ceramic_tile/Old_Ceramic_Tiles_vhqjefn_1K_BaseColor.png,
-	textures/subway/old_ceramic_tile/Old_Ceramic_Tiles_vhqjefn_1K_Normal.png,
-	textures/subway/old_ceramic_tile/Old_Ceramic_Tiles_vhqjefn_1K_Roughness.png,
-	textures/subway/old_ceramic_tile/Old_Ceramic_Tiles_vhqjefn_1K_Roughness.png,
-	1.000000, 1.000000, 1.000000,
-	0.000000
-},
-
-{
-	models/subway/stairs.obj,
-	0.000000, 0.000000, 0.000000,
-	0.000000, 0.000000, 0.000000,
-	1.000000, 1.000000, 1.000000,
-	textures/subway/old_ceramic_tile/Old_Ceramic_Tiles_vhqjefn_1K_BaseColor.png,
-	textures/subway/old_ceramic_tile/Old_Ceramic_Tiles_vhqjefn_1K_Normal.png,
-	textures/subway/old_ceramic_tile/Old_Ceramic_Tiles_vhqjefn_1K_Roughness.png,
-	textures/subway/old_ceramic_tile/Old_Ceramic_Tiles_vhqjefn_1K_Roughness.png,
-	1.000000, 1.000000, 1.000000,
-	0.000000
-},
-
-{
-	models/subway/right_wall.obj,
-	0.000000, 0.000000, 0.000000,
-	0.000000, 0.000000, 0.000000,
-	1.000000, 1.000000, 1.000000,
-	textures/subway/old_ceramic_tile/Old_Ceramic_Tiles_vhqjefn_1K_BaseColor.png,
-	textures/subway/old_ceramic_tile/Old_Ceramic_Tiles_vhqjefn_1K_Normal.png,
-	textures/subway/old_ceramic_tile/Old_Ceramic_Tiles_vhqjefn_1K_Roughness.png,
-	textures/subway/old_ceramic_tile/Old_Ceramic_Tiles_vhqjefn_1K_Roughness.png,
+	textures/subway/grey_concrete_tiles/Grey_Concrete_Tiles_smdmktg_4K_BaseColor.jpg,
+	textures/subway/grey_concrete_tiles/Grey_Concrete_Tiles_smdmktg_4K_Normal.jpg,
+	textures/subway/grey_concrete_tiles/Grey_Concrete_Tiles_smdmktg_4K_Roughness.jpg,
+	textures/subway/grey_concrete_tiles/Grey_Concrete_Tiles_smdmktg_4K_Specular.jpg,
 	1.000000, 1.000000, 1.000000,
 	0.000000
 },
@@ -54,23 +28,62 @@
 	0.000000, 0.000000, 0.000000,
 	0.000000, 0.000000, 0.000000,
 	1.000000, 1.000000, 1.000000,
-	textures/subway/old_ceramic_tile/Old_Ceramic_Tiles_vhqjefn_1K_BaseColor.png,
-	textures/subway/old_ceramic_tile/Old_Ceramic_Tiles_vhqjefn_1K_Normal.png,
-	textures/subway/old_ceramic_tile/Old_Ceramic_Tiles_vhqjefn_1K_Roughness.png,
-	textures/subway/old_ceramic_tile/Old_Ceramic_Tiles_vhqjefn_1K_Roughness.png,
+	textures/core/default/albedo_default.png,
+	textures/core/default/normal_default.png,
+	textures/core/default/roughness_default.png,
+	textures/core/default/metallic_default.png,
 	1.000000, 1.000000, 1.000000,
 	0.000000
 },
 
 {
-	models/subway/light.obj,
+	models/subway/grey_concrete_tiles.obj,
 	0.000000, 0.000000, 0.000000,
 	0.000000, 0.000000, 0.000000,
 	1.000000, 1.000000, 1.000000,
-	textures/subway/old_ceramic_tile/Old_Ceramic_Tiles_vhqjefn_1K_BaseColor.png,
-	textures/subway/old_ceramic_tile/Old_Ceramic_Tiles_vhqjefn_1K_Normal.png,
-	textures/subway/old_ceramic_tile/Old_Ceramic_Tiles_vhqjefn_1K_Roughness.png,
-	textures/subway/old_ceramic_tile/Old_Ceramic_Tiles_vhqjefn_1K_Roughness.png,
+	textures/subway/old_ceramic_tile/Old_Ceramic_Tiles_vhqjefn_4K_BaseColor.jpg,
+	textures/subway/old_ceramic_tile/Old_Ceramic_Tiles_vhqjefn_4K_Normal.jpg,
+	textures/subway/old_ceramic_tile/Old_Ceramic_Tiles_vhqjefn_4K_Roughness.jpg,
+	textures/subway/old_ceramic_tile/Old_Ceramic_Tiles_vhqjefn_4K_Specular.jpg,
 	1.000000, 1.000000, 1.000000,
-	370.967987
+	0.000000
+},
+
+{
+	models/room/light.obj,
+	4.921180, -7.066862, -3.153678,
+	0.000000, 0.000000, 0.000000,
+	2.000000, 1.000000, 1.000000,
+	textures/core/default/albedo_default.png,
+	textures/core/default/normal_default.png,
+	textures/core/default/roughness_default.png,
+	textures/core/default/metallic_default.png,
+	1.000000, 1.000000, 1.000000,
+	3.448000
+},
+
+{
+	models/cube.obj,
+	-3.698379, -1.057097, 4.951791,
+	0.000000, 0.000000, 0.000000,
+	1.000000, 1.000000, 1.000000,
+	textures/core/default/albedo_default.png,
+	textures/core/default/normal_default.png,
+	textures/core/default/roughness_default.png,
+	textures/core/default/metallic_default.png,
+	0.965000, 0.965000, 1.000000,
+	20.688999
+},
+
+{
+	models/cube.obj,
+	-2.653894, 3.677989, 4.150704,
+	0.000000, 0.000000, 0.000000,
+	1.000000, 1.000000, 1.000000,
+	textures/core/default/albedo_default.png,
+	textures/core/default/normal_default.png,
+	textures/core/default/roughness_default.png,
+	textures/core/default/metallic_default.png,
+	1.000000, 1.000000, 1.000000,
+	31.034000
 }

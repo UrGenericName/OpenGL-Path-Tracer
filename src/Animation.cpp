@@ -2,15 +2,29 @@
 
 #include "Animation.h"
 
+#include <glm/gtc/matrix_transform.hpp>
+
 void Animation::cameraSpin(Camera& cam, unsigned int currentFrame) {
 
-	cam.Position.x += 0.05;
+	static glm::vec3 initialPosition;
+	if (currentFrame == 0) {
+		initialPosition = glm::vec3(0.0f, -10.0f, 0.0f);
+	}
+	float angleDegrees = static_cast<float>(currentFrame) * (360 / 60);
+	float angleRadians = glm::radians(angleDegrees);
+
+	glm::mat4 modelMatrix = glm::mat4(1.0f);
+	modelMatrix = glm::rotate(modelMatrix, angleRadians, glm::vec3(0.0f, 0.0f, 1.0f));
+
+	cam.Position = glm::vec3(modelMatrix * glm::vec4(initialPosition, 1.0f));
+
+	cam.Orientation = -cam.Position;
 
 }
 
 void Animation::meshSpin(Mesh& mesh, unsigned int currentFrame) {
 
-	mesh.rotation.z += (3.14159265 * 2) / 60;
+	mesh.rotation.z += (3.14159265 * 2) / 120;
 
 }
 

@@ -43,7 +43,7 @@ void RenderComponent::AnimateComponents(DebugSettings& debugSettings, Camera& ca
 void RenderComponent::handleQueuedAnimationPreview(DebugSettings& debugSettings, Camera& camera, SSBOcomponent& SSBOcomponent, vector<Mesh*>& meshCollection) {
 
 	static vector<Mesh*> meshCollectionDeepCopy;
-	static Camera cameraCopy(camera);
+	static Camera* cameraCopy;
 
 	if (debugSettings.previewAnimationPhase == DebugSettings::RenderPhase::WAITING) {
 
@@ -51,6 +51,8 @@ void RenderComponent::handleQueuedAnimationPreview(DebugSettings& debugSettings,
 		for (auto mesh : meshCollection) {
 			meshCollectionDeepCopy.push_back(new Mesh(*mesh));
 		}
+
+		cameraCopy = new Camera(camera);
 
 		// First frame
 		AnimateComponents(debugSettings, camera, SSBOcomponent, meshCollection, animationFrame);
@@ -72,7 +74,8 @@ void RenderComponent::handleQueuedAnimationPreview(DebugSettings& debugSettings,
 			SSBOcomponent.generateGlobalVertices(meshCollection); SSBOcomponent.updateVertexSSBO();
 			SSBOcomponent.generateGlobalIndices(meshCollection); SSBOcomponent.updateIndicesSSBO();
 
-			if (camera.animation != nullptr) camera = cameraCopy;
+			if (camera.animation != nullptr) camera = *cameraCopy;
+			delete cameraCopy;
 
 			animationFrame = 0;
 			debugSettings.previewAnimationPhase = DebugSettings::RenderPhase::COMPLETE;
@@ -90,7 +93,7 @@ void RenderComponent::handleQueuedVideoRender(DebugSettings& debugSettings, Came
 	static string timeStamp;
 
 	static vector<Mesh*> meshCollectionDeepCopy;
-	static Camera cameraCopy(camera);
+	static Camera* cameraCopy;
 
 	if (debugSettings.videoRenderPhase == DebugSettings::RenderPhase::WAITING) {
 
@@ -98,6 +101,8 @@ void RenderComponent::handleQueuedVideoRender(DebugSettings& debugSettings, Came
 		for (auto mesh : meshCollection) {
 			meshCollectionDeepCopy.push_back(new Mesh(*mesh));
 		}
+
+		cameraCopy = new Camera(camera);
 
 		lastDrawWindowValue = debugSettings.drawWindow;
 		lastHighlightedMeshValue = debugSettings.highlightedMeshIndex;
@@ -137,7 +142,8 @@ void RenderComponent::handleQueuedVideoRender(DebugSettings& debugSettings, Came
 				SSBOcomponent.generateGlobalVertices(meshCollection); SSBOcomponent.updateVertexSSBO();
 				SSBOcomponent.generateGlobalIndices(meshCollection); SSBOcomponent.updateIndicesSSBO();
 
-				if (camera.animation != nullptr) camera = cameraCopy;
+				if (camera.animation != nullptr) camera = *cameraCopy;
+				delete cameraCopy;
 
 				animationFrame = 0;
 				debugSettings.drawWindow = lastDrawWindowValue;

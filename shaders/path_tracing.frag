@@ -147,6 +147,8 @@ void specular_reflection(in vec3 faceNormal, in float roughness, in vec3 incomin
 void diffuse_reflection(in vec3 faceNormal, out vec3 outgoingRayDir);
 vec3 randomUnitVector();
 
+vec2 getRandomUV();
+
 void randomize_normal(in float roughness, inout vec3 normal);
 void normal_space_to_world_space(in vec3 geometricFaceNormal, in vec3 normalMap, out vec3 worldSpaceNormal) ;
 void calculate_world_space_tangent_bitangent(vec3 faceNormal, out vec3 tangent, out vec3 bitangent);
@@ -281,7 +283,7 @@ void calculate_sample(out vec4 outputColor) {
             }
 
         } else {
-            outputColor.xyz *= vec3(0.07f, 0.13f, 0.17f);
+            outputColor.xyz *= u_backgroundColor;
             break;
         }
     }
@@ -358,9 +360,6 @@ bool intersect_scene(vec3 origin, vec3 dir, out HitInfo hitInfo) {
         // REFLECTION DIRECTION
         reflection_BSDF(hitInfo.faceNormal, hitInfo.roughness, hitInfo.metallic, dir, hitInfo.reflectionDir);
 
-
-        specular_reflection(hitInfo.faceNormal, hitInfo.roughness, dir, hitInfo.reflectionDir);
-
         return true;
 
     } else {
@@ -372,45 +371,77 @@ bool intersect_scene(vec3 origin, vec3 dir, out HitInfo hitInfo) {
 }
 
 void reflection_BSDF(in vec3 faceNormal, in float roughness, in float metallic, in vec3 incomingRayDir, out vec3 outgoingRayDir) {
-    
-        if (u_debugUniversalMetallic) metallic = u_debugUniversalMetallicAmount;
 
-        float p_specular = mix(0.04f, 1.0f, metallic);
-
-        if (randomUnitVector().z < p_specular) {
-
-            specular_reflection(faceNormal, roughness, incomingRayDir, outgoingRayDir);
-
-        } else {
-
-            diffuse_reflection(faceNormal, outgoingRayDir);
-
-        }
-}
-
-void specular_reflection(in vec3 faceNormal, in float roughness, in vec3 incomingRayDir, out vec3 outgoingRayDir) {
-    
     if (u_debugUniversalRoughness) roughness = u_debugUniversalRoughnessAmount; 
+    if (u_debugUniversalMetallic) metallic = u_debugUniversalMetallicAmount;
 
-    do {
 
-        vec3 randomVector = randomUnitVector();
-        if (randomVector.z <= 0) randomVector.z = -randomVector.z; // ensure it's within the top hemisphere
-
-        randomVector = normalize(mix(vec3(0.0f, 0.0f, 1.0f), randomVector, roughness));
-
-        normal_space_to_world_space(faceNormal, randomVector, outgoingRayDir);
-
-    } while(dot(outgoingRayDir, faceNormal) <= 0.0f);
-
+    vec2 randomUV = getRandomUV();
+    vec3 V = -normalize(incomingRayDir); 
+    
+    float safeRoughness = max(roughness, 0.001);
+    float alpha = safeRoughness * safeRoughness;
+    
+    // 1. --- SAMPLE MICROSURFACE NORMAL (H) ---
+    float phi = 2.0 * 3.14159265359 * randomUV.x;
+    float cosThetaSq = (1.0 - randomUV.y) / (1.0 + (alpha * alpha - 1.0) * randomUV.y);
+    float cosTheta = sqrt(cosThetaSq);
+    float sinTheta = sqrt(max(0.0, 1.0 - cosThetaSq));
+    
+    vec3 localH = vec3(sinTheta * cos(phi), sinTheta * sin(phi), cosTheta);
+    vec3 worldH;
+    normal_space_to_world_space(faceNormal, localH, worldH);
+    
+    // 2. --- GENERATE BOTH POTENTIAL PATHS UP FRONT ---
+    vec3 specularDir = reflect(-V, worldH);
+    
+    // Diffuse path
+    float phiDiffuse = 2.0 * 3.14159265359 * randomUV.x;
+    float cosThetaDiffuse = sqrt(randomUV.y);
+    float sinThetaDiffuse = sqrt(max(0.0, 1.0 - cosThetaDiffuse * cosThetaDiffuse));
+    vec3 localDiffuseDir = vec3(sinThetaDiffuse * cos(phiDiffuse), sinThetaDiffuse * sin(phiDiffuse), cosThetaDiffuse);
+    vec3 diffuseDir;
+    normal_space_to_world_space(faceNormal, localDiffuseDir, diffuseDir);
+    
+    // 3. --- FIX THE GEOMETRY GUARD ---
+    // If the rough specular ray points into the surface, fall back to the diffuse direction 
+    // instead of a perfect mirror. This keeps the surface looking completely matte/rough.
+    if (dot(specularDir, faceNormal) <= 0.0) {
+        specularDir = diffuseDir;
+    }
+    
+    // 4. --- DECIDE COIN FLIP (FRESNEL) ---
+    vec3 F0 = mix(vec3(0.04), vec3(1.0), metallic); 
+    float vdoth = max(dot(V, worldH), 0.0);
+    vec3 F = F0 + (vec3(1.0) - F0) * pow(1.0 - vdoth, 5.0);
+    float reflectionProbability = max(F.x, max(F.y, F.z));
+    
+    float pathRoll = getRandomUV().x;
+    
+    if (pathRoll < reflectionProbability) {
+        outgoingRayDir = specularDir;
+    } else {
+        // Linear blend for smooth dielectrics at roughness 0
+        outgoingRayDir = mix(diffuseDir, reflect(-V, faceNormal), 1.0 - roughness);
+    }
+    
+    outgoingRayDir = normalize(outgoingRayDir);
 }
 
-void diffuse_reflection(in vec3 faceNormal, out vec3 outgoingRayDir) {
-    
-    vec3 randomVector = randomUnitVector();
-    if (randomVector.z <= 0) randomVector.z = -randomVector.z; // ensure it's within the top hemisphere
 
-    normal_space_to_world_space(faceNormal, randomVector, outgoingRayDir);
+vec2 getRandomUV() {
+    
+    ivec2 dimensions = textureSize(colorNoise, 0);
+    uint width = uint(dimensions.x);
+    uint height = uint(dimensions.y);
+    
+    uint seed = (pixelSeed++) % (width * height);
+    int x = int(seed % width);
+    int y = int(seed / width);
+    
+    vec3 randomColor = (texelFetch(colorNoise, ivec2(x, y), 0).rgb + texelFetch(colorNoise, ivec2(y, x), 0).rgb) / 2.0f;
+
+    return randomColor.xy;
 
 }
 

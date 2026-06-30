@@ -33,7 +33,7 @@
 	textures/core/default/roughness_default.png,
 	textures/core/default/metallic_default.png,
 	1.000000, 1.000000, 1.000000,
-	10.000000
+	70.975998
 },
 
 {
@@ -45,7 +45,7 @@
 	textures/core/default/normal_default.png,
 	textures/core/default/roughness_default.png,
 	textures/core/default/metallic_default.png,
-	1.000000, 0.000000, 0.000000,
+	0.500000, 0.110000, 0.109000,
 	0.000000
 },
 
@@ -58,7 +58,7 @@
 	textures/core/default/normal_default.png,
 	textures/core/default/roughness_default.png,
 	textures/core/default/metallic_default.png,
-	0.000000, 1.000000, 0.000000,
+	0.256000, 0.463000, 0.744000,
 	0.000000
 },
 

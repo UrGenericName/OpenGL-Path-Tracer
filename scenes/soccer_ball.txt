@@ -1,0 +1,102 @@
+// FORMAT:
+// 	 fileName
+// 	 position
+// 	 rotation
+// 	 scale
+// 	 albedo
+// 	 normal
+// 	 roughness
+// 	 metallic
+// 	 tint
+// 	 emissive
+
+{
+	models/car_showroom/light_bottom.obj,
+	0.000000, 0.000000, -10.847077,
+	3.142000, 0.000000, 0.000000,
+	1.000000, 1.000000, 1.000000,
+	textures/core/default/albedo_default.png,
+	textures/core/default/normal_default.png,
+	textures/core/default/roughness_default.png,
+	textures/core/default/metallic_default.png,
+	0.260000, 0.260000, 0.260000,
+	0.000000
+},
+
+{
+	models/car_showroom/light_top.obj,
+	0.000000, 0.000000, -50.000000,
+	0.000000, 0.000000, 0.000000,
+	1.000000, 1.000000, 1.000000,
+	textures/core/default/albedo_default.png,
+	textures/core/default/normal_default.png,
+	textures/core/default/roughness_default.png,
+	textures/core/default/metallic_default.png,
+	0.940000, 0.940000, 1.000000,
+	6.000000
+},
+
+{
+	models/car_showroom/light_right.obj,
+	0.000000, 0.000000, -50.000000,
+	0.000000, 0.000000, 0.000000,
+	1.000000, 1.000000, 1.000000,
+	textures/core/default/albedo_default.png,
+	textures/core/default/normal_default.png,
+	textures/core/default/roughness_default.png,
+	textures/core/default/metallic_default.png,
+	0.491000, 0.420000, 0.418000,
+	2.364000
+},
+
+{
+	models/car_showroom/light_left.obj,
+	0.000000, 0.000000, -50.000000,
+	0.000000, 0.000000, 0.000000,
+	1.000000, 1.000000, 1.000000,
+	textures/core/default/albedo_default.png,
+	textures/core/default/normal_default.png,
+	textures/core/default/roughness_default.png,
+	textures/core/default/metallic_default.png,
+	1.000000, 0.888000, 0.806000,
+	6.000000
+},
+
+{
+	models/car_showroom/light_back.obj,
+	0.000000, 0.000000, -50.000000,
+	0.000000, 0.000000, 0.000000,
+	1.000000, 1.000000, 1.000000,
+	textures/core/default/albedo_default.png,
+	textures/core/default/normal_default.png,
+	textures/core/default/roughness_default.png,
+	textures/core/default/metallic_default.png,
+	0.420000, 0.420000, 0.545000,
+	2.774000
+},
+
+{
+	models/car_showroom/light_front.obj,
+	0.000000, 0.000000, -50.000000,
+	0.000000, 0.000000, 0.000000,
+	1.000000, 1.000000, 1.000000,
+	textures/core/default/albedo_default.png,
+	textures/core/default/normal_default.png,
+	textures/core/default/roughness_default.png,
+	textures/core/default/metallic_default.png,
+	1.000000, 0.818000, 0.673000,
+	6.000000
+},
+
+{
+	models/soccer_ball/soccer_ball.obj,
+	0.000000, 0.000000, 0.000000,
+	0.000000, 0.000000, 0.000000,
+	50.000000, 50.000000, 50.000000,
+	textures/soccer_ball/Worn_Football_vlkjadr_High_4K_Albedo.png,
+	textures/soccer_ball/Worn_Football_vlkjadr_High_4K_Normal.png,
+	textures/soccer_ball/Worn_Football_vlkjadr_High_4K_Roughness.png,
+	textures/soccer_ball/Worn_Football_vlkjadr_High_4K_Metallic.png,
+	1.000000, 1.000000, 1.000000,
+	0.000000
+}

@@ -47,6 +47,7 @@ Mesh::Mesh(const Mesh& other) {
 
 	position = other.position;
 	rotation = other.rotation;
+	scale = other.scale;
 	emissive = other.emissive;
 
 	animation = other.animation;

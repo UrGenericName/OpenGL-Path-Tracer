@@ -317,7 +317,7 @@ void DebugWindow::drawCameraSettingsTab(Scene& scene) {
 		TableNextColumn();
 		if (SliderFloat("Near Plane", &(scene.camera.nearPlane), 0.0f, scene.camera.farPlane)) scene.debugSettings.currentSample = 0;
 		TableNextColumn();
-		if (SliderFloat("Far Plane", &(scene.camera.farPlane), scene.camera.nearPlane, 10000.0f)) scene.debugSettings.currentSample = 0;
+		if (SliderFloat("Far Plane", &(scene.camera.farPlane), scene.camera.nearPlane, 1000.0f)) scene.debugSettings.currentSample = 0;
 
 		EndTable();
 	}
@@ -541,7 +541,7 @@ void DebugWindow::drawMeshSettingsTab(Scene& scene) {
 			TableNextColumn();
 			Text("Emission");
 			TableNextColumn();
-			if (SliderFloat("##emission", &(highlightedMesh->emissive), 0.0f, 500.0f)) {
+			if (SliderFloat("##emission", &(highlightedMesh->emissive), 0.0f, 200.0f)) {
 				scene.debugSettings.currentSample = 0;
 				scene.SSBOcomponent.generateMeshHeader(scene.meshCollection);
 				scene.SSBOcomponent.updateMeshHeaderSSBO();
@@ -638,7 +638,7 @@ void DebugWindow::drawMeshMaterialsTab(Scene& scene) {
 			bool isImportValid;
 
 			filePath = string(scene.debugSettings.albedo);
-			isImportValid = (std::filesystem::exists(filePath) && filePath.extension().string() == ".png");
+			isImportValid = (std::filesystem::exists(filePath) && (filePath.extension().string() == ".png" || filePath.extension().string() == ".jpg"));
 			PushStyleColor(ImGuiCol_FrameBg, (isImportValid ? validPathColor : invalidPathColor));
 			PushItemWidth(-1.0f);
 			InputTextWithHint("##importAlbedo", DEFAULT_ALBEDO, scene.debugSettings.albedo, IM_ARRAYSIZE(scene.debugSettings.albedo));
@@ -662,7 +662,7 @@ void DebugWindow::drawMeshMaterialsTab(Scene& scene) {
 			TableNextColumn();
 
 			filePath = string(scene.debugSettings.normal);
-			isImportValid = (std::filesystem::exists(filePath) && filePath.extension().string() == ".png");
+			isImportValid = (std::filesystem::exists(filePath) && (filePath.extension().string() == ".png" || filePath.extension().string() == ".jpg"));
 			PushStyleColor(ImGuiCol_FrameBg, (isImportValid ? validPathColor : invalidPathColor));
 			PushItemWidth(-1.0f);
 			InputTextWithHint("##importNormal", DEFAULT_NORMAL, scene.debugSettings.normal, IM_ARRAYSIZE(scene.debugSettings.normal));
@@ -686,7 +686,7 @@ void DebugWindow::drawMeshMaterialsTab(Scene& scene) {
 			TableNextColumn();
 
 			filePath = string(scene.debugSettings.roughness);
-			isImportValid = (std::filesystem::exists(filePath) && filePath.extension().string() == ".png");
+			isImportValid = (std::filesystem::exists(filePath) && (filePath.extension().string() == ".png" || filePath.extension().string() == ".jpg"));
 			PushStyleColor(ImGuiCol_FrameBg, (isImportValid ? validPathColor : invalidPathColor));
 			PushItemWidth(-1.0f);
 			InputTextWithHint("##importRoughness", DEFAULT_ROUGHNESS, scene.debugSettings.roughness, IM_ARRAYSIZE(scene.debugSettings.roughness));
@@ -710,7 +710,7 @@ void DebugWindow::drawMeshMaterialsTab(Scene& scene) {
 			TableNextColumn();
 
 			filePath = string(scene.debugSettings.metallic);
-			isImportValid = (std::filesystem::exists(filePath) && filePath.extension().string() == ".png");
+			isImportValid = (std::filesystem::exists(filePath) && (filePath.extension().string() == ".png" || filePath.extension().string() == ".jpg"));
 			PushStyleColor(ImGuiCol_FrameBg, (isImportValid ? validPathColor : invalidPathColor));
 			PushItemWidth(-1.0f);
 			InputTextWithHint("##importMetallic", DEFAULT_METALLIC, scene.debugSettings.metallic, IM_ARRAYSIZE(scene.debugSettings.metallic));
