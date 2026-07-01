@@ -1,3 +1,7 @@
+<h1>OpenGL PBR Path-Tracing Engine</h1>
+
+<img width="1200" height="800" alt="output_2026-06-30_19-22-03 5584778" src="https://github.com/user-attachments/assets/42e6005e-45df-40a3-893b-235a7429dd2b" />
+
 Over the past month I've been hard at work building a PBR Path-Tracing Engine developed in OpenGL.  This project served as an opportunity to finally delve head first into the intimidating prospect of learning an graphics API for the first time, which has been quite the challenge yet deeply rewarding learning many of the technical fundamentals of 3D graphics.
 
 The primary objective for this project was to build a reasonably flexible engine that enables the creation, manipulation, and rendering (image or video) of scenes with relative ease, utilizing standardized pipelines and conventions such as PBR materials.  At the end of the project I wanted a user to be able to build and render scenes, from scratch, without needing to interface with any of the underlying C++ code in the process.  This involved implementing quality of life features, such as a scene importer/exporter, dedicated editor window, translation gizmo, and model importer.  While there are still issues that should ideally be ironed out at some-point, such as the OBJ importer not having a native triangulation solution, a handful of unresolved crashes, improving overall performance—in general this engine successfully fulfills this core objective.
