@@ -22,6 +22,15 @@ void Animation::cameraSpin(Camera& cam, unsigned int currentFrame) {
 
 }
 
+void Animation::ballMove(Mesh& mesh, unsigned int currentFrame) {
+
+	float offset = (mesh.position.x > 0) ? 0.0f : 60.0f;
+	float time = (currentFrame + offset) / 120.0f;
+
+	mesh.position.z = sin(time * 2.0f * 3.14159265f) * 3.5f + 2.0f;
+
+}
+
 void Animation::meshSpin(Mesh& mesh, unsigned int currentFrame) {
 
 	mesh.rotation.z += (3.14159265 * 2) / 120;
@@ -63,6 +72,7 @@ namespace Animation {
 	vector<AnimationMeshFunction*> animationMeshFunctions{
 
 		new AnimationMeshFunction{ "Disabled", nullptr },
+		new AnimationMeshFunction{ "ballMove", ballMove },
 		new AnimationMeshFunction{ "meshSpin", meshSpin },
 		new AnimationMeshFunction{ "meshLightHue", meshLightHue }
 

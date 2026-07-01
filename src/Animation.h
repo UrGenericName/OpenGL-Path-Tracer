@@ -10,6 +10,7 @@
 namespace Animation {
 
 	void cameraSpin(Camera& cam, unsigned int currentFrame);
+	void ballMove(Mesh& mesh, unsigned int currentFrame);
 	void meshSpin(Mesh& mesh, unsigned int currentFrame);
 	void meshLightHue(Mesh& mesh, unsigned int currentFrame);
 

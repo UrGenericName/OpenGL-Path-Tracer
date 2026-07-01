@@ -42,22 +42,22 @@ void Scene::Inputs(GLFWwindow* window) {
 	else if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_RELEASE) {
 		debugSettings.mouseLeftClick = false;
 	}	// MOVEMENT (w, a, s, d)
-	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
+	if (!debugSettings.usingDebugWindow && glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
 		camera.Position += camera.speed * camera.Orientation;	// move position foward from orientation
 		debugSettings.currentSample = 0;
 	}
 
-	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
+	if (!debugSettings.usingDebugWindow && glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
 		camera.Position += camera.speed * -glm::normalize(glm::cross(camera.Orientation, camera.Up)); // find the left vector from orientation and add to position
 		debugSettings.currentSample = 0;
 	}
 
-	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
+	if (!debugSettings.usingDebugWindow && glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
 		camera.Position += camera.speed * -camera.Orientation;	// move position backward from orientation
 		debugSettings.currentSample = 0;
 	}
 
-	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
+	if (!debugSettings.usingDebugWindow && glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
 		camera.Position += camera.speed * glm::normalize(glm::cross(camera.Orientation, camera.Up));	// find the right vector from orientation and add to position
 		debugSettings.currentSample = 0;
 	}
@@ -65,11 +65,11 @@ void Scene::Inputs(GLFWwindow* window) {
 
 
 	// UP & DOWN (space, ctrl)
-	if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
+	if (!debugSettings.usingDebugWindow && glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
 		camera.Position += camera.speed * camera.Up;
 		debugSettings.currentSample = 0;
 	}
-	if (shaderPipelineComponent.gizmo.currentlyInUse == false && glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) {
+	if (!debugSettings.usingDebugWindow && shaderPipelineComponent.gizmo.currentlyInUse == false && glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) {
 		camera.Position += camera.speed * -camera.Up;
 		debugSettings.currentSample = 0;
 	}

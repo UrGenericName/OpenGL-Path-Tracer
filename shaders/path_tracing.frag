@@ -100,6 +100,7 @@ uniform vec3 u_camOrientation;
 #define MAX_BRIGHTNESS 1.0f
 #define MIN_BRIGHTNESS 0.0f
 
+#define PI 3.141592659
 #define EPSILON 0.00001
 #define FAR_PLANE 999999
 
@@ -143,13 +144,11 @@ void calculate_normal_map_vector(in vec3 normalMap, out vec3 normalMapVector);
 void calculate_geometric_face_normal(in int mesh, in int trig, Barycentric weights, out vec3 result);
 
 void reflection_BSDF(in vec3 faceNormal, in float roughness, in float metallic, in vec3 incomingRayDir, out vec3 outgoingRayDir);
-void specular_reflection(in vec3 faceNormal, in float roughness, in vec3 incomingRayDir, out vec3 outgoingRayDir);
-void diffuse_reflection(in vec3 faceNormal, out vec3 outgoingRayDir);
-vec3 randomUnitVector();
+void generateLocalDiffuseVector(out vec3 outputVector);
+void generateLocalGGXvector(float roughness, out vec3 outputVector);
+float fresnelReflectance(vec3 viewDir, vec3 worldGGX, float metallic);
+vec3 getRandomVector();
 
-vec2 getRandomUV();
-
-void randomize_normal(in float roughness, inout vec3 normal);
 void normal_space_to_world_space(in vec3 geometricFaceNormal, in vec3 normalMap, out vec3 worldSpaceNormal) ;
 void calculate_world_space_tangent_bitangent(vec3 faceNormal, out vec3 tangent, out vec3 bitangent);
 bool intersect_bounding_box(vec3 orig, vec3 dir, BoundingBox box);
@@ -259,35 +258,41 @@ void calculate_sample(out vec4 outputColor) {
     normal_space_to_world_space(normalize(geometricFaceNormal), normalMapVector, hitInfo.faceNormal);
 
     // REFLECTION DIRECTION
-    vec3 incomingRay = (intersectionPoint - u_camPos);
+    vec3 incomingRay = normalize(intersectionPoint - u_camPos);
     reflection_BSDF(hitInfo.faceNormal, roughnessMap, metallicMap, incomingRay, hitInfo.reflectionDir);
 
+    // MODIFY IN LOOP
     float cosineFactor = max(0.0f, dot(hitInfo.faceNormal, hitInfo.reflectionDir));
-
-    outputColor = vec4(albedoMap, 1.0f);
-
     float totalBrightness = 0.0f;
+    outputColor = vec4(albedoMap, 1.0f);
 
     for (int i = 0; i < u_maxBounces; ++i) {
         
         vec3 intersectionPoint = hitInfo.intersectionPoint;
         vec3 reflectionDir = hitInfo.reflectionDir;
-        if (intersect_scene(intersectionPoint, reflectionDir, hitInfo)) {
 
+        if (intersect_scene(intersectionPoint, reflectionDir, hitInfo)) {
+            
             cosineFactor *= max(0.0f, dot(hitInfo.faceNormal, hitInfo.reflectionDir));
             outputColor.xyz *= hitInfo.albedo;
 
+            // EARLY EXIT FOR EMISSIVE GEOMETRY
             if (hitInfo.emissive != 0.0f) {
                 totalBrightness = hitInfo.emissive;
                 break;
             }
 
         } else {
+            
+            // IF HIT BACKGROUND
             outputColor.xyz *= u_backgroundColor;
             break;
+
         }
+
     }
 
+    // LIGHT = TOTAL ALBEDO * BRIGHTNESS * LAMBERTIAN COSINE
     outputColor.xyz *= totalBrightness * cosineFactor;
 
 }
@@ -371,81 +376,82 @@ bool intersect_scene(vec3 origin, vec3 dir, out HitInfo hitInfo) {
 }
 
 void reflection_BSDF(in vec3 faceNormal, in float roughness, in float metallic, in vec3 incomingRayDir, out vec3 outgoingRayDir) {
+    
+    incomingRayDir = normalize(incomingRayDir); // just make sure the incoming ray is normalized
 
     if (u_debugUniversalRoughness) roughness = u_debugUniversalRoughnessAmount; 
     if (u_debugUniversalMetallic) metallic = u_debugUniversalMetallicAmount;
-
-
-    vec2 randomUV = getRandomUV();
-    vec3 V = -normalize(incomingRayDir); 
     
-    float safeRoughness = max(roughness, 0.001);
-    float alpha = safeRoughness * safeRoughness;
+    // Calculates specular ray
+    vec3 localGGX, worldGGX;
+    generateLocalGGXvector(roughness, localGGX);
+    normal_space_to_world_space(faceNormal, localGGX, worldGGX);
+    vec3 specularDir = reflect(incomingRayDir, worldGGX);
     
-    // 1. --- SAMPLE MICROSURFACE NORMAL (H) ---
-    float phi = 2.0 * 3.14159265359 * randomUV.x;
-    float cosThetaSq = (1.0 - randomUV.y) / (1.0 + (alpha * alpha - 1.0) * randomUV.y);
-    float cosTheta = sqrt(cosThetaSq);
-    float sinTheta = sqrt(max(0.0, 1.0 - cosThetaSq));
-    
-    vec3 localH = vec3(sinTheta * cos(phi), sinTheta * sin(phi), cosTheta);
-    vec3 worldH;
-    normal_space_to_world_space(faceNormal, localH, worldH);
-    
-    // 2. --- GENERATE BOTH POTENTIAL PATHS UP FRONT ---
-    vec3 specularDir = reflect(-V, worldH);
-    
-    // Diffuse path
-    float phiDiffuse = 2.0 * 3.14159265359 * randomUV.x;
-    float cosThetaDiffuse = sqrt(randomUV.y);
-    float sinThetaDiffuse = sqrt(max(0.0, 1.0 - cosThetaDiffuse * cosThetaDiffuse));
-    vec3 localDiffuseDir = vec3(sinThetaDiffuse * cos(phiDiffuse), sinThetaDiffuse * sin(phiDiffuse), cosThetaDiffuse);
-    vec3 diffuseDir;
+    // Calculates diffuse ray
+    vec3 localDiffuseDir, diffuseDir;
+    generateLocalDiffuseVector(localDiffuseDir);
     normal_space_to_world_space(faceNormal, localDiffuseDir, diffuseDir);
     
-    // 3. --- FIX THE GEOMETRY GUARD ---
     // If the rough specular ray points into the surface, fall back to the diffuse direction 
-    // instead of a perfect mirror. This keeps the surface looking completely matte/rough.
     if (dot(specularDir, faceNormal) <= 0.0) {
         specularDir = diffuseDir;
     }
     
-    // 4. --- DECIDE COIN FLIP (FRESNEL) ---
-    vec3 F0 = mix(vec3(0.04), vec3(1.0), metallic); 
-    float vdoth = max(dot(V, worldH), 0.0);
-    vec3 F = F0 + (vec3(1.0) - F0) * pow(1.0 - vdoth, 5.0);
-    float reflectionProbability = max(F.x, max(F.y, F.z));
+    float reflectionProbability = fresnelReflectance(-incomingRayDir, worldGGX, metallic);
+    float randomRoll = getRandomVector().x;
     
-    float pathRoll = getRandomUV().x;
-    
-    if (pathRoll < reflectionProbability) {
-        outgoingRayDir = specularDir;
+    if (randomRoll < reflectionProbability) {
+        outgoingRayDir = specularDir;   // just specular
     } else {
-        // Linear blend for smooth dielectrics at roughness 0
-        outgoingRayDir = mix(diffuseDir, reflect(-V, faceNormal), 1.0 - roughness);
+        outgoingRayDir = mix(diffuseDir, reflect(incomingRayDir, faceNormal), 1.0 - roughness); // diffuse and specular blend
     }
     
     outgoingRayDir = normalize(outgoingRayDir);
 }
 
+float fresnelReflectance(vec3 viewDir, vec3 worldGGX, float metallic) {
+    
+    // Schlick's Fresnel approximation
+    vec3 F0 = mix(vec3(0.04), vec3(1.0), metallic); 
+    float vdoth = max(dot(viewDir, worldGGX), 0.0);
+    vec3 F = F0 + (vec3(1.0) - F0) * pow(1.0 - vdoth, 5.0);
+    return max(F.x, max(F.y, F.z));
+    
+}
 
-vec2 getRandomUV() {
+void generateLocalDiffuseVector(out vec3 outputVector) {
     
-    ivec2 dimensions = textureSize(colorNoise, 0);
-    uint width = uint(dimensions.x);
-    uint height = uint(dimensions.y);
-    
-    uint seed = (pixelSeed++) % (width * height);
-    int x = int(seed % width);
-    int y = int(seed / width);
-    
-    vec3 randomColor = (texelFetch(colorNoise, ivec2(x, y), 0).rgb + texelFetch(colorNoise, ivec2(y, x), 0).rgb) / 2.0f;
+    vec3 random = getRandomVector();
 
-    return randomColor.xy;
+    // uses cosine-weighted hemisphere sampling
+    float phi = 2.0 * PI * random.x;
+    float cosTheta = sqrt(random.y);
+    float sinTheta = sqrt(max(0.0, 1.0 - cosTheta * cosTheta));
+    outputVector = vec3(sinTheta * cos(phi), sinTheta * sin(phi), cosTheta);
 
 }
 
-vec3 randomUnitVector() {
+void generateLocalGGXvector(float roughness, out vec3 outputVector) {
+    
+    vec3 random = getRandomVector();
+    
+
+    // uses GGX (Throwbridge-reitz) normal distrubition function
+    float safeRoughness = max(roughness, 0.001);
+    float alpha = safeRoughness * safeRoughness;
+    
+    float phi = 2.0 * PI * random.x;
+    float cosThetaSq = (1.0 - random.y) / (1.0 + (alpha * alpha - 1.0) * random.y);
+    float cosTheta = sqrt(cosThetaSq);
+    float sinTheta = sqrt(max(0.0, 1.0 - cosThetaSq));
+
+    outputVector = vec3(sinTheta * cos(phi), sinTheta * sin(phi), cosTheta);
+
+}
+
+// generates a vec3 with random floats [0, 1]
+vec3 getRandomVector() {
     
     ivec2 dimensions = textureSize(colorNoise, 0);
     uint width = uint(dimensions.x);
@@ -455,18 +461,9 @@ vec3 randomUnitVector() {
     int x = int(seed % width);
     int y = int(seed / width);
     
-    vec3 randomColor = (texelFetch(colorNoise, ivec2(x, y), 0).rgb + texelFetch(colorNoise, ivec2(y, x), 0).rgb) / 2.0f;
+    vec3 randomColor = texelFetch(colorNoise, ivec2(x, y), 0).rgb;
 
-    float cosTheta = 1.0 - 2.0 * randomColor.x;
-    float sinTheta = sqrt(max(0.0, 1.0 - cosTheta * cosTheta));
-    
-    float phi = 2.0 * 3.14159265359 * randomColor.y;
-    
-    return vec3(
-        sinTheta * cos(phi),
-        sinTheta * sin(phi),
-        cosTheta
-    );
+    return randomColor;
 
 }
 
@@ -513,8 +510,7 @@ void calculate_world_space_tangent_bitangent(vec3 faceNormal, out vec3 tangent, 
 
 }
 
-bool intersect_bounding_box(vec3 orig, vec3 dir, BoundingBox box)
-{
+bool intersect_bounding_box(vec3 orig, vec3 dir, BoundingBox box) {
     vec3 invD = 1.0 / dir;
 
     vec3 t1 = (box.minBounds.xyz - orig) * invD;

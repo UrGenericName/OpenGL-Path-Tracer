@@ -397,7 +397,7 @@ void DebugWindow::drawMeshSettingsTab(Scene& scene) {
 			TableNextColumn();
 			{
 				PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.3f, 0.1f, 0.1f, 1.0f));
-				if (DragFloat("##pitch", &(highlightedMesh->rotation.x), glm::pi<float>() * 0.05f)) {
+				if (DragFloat("##pitch", &(highlightedMesh->rotation.x), glm::pi<float>() * 0.025f)) {
 					scene.debugSettings.currentSample = 0;
 					scene.SSBOcomponent.generateBoundingBoxes(scene.meshCollection);
 					scene.SSBOcomponent.updateBoundingBoxesSSBO();
@@ -407,7 +407,7 @@ void DebugWindow::drawMeshSettingsTab(Scene& scene) {
 				PopStyleColor(1);
 				TableNextColumn();
 				PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.1f, 0.3f, 0.1f, 1.0f));
-				if (DragFloat("##yaw", &(highlightedMesh->rotation.y), glm::pi<float>() * 0.05f)) {
+				if (DragFloat("##yaw", &(highlightedMesh->rotation.y), glm::pi<float>() * 0.025f)) {
 					scene.debugSettings.currentSample = 0;
 					scene.SSBOcomponent.generateBoundingBoxes(scene.meshCollection);
 					scene.SSBOcomponent.updateBoundingBoxesSSBO();
@@ -417,7 +417,7 @@ void DebugWindow::drawMeshSettingsTab(Scene& scene) {
 				PopStyleColor(1);
 				TableNextColumn();
 				PushStyleColor(ImGuiCol_FrameBg, ImVec4(0.15f, 0.15f, 0.3f, 1.0f));
-				if (DragFloat("##roll", &(highlightedMesh->rotation.z), glm::pi<float>() * 0.05f)) {
+				if (DragFloat("##roll", &(highlightedMesh->rotation.z), glm::pi<float>() * 0.025f)) {
 					scene.debugSettings.currentSample = 0;
 					scene.SSBOcomponent.generateBoundingBoxes(scene.meshCollection);
 					scene.SSBOcomponent.updateBoundingBoxesSSBO();
