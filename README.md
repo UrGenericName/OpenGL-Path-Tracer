@@ -30,13 +30,12 @@ https://github.com/user-attachments/assets/50a54fdc-03c8-4691-abd0-e01327e0bc39
 
 Being and offline renderer, maximum performance wasn't the main goal. However, I still felt it important to keep performance in mind throughout the project, optimizing where reasonable to learn OpenGL's limits and bottlenecks. Ensuring buffers are only updated when necessary, using a single texture to avoid redundant duplicates, limiting conditional branching in my fragment shaders, etc.
 
-For the latter, I ended up with some clever bitwise operations as a replacement to conditional branches. For example, to make highlighted objects stand out from similar colors, I needed a dotted pattern. I avoided a shader branch by using a bitwise OR to generate a zero on even X/Y coordinates, which ended up creating the pattern I was looking for. 
-
+For the latter, I ended up with some clever bitwise operations as a replacement to conditional branches.  For example, I needed a way to help users visually disguise highlighted objects from other similar looking yellow objects in the scene.  To achieve this, I wanted to overlay a dotted pattern across any highlighted objects to make them stand out.  Initially I built this pattern with a if-statement, but later optimized it by switching to a bitwise operation.
 ```
-inputColor = mix(inputColor, highlightColor, strength);
-inputColor *= ( (pixelCoords.x % 2) | (pixelCoords.y % 2) );
+color *= ( (pixelCoords.x % 2) | (pixelCoords.y % 2) );
 ```
-Most of my performance considerations were small choices like this, more focused on avoidance rather than implementing large acceleration structures. One of the big optimizations that felt a bit out of scope for this project was a bounding-volume hierarchy. I still would like to use this at some point in one of my future projects, but for this one I opted to a simpler, less efficient, model & bounding-box pair.
+<img width="272" height="244" alt="image" src="https://github.com/user-attachments/assets/3b3f42e2-53d0-4c63-ad16-d57aaf04d26e" />
 
+Most of my performance considerations were small choices like this, more focused on avoidance rather than implementing large acceleration structures.  While this specific example yielded no measurable performance gain, its a good reflection of the mindset I had while writing these shaders.  One of the big optimizations that felt a bit out of scope for this project was a bounding-volume hierarchy.  I still would like to use this at some point in one of my future projects, but for this one I opted to a simpler, less efficient, model & bounding-box pair.
 
 Overall, I am incredibly pleased with how this project turned out and am excited to have cleared the beginner’s hurdle of graphics programming. I look forward to utilizing everything I've learned in future graphics projects, and I plan to explore more APIs down the road.
