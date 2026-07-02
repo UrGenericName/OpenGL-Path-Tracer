@@ -10,7 +10,7 @@ While there are still issues that should ideally be ironed out at some-point, su
 
 <img width="1201" height="825" alt="1782879261456" src="https://github.com/user-attachments/assets/30c269e7-c5c1-43c3-bb90-c53c1dc5ae4a" />
 
-Utilizing all these systems allowed me to build, and render, entire scenes with reasonable flexibility. While it's nowhere near perfect—and will by no means be should be used as a replacement for industry-standard tools like Blender—I think it was highly successful as a technical study and proof of concept.
+Utilizing all these systems allowed me to build, and render, entire scenes with reasonable flexibility.  While it's nowhere near perfect, I think it was highly successful as a technical study and proof of concept.
 
 In addition to my primary objective, some of the technical goals I had in regard to rendering included an implementation of a PBR pipeline (Albedo, Normal, Roughness, and Metallic maps), Cook-Torrance specular BRDF microfacet reflectance model, and Monte Carlo sampling. For performance, I aimed to implement a Z-prepass to cut down on overdraw, alongside model-level bounding boxes for collision detection.
 
